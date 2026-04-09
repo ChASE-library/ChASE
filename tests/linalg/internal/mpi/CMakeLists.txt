@@ -1,5 +1,6 @@
 setup_test(HEMMCPUDistTest hemm.cpp LIBRARIES pchase_cpu)
 setup_test(CholQRCPUDistTest cholqr.cpp LIBRARIES pchase_cpu)
+setup_test(HouseholderMPIDistTest householder_qr.cpp LIBRARIES pchase_cpu)
 setup_test(RayleighRitzCPUDistTest rayleighRitz.cpp LIBRARIES pchase_cpu)
 setup_test(PseudoHermitianRayleighRitzCPUDistTest pseudo_hermitian_rayleighRitz.cpp LIBRARIES pchase_cpu)
 setup_test(ResidualsCPUDistTest residuals.cpp LIBRARIES pchase_cpu)

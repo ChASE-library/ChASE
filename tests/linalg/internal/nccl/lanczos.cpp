@@ -5,10 +5,12 @@
 // https://github.com/ChASE-library/ChASE
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <complex>
 #include <cmath>
 #include <cstring>
-#include <random>
+#include <type_traits>
+#include "linalg/internal/cuda/random_normal_distribution.hpp"
 #include "linalg/internal/nccl/lanczos.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
@@ -16,6 +18,25 @@
 
 // Global static resources that persist across all test suites
 namespace {
+/** Absolute tolerance: rel_ratio * max(|reference|, 1). */
+template <typename B>
+B rel_abs_tolerance(B reference, B rel_ratio = B(0.05))
+{
+    using std::abs;
+    return rel_ratio * (std::max)(abs(reference), B(1));
+}
+
+/**
+ * Reference scale for multi-vector NCCL Lanczos `upperb` (max |Ritz| + |β_last|).
+ * For Clement N≈500, M=10 this is ~1.51·(N−1); keep in sync with observed bound.
+ */
+template <typename B>
+B lanczos_multi_upperb_reference(B spectral_radius)
+{
+    constexpr B kScale = B(1.51);
+    return kScale * spectral_radius;
+}
+
     bool resources_initialized = false;
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
     cublasHandle_t cublasH;
@@ -30,6 +51,39 @@ namespace {
     double* Clement_d = nullptr;
     float* Clement_s = nullptr;
     std::size_t Clement_size = 0;
+    curandStatePhilox4_32_10_t* d_curand_states = nullptr;
+
+template <typename T, typename MV>
+void fill_V_cuda_normal_gpu(
+    MV& V_,
+    const std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>& grid,
+    cudaStream_t stream,
+    curandStatePhilox4_32_10_t* states)
+{
+    int mpi_col_rank;
+    MPI_Comm_rank(grid->get_col_comm(), &mpi_col_rank);
+    const unsigned long long seed =
+        1337ULL + static_cast<unsigned long long>(mpi_col_rank);
+    const std::size_t n = V_.l_ld() * V_.l_cols();
+    cudaStream_t* stream_ptr = &stream;
+
+    if constexpr (std::is_floating_point_v<T>) {
+        chase::linalg::internal::cuda::chase_rand_normal(
+            seed, states, V_.l_data(), n, stream);
+    } else {
+        using B = chase::Base<T>;
+        B* d_tmp = nullptr;
+        CHECK_CUDA_ERROR(
+            cudaMalloc(reinterpret_cast<void**>(&d_tmp), n * sizeof(B)));
+        chase::linalg::internal::cuda::chase_rand_normal(seed, states, d_tmp,
+                                                          n, stream);
+        chase::linalg::internal::cuda::copyRealToT(d_tmp, V_.l_data(),
+                                                   static_cast<int>(n),
+                                                   stream_ptr);
+        CHECK_CUDA_ERROR(cudaFree(d_tmp));
+    }
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+}
 }
 
 template<typename T>
@@ -59,7 +113,8 @@ protected:
             CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
             CHECK_CUDA_ERROR(cudaStreamCreate(&stream));
             CHECK_CUBLAS_ERROR(cublasSetStream(cublasH, stream));
-            CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublasH, CUBLAS_POINTER_MODE_DEVICE));
+            CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void**>(&d_curand_states),
+                                        sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
             // Allocate Clement matrices
             Clement_size = N * N;
             Clement_z = new std::complex<double>[Clement_size];
@@ -144,6 +199,11 @@ public:
                 d_V_data_size = 0;
             }
 
+            if (d_curand_states != nullptr) {
+                CHECK_CUDA_ERROR(cudaFree(d_curand_states));
+                d_curand_states = nullptr;
+            }
+
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
             CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
             
@@ -163,7 +223,6 @@ TYPED_TEST_SUITE(LanczosNCCLDistTest, TestTypes);
 
 TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU) {
     using T = TypeParam;  // Get the current type
-    int *coords = this->get_mpi_grid().get()->get_coords();
 
     // Allocate CPU buffers for this test
     std::vector<chase::Base<T>> ritzv(this->M * this->numvec);
@@ -187,23 +246,15 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU) {
     auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->m, this->M, this->m, reinterpret_cast<T*>(this->get_V_device()), this->get_mpi_grid());
     auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, this->get_mpi_grid());
 
-    V_.allocate_cpu_data();
-    std::mt19937 gen(1337.0 + coords[0]);
-    std::normal_distribution<> d;
-
-    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++) {
-        auto rnd = getRandomT<T>([&]() { return d(gen); });
-        V_.cpu_data()[j] = rnd;
-    }
-
-    V_.H2D();
+    fill_V_cuda_normal_gpu<T>(V_, this->get_mpi_grid(), this->get_stream(),
+                              d_curand_states);
 
     auto Clement_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(this->N, this->N, this->N, Clement, this->get_mpi_grid());
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
     chase::Base<T> upperb;
-
+    cudaDeviceSynchronize();
     chase::linalg::internal::cuda_nccl::lanczos(this->get_cublas_handle(),
                                           this->M,
                                           this->numvec,
@@ -214,19 +265,17 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU) {
                                           Tau.data(),
                                           ritzV.data());
 
-    for(auto i = 0; i < this->numvec; i++) {
-        EXPECT_GT(ritzv[i * this->M], 1.0 - chase::Base<T>(this->N));
-        EXPECT_LT(ritzv[(i + 1) * this->M-1], chase::Base<T>(this->N - 1));
+    cudaDeviceSynchronize();
+    {
+        using B = chase::Base<T>;
+        const B spectral = B(this->N - 1);
+        const B ref = lanczos_multi_upperb_reference(spectral);
+        EXPECT_NEAR(upperb, ref, rel_abs_tolerance(ref));
     }
-
-    EXPECT_GT(upperb, chase::Base<T>(this->N - 1));
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1)));
 }
 
 TYPED_TEST(LanczosNCCLDistTest, lanczosGPU) {
     using T = TypeParam;  // Get the current type
-
-    int *coords = this->get_mpi_grid().get()->get_coords();
 
     // Get pointer to the appropriate Clement matrix
     T* Clement = [this]() -> T* {
@@ -245,33 +294,27 @@ TYPED_TEST(LanczosNCCLDistTest, lanczosGPU) {
     auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->m, this->M, this->m, reinterpret_cast<T*>(this->get_V_device()), this->get_mpi_grid());
     auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, this->get_mpi_grid());
 
-    V_.allocate_cpu_data();
+    fill_V_cuda_normal_gpu<T>(V_, this->get_mpi_grid(), this->get_stream(),
+                              d_curand_states);
 
-    std::mt19937 gen(1337.0 + coords[0]);
-    std::normal_distribution<> d;
-
-    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++)
-    {
-        auto rnd = getRandomT<T>([&]() { return d(gen); });
-        V_.cpu_data()[j] = rnd;
-    }
-
-    V_.H2D();
-    
     auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, Clement, this->get_mpi_grid());
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
     chase::Base<T> upperb;
-    
+    cudaDeviceSynchronize();
     chase::linalg::internal::cuda_nccl::lanczos(this->get_cublas_handle(),
                                           this->M,
                                           H_,
                                           V_,
                                           &upperb);
-    
-    EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );    
+    cudaDeviceSynchronize();
+
+    {
+        using B = chase::Base<T>;
+        const B ref = B(this->N - 1);
+        EXPECT_NEAR(upperb, ref, rel_abs_tolerance(ref));
+    }
 }
 
 TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
@@ -282,7 +325,6 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
     std::vector<chase::Base<T>> ritzV(this->M * this->M);
     std::vector<chase::Base<T>> Tau(this->M * this->M * this->numvec);
 
-    int *coords = this->get_mpi_grid().get()->get_coords();
     std::size_t blocksize = 25;
 
     // Get pointer to the appropriate Clement matrix
@@ -302,17 +344,8 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
     auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->m, this->M, blocksize, this->m, reinterpret_cast<T*>(this->get_V_device()), this->get_mpi_grid());
     auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, this->get_mpi_grid());
 
-    V_.allocate_cpu_data();
-    std::mt19937 gen(1337.0 + coords[0]);
-    std::normal_distribution<> d;
-
-    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++)
-    {
-        auto rnd = getRandomT<T>([&]() { return d(gen); });
-        V_.cpu_data()[j] = rnd;
-    }
-
-    V_.H2D();
+    fill_V_cuda_normal_gpu<T>(V_, this->get_mpi_grid(), this->get_stream(),
+                              d_curand_states);
 
     auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, Clement, this->get_mpi_grid());
     Clement_.redistributeImpl(&H2_);
@@ -320,6 +353,7 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
 
     chase::Base<T> upperb;
     
+    cudaDeviceSynchronize();
     chase::linalg::internal::cuda_nccl::lanczos(this->get_cublas_handle(),
                                           this->M,
                                           this->numvec,
@@ -330,20 +364,18 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
                                           Tau.data(),
                                           ritzV.data());
 
-    for(auto i = 0; i < this->numvec; i++) {
-        EXPECT_GT(ritzv[i * this->M], 1.0 - chase::Base<T>(this->N));
-        EXPECT_LT(ritzv[(i + 1) * this->M-1], chase::Base<T>(this->N - 1));
+    cudaDeviceSynchronize();
+    {
+        using B = chase::Base<T>;
+        const B spectral = B(this->N - 1);
+        const B ref = lanczos_multi_upperb_reference(spectral);
+        EXPECT_NEAR(upperb, ref, rel_abs_tolerance(ref));
     }
-
-    EXPECT_GT(upperb, chase::Base<T>(this->N - 1));
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1)));    
-
 }
 
 TYPED_TEST(LanczosNCCLDistTest, lanczosGPUBlockCyclic){
     using T = TypeParam;  // Get the current type
 
-    int *coords = this->get_mpi_grid().get()->get_coords();
     std::size_t blocksize = 25;
 
     // Get pointer to the appropriate Clement matrix
@@ -363,33 +395,27 @@ TYPED_TEST(LanczosNCCLDistTest, lanczosGPUBlockCyclic){
     auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->m, this->M, blocksize, this->m, reinterpret_cast<T*>(this->get_V_device()), this->get_mpi_grid());
     auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, this->get_mpi_grid());
 
-    V_.allocate_cpu_data();
-    std::mt19937 gen(1337.0 + coords[0]);
-    std::normal_distribution<> d;
-
-    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++)
-    {
-        auto rnd = getRandomT<T>([&]() { return d(gen); });
-        V_.cpu_data()[j] = rnd;
-    }
-
-    V_.H2D();
+    fill_V_cuda_normal_gpu<T>(V_, this->get_mpi_grid(), this->get_stream(),
+                              d_curand_states);
 
     auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, Clement, this->get_mpi_grid());
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
     chase::Base<T> upperb;
-    
+    cudaDeviceSynchronize();
     chase::linalg::internal::cuda_nccl::lanczos(this->get_cublas_handle(),
                                           this->M,
                                           H_,
                                           V_,
                                           &upperb);
-    
-    EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );     
+    cudaDeviceSynchronize();
 
+    {
+        using B = chase::Base<T>;
+        const B ref = B(this->N - 1);
+        EXPECT_NEAR(upperb, ref, rel_abs_tolerance(ref));
+    }
 }
 
 

@@ -154,23 +154,16 @@ struct cuda_mpi
     template <typename InputMultiVectorType>
     static void houseHoulderQR(InputMultiVectorType& V);
 
-    // CUDA-aware MPI Householder QR (mirroring NCCL APIs)
-    /** Distributed Householder QR + form Q. V must be on device; uses CUDA-aware MPI for collectives. */
-    template <typename T>
-    static void distributed_houseQR_formQ(
-        std::size_t m_global, std::size_t n, std::size_t l_rows,
-        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
-        cublasHandle_t cublas_handle, T* d_workspace,
-        std::size_t lwork_elems, MPI_Comm mpi_col_comm);
-
-    /** Blocked distributed Householder QR + form Q. V on device; CUDA-aware MPI for collectives. */
-    template <typename T>
-    static void distributed_blocked_houseQR_formQ(
-        std::size_t m_global, std::size_t n, std::size_t l_rows,
-        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
-        std::size_t nb,
-        cublasHandle_t cublas_handle, T* d_workspace,
-        std::size_t lwork_elems, MPI_Comm mpi_col_comm);
+    /** Runtime tuning knobs for Householder QR (performance/numerical only).
+     *  Defaults match the current non-env fallback behavior. */
+    struct HouseQRTuning
+    {
+        std::size_t outer_block_nb = 32;   // level-1: blocked QR panel width (API nb)
+        int panel_sub_nb = 8;      // level-3: inner unblocked panel micro-block size
+        int formq_chunks = 1;      // backward formQ chunk count
+        int timing_blocking = 0;   // per-phase timing host sync: 0 off, 1 on
+        int panel_hiprec = 0;      // (unused for CUDA-aware MPI; kept for API parity)
+    };
 
     /** Lightweight timing container for Householder panel factorization. */
     struct HouseholderPanelTiming
@@ -180,9 +173,11 @@ struct cuda_mpi
         float allreduce_tau_ms = 0.f;
         float scal_ms          = 0.f;
         float trail_ms         = 0.f;
+        /** Full panel: cudaEvent elapsed over entire jj loop (ms), debug/tuning only. */
+        float panel_total_ms   = 0.f;
     };
-            
-    /** Panel factorization for columns [k, k+jb). Used by blocked/unblocked QR; swap for different strategy. */
+
+    /** Panel factorization for columns [k, k+jb) in regular 1D block-row layout. */
     template <typename T>
     static void distributed_houseQR_panel_factor(
         std::size_t n, std::size_t l_rows, std::size_t g_off,
@@ -190,8 +185,85 @@ struct cuda_mpi
         cublasHandle_t cublas_handle,
         chase::Base<T>* d_real_scalar, T* d_T_scalar,
         T* d_one, T* d_zero, T* d_minus_one, T* d_panel_scalars, T* d_w,
-        MPI_Comm mpi_comm_row,
+        MPI_Comm mpi_col_comm,
         HouseholderPanelTiming* panel_timing = nullptr);
+
+    /** Panel factorization for 1-D block-cyclic rows (segment metadata). */
+    template <typename T>
+    static void distributed_houseQR_panel_factor_block_cyclic_1d(
+        std::size_t n, std::size_t m_global,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t k, std::size_t jb, std::size_t nb_dist,
+        T* d_tau,
+        cublasHandle_t cublas_handle,
+        chase::Base<T>* d_real_scalar, T* d_T_scalar,
+        T* d_one, T* d_zero, T* d_minus_one, T* d_panel_scalars, T* d_w,
+        MPI_Comm mpi_col_comm,
+        std::size_t l_rows, const std::uint64_t* d_row_global, T* d_r_diag,
+        const HouseQRTuning* tuning = nullptr,
+        HouseholderPanelTiming* panel_timing = nullptr);
+
+    /** Column sub-range of block-cyclic panel [jj_begin, jj_end). */
+    template <typename T>
+    static void distributed_houseQR_panel_factor_block_cyclic_1d_columns(
+        std::size_t n, std::size_t m_global,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t k, std::size_t jj_begin,
+        std::size_t jj_end, std::size_t jb_panel_total, std::size_t nb_dist,
+        T* d_tau, cublasHandle_t cublas_handle,
+        chase::Base<T>* d_real_scalar, T* d_T_scalar, T* d_one, T* d_zero,
+        T* d_minus_one, T* d_panel_scalars, T* d_w, MPI_Comm mpi_col_comm,
+        int col_rank, int col_size, std::size_t l_rows,
+        const std::uint64_t* d_row_global, T* d_r_diag,
+        const HouseQRTuning* tuning, HouseholderPanelTiming* panel_timing,
+        T* d_sub_workspace, std::size_t d_sub_workspace_elems);
+
+    /** Distributed Householder QR + form Q (unblocked). V on device; CUDA-aware MPI. */
+    template <typename T>
+    static void distributed_houseQR_formQ(
+        std::size_t m_global, std::size_t n, std::size_t l_rows,
+        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
+        cublasHandle_t cublas_handle, T* d_workspace,
+        std::size_t lwork_elems, MPI_Comm mpi_col_comm,
+        const HouseQRTuning* tuning = nullptr);
+
+    /** Blocked distributed Householder QR + form Q (1D block). V on device; CUDA-aware MPI. */
+    template <typename T>
+    static void distributed_blocked_houseQR_formQ(
+        std::size_t m_global, std::size_t n, std::size_t l_rows,
+        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
+        cublasHandle_t cublas_handle, T* d_workspace,
+        std::size_t lwork_elems, MPI_Comm mpi_col_comm,
+        const HouseQRTuning* tuning = nullptr);
+
+    /** Unblocked distributed Householder QR + form Q for block-cyclic rows. */
+    template <typename T>
+    static void distributed_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global, std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t nb_dist, MPI_Comm mpi_comm,
+        cublasHandle_t cublas_handle, T* d_workspace, std::size_t lwork_elems,
+        MPI_Comm mpi_col_comm,
+        const HouseQRTuning* tuning = nullptr);
+
+    /** Blocked distributed Householder QR + form Q for block-cyclic rows. */
+    template <typename T>
+    static void distributed_blocked_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global, std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, MPI_Comm mpi_comm,
+        std::size_t nb_dist,
+        cublasHandle_t cublas_handle, T* d_workspace, std::size_t lwork_elems,
+        MPI_Comm mpi_col_comm,
+        const HouseQRTuning* tuning = nullptr);
 
     /** GPU-facing entry point for Householder QR (geqrf + form Q) using CUDA-aware MPI. */
     template <typename InputMultiVectorType>
@@ -199,7 +271,7 @@ struct cuda_mpi
                                InputMultiVectorType& V1,
                                typename InputMultiVectorType::value_type* workspace,
                                int lwork,
-                               std::size_t nb = 32);
+                               const HouseQRTuning* tuning = nullptr);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(
@@ -310,6 +382,7 @@ struct cuda_mpi
 } // namespace chase
 
 #include "linalg/internal/cuda_aware_mpi/cholqr.hpp"
+#include "linalg/internal/cuda_aware_mpi/householder_qr.hpp"
 #include "linalg/internal/cuda_aware_mpi/flipSign.hpp"
 #include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda_aware_mpi/lanczos.hpp"

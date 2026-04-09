@@ -10,8 +10,6 @@
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "shiftDiagonal.cuh"
-#include <cmath>
-#include <limits>
 
 namespace chase
 {
@@ -71,20 +69,39 @@ void add_diagonal_shift(T* A, std::size_t n, chase::Base<T> shift,
 /**
  * @brief Shift diagonal using a device-resident scalar.
  *
- * Computes `H(ii) += (*d_shift) * scale` on GPU, avoiding D2H scalar copies.
+ * Computes precision-dependent `H(ii) += (*d_shift) * scale` on GPU:
+ * - single / complex<float>: `scale = 10 * epsilon(float)`
+ * - double / complex<double>: `scale = sqrt(shift_scale_num_rows) * epsilon(double)`
+ * The scale is evaluated inside the CUDA kernel so the full shift is
+ * stream-ordered with `*d_shift` (no separate host-computed scale). Same
+ * convention as shifted Cholesky QR in the MPI path: pass the global row count
+ * of \f$V\f$ (not the Gram order) when applicable; for a square Gram-only scale
+ * use `n`.
+ *
+ * @note Non-blocking streams: enqueue after the producer of `d_shift` (e.g.
+ * absTrace) on the same stream.
  */
+template <typename T>
+void shiftDiagonalFromDeviceShift(chase::matrix::Matrix<T, chase::platform::GPU>* H,
+                                  const chase::Base<T>* d_shift,
+                                  cudaStream_t* stream_,
+                                  std::size_t shift_scale_num_rows)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    std::size_t n = std::min(H->rows(), H->cols());
+    chase_shift_matrix_from_device_shift(H->data(), n, H->ld(), d_shift,
+                                         shift_scale_num_rows, usedStream);
+}
+
+/** @overload Uses `min(rows,cols)` of \p H for `sqrt` factor (legacy Gram-only scale). */
 template <typename T>
 void shiftDiagonalFromDeviceShift(chase::matrix::Matrix<T, chase::platform::GPU>* H,
                                   const chase::Base<T>* d_shift,
                                   cudaStream_t* stream_ = nullptr)
 {
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    std::size_t n = std::min(H->rows(), H->cols());
-    chase::Base<T> scale =
-        std::sqrt(static_cast<chase::Base<T>>(H->rows())) *
-        std::numeric_limits<chase::Base<T>>::epsilon();
-    chase_shift_matrix_from_device_shift(H->data(), n, H->ld(), d_shift, scale, usedStream);
+    std::size_t gram_n = std::min(H->rows(), H->cols());
+    shiftDiagonalFromDeviceShift(H, d_shift, stream_, gram_n);
 }
 
 /**

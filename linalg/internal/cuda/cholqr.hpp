@@ -403,11 +403,20 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
         CHECK_CUDA_ERROR(cudaMemcpyAsync(&nrmf_host, d_nrmf, sizeof(chase::Base<T>),
                                         cudaMemcpyDeviceToHost, stream));
         CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
-        shift_scale = std::sqrt(V.rows()) * nrmf_host *
-            std::numeric_limits<chase::Base<T>>::epsilon();
+        if constexpr (std::is_same<chase::Base<T>, float>::value)
+        {
+            shift_scale = static_cast<chase::Base<T>>(10.0) * nrmf_host *
+                          std::numeric_limits<chase::Base<T>>::epsilon();
+        }
+        else
+        {
+            shift_scale = std::sqrt(static_cast<double>(V.rows())) * nrmf_host *
+                          std::numeric_limits<chase::Base<T>>::epsilon();
+        }
     }
 #endif
-    chase::linalg::internal::cuda::shiftDiagonalFromDeviceShift(A, d_nrmf, &stream);
+    chase::linalg::internal::cuda::shiftDiagonalFromDeviceShift(
+        A, d_nrmf, &stream, V.rows());
     CHECK_CUDA_ERROR(cudaFreeAsync(d_nrmf, stream));
 
     int* devInfo = external_devInfo;
@@ -485,8 +494,9 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     std::ostringstream oss;
     oss << std::setprecision(2)
-        << "choldegree: 2, shift computed on device (scale=" << shift_scale
-        << ", nrmf(device->host)=" << nrmf_host << ")";
+        << "\ncholdegree: 2, shift computed on device (scale=" << shift_scale
+        << ", nrmf(device->host)=" << nrmf_host
+        << ", final_shift=" << (nrmf_host * shift_scale) << ")\n";
     chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
 #endif
     return info;

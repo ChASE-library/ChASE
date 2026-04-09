@@ -1,6 +1,7 @@
 setup_test(HEMMGPUNCCLDistTest hemm.cpp LIBRARIES pchase_gpu)
 setup_test(PseudoHEMMGPUNCCLDistTest pseudo_hermitian_hemm.cpp LIBRARIES pchase_gpu)
 setup_test(CholQRGPUNCCLDistTest cholqr.cpp LIBRARIES pchase_gpu)
+setup_test(HouseholderNCCLDistTest householder_qr.cpp LIBRARIES pchase_gpu)
 setup_test(RayleighRitzGPUNCCLDistTest rayleighRitz.cpp LIBRARIES pchase_gpu)
 setup_test(PseudoRayleighRitzGPUNCCLDistTest pseudo_hermitian_rayleighRitz.cpp LIBRARIES pchase_gpu)
 setup_test(ResidualsGPUNCCLDistTest residuals.cpp LIBRARIES pchase_gpu)

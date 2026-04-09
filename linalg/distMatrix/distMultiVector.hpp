@@ -2753,7 +2753,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2778,7 +2778,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -2789,7 +2789,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2848,7 +2848,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2872,7 +2872,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -2883,7 +2883,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -4359,7 +4359,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -4384,7 +4384,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -4395,7 +4395,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -4460,7 +4460,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -4484,7 +4484,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -4495,7 +4495,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }

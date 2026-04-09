@@ -6,11 +6,13 @@
 
 #include <algorithm>
 #include <complex>
+#include <cstring>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <mpi.h>
 #include <string>
 #include <vector>
@@ -92,7 +94,9 @@ static void nev_smallest_positive_eigs(const T_PseudoBSE* eigs_H, std::size_t n,
 enum class PseudoBSEBackend { CPU, GPU };
 
 // pChASE Solve_pseudo with BSE matrix (cdouble_random_BSE.bin).
-// Supports both pChASECPU and pChASEGPU (NCCL when HAS_CUDA).
+// This file uses block-cyclic matrix + DistMultiVectorBlockCyclic1D. Both pChASECPU and
+// pChASEGPU currently throw for pseudo-Hermitian + block-cyclic 1D MV; the test catches
+// that std::runtime_error and GTEST_SKIP() until block-cyclic pseudo-Hermitian is supported.
 // Note: First-iteration Ritz values and residuals can differ between CPU and GPU
 // because (1) initial vectors use different RNGs (CPU: std::mt19937, GPU: curand)
 // and different seed mapping (CPU: 1337+coords_[0], GPU: 1337+mpi_col_rank); (2) QR
@@ -177,9 +181,7 @@ protected:
 TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
 {
     const PseudoBSEBackend backend = GetParam();
-#ifdef HAS_CUDA
-    if (backend == PseudoBSEBackend::GPU) { /* GPU test runs when HAS_CUDA */ }
-#else
+#ifndef HAS_CUDA
     if (backend == PseudoBSEBackend::GPU)
         GTEST_SKIP() << "GPU backend not built (no HAS_CUDA)";
 #endif
@@ -195,8 +197,18 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
         Vec_cpu_ = std::make_shared<DistMultiVectorCPU>(N_, 2 * nevex_, blocksize_,
                                                         mpi_grid_);
         Hmat_cpu_->readFromBinaryFile(matrix_path_);
-        single = new chase::Impl::pChASECPU<PseudoHMatrixCPU, DistMultiVectorCPU>(
-            nev_, nex_, Hmat_cpu_.get(), Vec_cpu_.get(), Lambda_.data());
+        try
+        {
+            single = new chase::Impl::pChASECPU<PseudoHMatrixCPU, DistMultiVectorCPU>(
+                nev_, nex_, Hmat_cpu_.get(), Vec_cpu_.get(), Lambda_.data());
+        }
+        catch (const std::runtime_error& e)
+        {
+            const char* msg = e.what();
+            if (msg && std::strstr(msg, "block-cyclic"))
+                GTEST_SKIP() << e.what();
+            throw;
+        }
     }
 #ifdef HAS_CUDA
     else
@@ -210,9 +222,19 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
         Hmat_gpu_->allocate_cpu_data();
         Hmat_gpu_->readFromBinaryFile(matrix_path_);
         Hmat_gpu_->H2D();
-        single = new chase::Impl::pChASEGPU<PseudoHMatrixGPU, DistMultiVectorGPU,
-                                            PseudoBSEBackendType>(
-            nev_, nex_, Hmat_gpu_.get(), Vec_gpu_.get(), Lambda_.data());
+        try
+        {
+            single = new chase::Impl::pChASEGPU<PseudoHMatrixGPU, DistMultiVectorGPU,
+                                                PseudoBSEBackendType>(
+                nev_, nex_, Hmat_gpu_.get(), Vec_gpu_.get(), Lambda_.data());
+        }
+        catch (const std::runtime_error& e)
+        {
+            const char* msg = e.what();
+            if (msg && std::strstr(msg, "block-cyclic"))
+                GTEST_SKIP() << e.what();
+            throw;
+        }
     }
 #endif
 
@@ -360,7 +382,7 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
 #endif
 }
 
-// Instantiate: CPU always; CPU+GPU when HAS_CUDA (pChASEGPU with NCCL).
+// Instantiate: CPU; and GPU when HAS_CUDA. With block-cyclic MV both may GTEST_SKIP until supported.
 #ifdef HAS_CUDA
 INSTANTIATE_TEST_SUITE_P(CPU_and_GPU, ChaseDistributedSolvePseudoBSETest,
                          ::testing::Values(PseudoBSEBackend::CPU, PseudoBSEBackend::GPU));

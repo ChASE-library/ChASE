@@ -153,7 +153,16 @@ int shiftedcholQR2(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
     blaspp::t_syherk('U', 'C', n, m, &one, V, ldv, &zero, A, n);
     Base<T> nrmf = 0.0;
     computeDiagonalAbsSum(n, n, A, n, &nrmf);
-    shift = std::sqrt(m) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+    if constexpr (std::is_same<Base<T>, float>::value)
+    {
+        shift = static_cast<Base<T>>(10.0) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(m)) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
     shiftMatrixDiagonal(n, n, A, n, (T)shift);
     info = lapackpp::t_potrf('U', n, A, n);
     if (info != 0)

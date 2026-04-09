@@ -61,8 +61,8 @@ void cuda_mpi::rayleighRitz(
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                 cusolver_handle, CUSOLVER_EIG_MODE_VECTOR,
-                CUBLAS_FILL_MODE_LOWER, subSize, A->l_data(), subSize,
-                ritzv.l_data(), &lwork_heevd));
+                CUBLAS_FILL_MODE_UPPER, subSize, A->l_data(), subSize,
+                ritzv.l_data() + offset, &lwork_heevd));
 
         if (upperTriangularSize > lwork_heevd)
         {

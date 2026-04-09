@@ -342,7 +342,16 @@ int cpu_mpi::shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T* V,
                   comm);
     Base<T> nrmf = 0.0;
     chase::linalg::internal::cpu::computeDiagonalAbsSum(n, n, A, n, &nrmf);
-    shift = std::sqrt(N) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+    if constexpr (std::is_same<Base<T>, float>::value)
+    {
+        shift = static_cast<Base<T>>(10.0) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(N)) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
     chase::linalg::internal::cpu::shiftMatrixDiagonal(n, n, A, n, (T)shift);
     info = lapackpp::t_potrf('U', n, A, n);
     if (info != 0)

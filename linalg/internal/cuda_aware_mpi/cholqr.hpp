@@ -606,8 +606,16 @@ int cuda_mpi::shiftedcholQR2(cublasHandle_t cublas_handle,
                                                 (cudaStream_t)0);
     CHECK_CUDA_ERROR(cudaMemcpy(&nrmf, d_nrmf, sizeof(chase::Base<T>),
                                 cudaMemcpyDeviceToHost));
-    shift =
-        std::sqrt(N) * nrmf * std::numeric_limits<chase::Base<T>>::epsilon();
+    if constexpr (std::is_same<chase::Base<T>, float>::value)
+    {
+        shift = static_cast<chase::Base<T>>(10.0) * nrmf *
+                std::numeric_limits<chase::Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(N)) * nrmf *
+                std::numeric_limits<chase::Base<T>>::epsilon();
+    }
 
     chase::linalg::internal::cuda::chase_shift_matrix(A, n, n, shift,
                                                       (cudaStream_t)0);

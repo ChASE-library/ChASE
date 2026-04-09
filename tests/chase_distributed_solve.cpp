@@ -209,11 +209,15 @@ protected:
     void SetUp() override
     {
         MPI_Comm_size(MPI_COMM_WORLD, &world_size_);
-        N_ = 256;
-        nev_ = 24;
-        nex_ = 16;
-        blocksize_ = 32;
-        perturb_ = static_cast<chase::Base<T>>(1e-6);
+        N_ = 1001;
+        nev_ = 100;
+        nex_ = 60;
+        blocksize_ = 64;
+        if constexpr (std::is_same_v<T, float> ||
+                      std::is_same_v<T, std::complex<float>>)
+            perturb_ = static_cast<chase::Base<T>>(1e-3);
+        else
+            perturb_ = static_cast<chase::Base<T>>(1e-6);
         setup_distributed_clement<T, chase::platform::CPU>(
             N_, nev_, nex_, blocksize_, perturb_, world_size_, mpi_grid_,
             Clement_, Hmat_, Vec_, Lambda_, Clement_data_);
@@ -251,7 +255,7 @@ TYPED_TEST(ChaseDistributedSolveCPUTest, pChaseCPU_Solve_Clement_Converges)
             this->Lambda_.data());
 
     auto& config = single->GetConfig();
-    config.SetTol(1e-10);
+    config.SetTol(getResidualToleranceDist<T>());
     config.SetDeg(16);
     config.SetOpt(true);
     config.SetApprox(false);
@@ -333,7 +337,7 @@ TYPED_TEST(ChaseDistributedSolveCPUBlockBlockTest, pChaseCPU_Solve_Clement_Block
             this->Lambda_.data());
 
     auto& config = single->GetConfig();
-    config.SetTol(1e-10);
+    config.SetTol(getResidualToleranceDist<T>());
     config.SetDeg(16);
     config.SetOpt(true);
     config.SetApprox(false);
@@ -378,11 +382,15 @@ protected:
     void SetUp() override
     {
         MPI_Comm_size(MPI_COMM_WORLD, &world_size_);
-        N_ = 256;
-        nev_ = 24;
-        nex_ = 16;
-        blocksize_ = 32;
-        perturb_ = static_cast<chase::Base<T>>(1e-6);
+        N_ = 1001;
+        nev_ = 100;
+        nex_ = 60;
+        blocksize_ = 64;
+        if constexpr (std::is_same_v<T, float> ||
+                      std::is_same_v<T, std::complex<float>>)
+            perturb_ = static_cast<chase::Base<T>>(1e-3);
+        else
+            perturb_ = static_cast<chase::Base<T>>(1e-6);
         setup_distributed_clement<T, chase::platform::GPU>(
             N_, nev_, nex_, blocksize_, perturb_, world_size_, mpi_grid_,
             Clement_, Hmat_, Vec_, Lambda_, Clement_data_);
@@ -421,7 +429,7 @@ TYPED_TEST(ChaseDistributedSolveGPUTest, pChaseGPU_Solve_Clement_Converges)
             this->Lambda_.data());
 
     auto& config = single->GetConfig();
-    config.SetTol(1e-10);
+    config.SetTol(getResidualToleranceDist<T>());
     config.SetDeg(16);
     config.SetOpt(true);
     config.SetApprox(false);
@@ -465,10 +473,14 @@ protected:
     void SetUp() override
     {
         MPI_Comm_size(MPI_COMM_WORLD, &world_size_);
-        N_ = 256;
-        nev_ = 24;
-        nex_ = 16;
-        perturb_ = static_cast<chase::Base<T>>(1e-6);
+        N_ = 1001;
+        nev_ = 100;
+        nex_ = 60;
+        if constexpr (std::is_same_v<T, float> ||
+                      std::is_same_v<T, std::complex<float>>)
+            perturb_ = static_cast<chase::Base<T>>(1e-3);
+        else
+            perturb_ = static_cast<chase::Base<T>>(1e-6);
         setup_distributed_clement_blockblock<T, chase::platform::GPU>(
             N_, nev_, nex_, perturb_, world_size_, mpi_grid_, Clement_, Hmat_,
             Vec_, Lambda_, Clement_data_);
@@ -504,7 +516,7 @@ TYPED_TEST(ChaseDistributedSolveGPUBlockBlockTest, pChaseGPU_Solve_Clement_Block
             this->Lambda_.data());
 
     auto& config = single->GetConfig();
-    config.SetTol(1e-10);
+    config.SetTol(getResidualToleranceDist<T>());
     config.SetDeg(16);
     config.SetOpt(true);
     config.SetApprox(false);

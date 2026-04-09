@@ -1250,15 +1250,31 @@ public:
                 else
                 {
 #endif
-                    measure_cuda(time_chol_shifted_ms, [&]() {
-                        info = kernelNamespace::shiftedcholQR2(
-                            cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                            V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
-                            // V1_->getMpiGrid()->get_nccl_col_comm(),
-                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                                V1_->getMpiGrid()),
-                            d_work_, lwork_, A_->l_data(), devInfo_);
-                    });
+                    if constexpr (std::is_same<T, std::complex<float>>::value ||
+                                std::is_same<T, float>::value)
+                    {
+                        measure_cuda(time_chol_shifted_ms, [&]() {
+                            info = kernelNamespace::cholQR2(
+                                cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                                V1_->l_data(), V1_->l_ld(),
+                                // V1_->getMpiGrid()->get_nccl_col_comm(),
+                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                    V1_->getMpiGrid()),
+                                d_work_, lwork_, A_->l_data(), devInfo_);
+                        });
+                    }else
+                    {
+                        measure_cuda(time_chol_shifted_ms, [&]() {
+                            info = kernelNamespace::shiftedcholQR2(
+                                cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                                V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
+                                // V1_->getMpiGrid()->get_nccl_col_comm(),
+                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                    V1_->getMpiGrid()),
+                                d_work_, lwork_, A_->l_data());
+        
+                        });
+                    }
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1600,10 +1616,10 @@ public:
 
         cudaDeviceSynchronize();
         CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper<T>(
-            V1_->l_data(), V1_->l_ld() * V1_->l_cols(), 0,
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld() * (V1_->l_cols() - locked_), 0,
             V1_->getMpiGrid()->get_nccl_row_comm()));
         chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), 
-        V2_->l_cols(), V1_->l_data(), V1_->l_ld(), 
+        V2_->l_cols() - locked_, V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(), 
         V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
