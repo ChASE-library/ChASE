@@ -35,6 +35,7 @@
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
 #include <cstdlib>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 using namespace chase::linalg;
@@ -440,10 +441,22 @@ public:
         }
 #endif
 
-#ifdef HAS_NCCL
-        // NCCL warm-up: 1x1 matrix to warm up entire path
+#if defined(HAS_NCCL) && defined(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
+        // NCCL benchmark warm-up (optional; CMake: CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=ON,
+        // not combined with Release/RelWithDebInfo). Adds measurable startup cost.
         if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
         {
+            if (my_rank_ == 0)
+            {
+                std::cerr
+                    << "[ChASE][WARN] pChASEGPU constructor NCCL benchmark warm-up is enabled "
+                       "(extra cholQR/Lanczos work at startup). To disable: configure with "
+                       "-DCHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=OFF, or build with "
+                       "CMAKE_BUILD_TYPE=Release or RelWithDebInfo (warm-up is never enabled "
+                       "for those build types).\n";
+                std::cerr.flush();
+            }
+
             cudaEvent_t start, stop;
             cudaEventCreate(&start);
             cudaEventCreate(&stop);
@@ -509,7 +522,7 @@ public:
             cudaEventDestroy(start);
             cudaEventDestroy(stop);
         }
-#endif
+#endif // HAS_NCCL && CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
 
     }
 

@@ -53,6 +53,34 @@ option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
 option(CHASE_PANEL_HIPREC "Enable Split-Sync-Fix and high-precision panel protection" OFF)
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
+# Optional NCCL warm-up in pChASEGPU constructor (cholQR1 + Lanczos); skews startup timing.
+option(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
+  "Enable NCCL warm-up in pChASEGPU constructor (benchmarks only; extra startup cost)" OFF)
+
+set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE OFF)
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
+  if(CMAKE_BUILD_TYPE)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _CHASE_BT_UPPER)
+    if(_CHASE_BT_UPPER STREQUAL "RELEASE" OR _CHASE_BT_UPPER STREQUAL "RELWITHDEBINFO")
+      message(WARNING
+        "CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP is ignored for CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} "
+        "(Release and RelWithDebInfo builds never enable this warm-up).")
+    else()
+      set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE ON)
+    endif()
+  else()
+    # Multi-config generators may leave CMAKE_BUILD_TYPE empty; honor the option if set.
+    set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE ON)
+  endif()
+endif()
+
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE)
+  target_compile_definitions(chase_algorithm INTERFACE CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=1)
+  message(STATUS "GPU constructor benchmark warm-up (pChASEGPU): ON")
+else()
+  message(STATUS "GPU constructor benchmark warm-up (pChASEGPU): OFF")
+endif()
+
 # GPU-resident Lanczos (fused kernels + NCCL) is required for GPU Lanczos paths.
 set(CHASE_ENABLE_GPU_RESIDENT_LANCZOS ON)
 
@@ -204,6 +232,9 @@ if(CHASE_SAVE_RESIDUALS)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_SAVE_RESIDUALS")
 endif()
 set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE)
+  set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=1")
+endif()
 
 set(CHASE_LINK_LIBRARIES "")
 
