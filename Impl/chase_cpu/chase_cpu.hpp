@@ -683,9 +683,19 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                info = chase::linalg::internal::cpu::shiftedcholQR2(
-                    Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(),
-                    A_.data());
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    info = chase::linalg::internal::cpu::shiftedcholQR2(
+                        Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(),
+                        A_.data());
+                }
+                else
+                {
+                    info = chase::linalg::internal::cpu::shiftedcholQR2(
+                        Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(),
+                        A_.data());
+                }
             }
             else if (cond < cond_threshold_lower)
             {

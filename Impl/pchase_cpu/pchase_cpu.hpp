@@ -569,6 +569,34 @@ public:
             cond_threshold_lower = std::atof(chol_threshold);
         }
 
+        unsigned int householder_nb = 32u;
+        if (const char* hh_nb_env = std::getenv("CHASE_HOUSEHOLDER_NB"))
+        {
+            const long parsed = std::strtol(hh_nb_env, nullptr, 10);
+            if (parsed > 0)
+                householder_nb = static_cast<unsigned int>(parsed);
+        }
+        chase::linalg::internal::cpu_mpi::HouseQRTuning hh_tuning{};
+        hh_tuning.outer_block_nb = static_cast<int>(householder_nb);
+
+        auto call_householder = [&](auto& vec) {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              std::decay_t<decltype(vec)>>::value)
+            {
+#ifdef HAS_SCALAPACK
+                chase::linalg::internal::cpu_mpi::houseHoulderQR(vec);
+#else
+                chase::linalg::internal::cpu_mpi::cpu_distributed_houseQR_formQ(
+                    vec, &hh_tuning);
+#endif
+            }
+            else
+            {
+                chase::linalg::internal::cpu_mpi::cpu_distributed_houseQR_formQ(
+                    vec, &hh_tuning);
+            }
+        };
+
         // int display_bounds = 0;
         // char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         // if (display_bounds_env)
@@ -637,15 +665,13 @@ public:
             {
                 V1_->copyTo();
                 auto V1_d = V1_->getDoublePrecisionMatrix();
-                chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
-                    *V1_d, 16);
+                call_householder(*V1_d);
                 V1_->copyback();
             }
             else
 #endif
             {
-                chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
-                    *V1_, 16);
+                call_householder(*V1_);
             }
         }
         else
@@ -684,10 +710,21 @@ public:
                 else
                 {
 #endif
-                    info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
-                        V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    if constexpr (std::is_same<T, std::complex<float>>::value ||
+                                  std::is_same<T, float>::value)
+                    {
+                        info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
+                            V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    }
+                    else
+                    {
+                        info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
+                            V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    }
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -760,15 +797,13 @@ public:
                 {
                     V1_->copyTo();
                     auto V1_d = V1_->getDoublePrecisionMatrix();
-                    chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
-                        *V1_d, 16);
+                    call_householder(*V1_d);
                     V1_->copyback();
                 }
                 else
 #endif
                 {
-                    chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
-                        *V1_, 16);
+                    call_householder(*V1_);
                 }
             }
         }

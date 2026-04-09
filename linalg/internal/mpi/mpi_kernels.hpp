@@ -27,6 +27,14 @@ namespace internal
 {
 struct cpu_mpi
 {
+    struct HouseQRTuning
+    {
+        int outer_block_nb = 32;
+        int panel_sub_nb = 8;
+        int formq_chunks = 1;
+        int timing_blocking = 0;
+    };
+
     template <typename T>
     static int cholQR1(std::size_t m, std::size_t n, T* V, int ldv,
                        MPI_Comm comm, T* A = nullptr);
@@ -103,7 +111,8 @@ struct cpu_mpi
 
     /** formQ_1d_block or formQ_block_cyclic_1d via is_block_cyclic_1d_multivector. */
     template <typename InputMultiVectorType>
-    static void cpu_distributed_houseQR_formQ(InputMultiVectorType& V);
+    static void cpu_distributed_houseQR_formQ(
+        InputMultiVectorType& V, const HouseQRTuning* tuning = nullptr);
 
     /** Blocked compact-WY QR + form Q; same layout as panel_factor_1d_block (m_global >= n). */
     template <typename T>

@@ -846,9 +846,19 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                info = chase::linalg::internal::cuda::shiftedcholQR2(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
-                    devInfo_);
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    info = chase::linalg::internal::cuda::shiftedcholQR2(
+                        cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
+                        devInfo_);
+                }
+                else
+                {
+                    info = chase::linalg::internal::cuda::shiftedcholQR2(
+                        cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
+                        devInfo_);
+                }
             }
             else if (cond < cond_threshold_lower)
             {

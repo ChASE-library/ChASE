@@ -1254,13 +1254,13 @@ public:
                                 std::is_same<T, float>::value)
                     {
                         measure_cuda(time_chol_shifted_ms, [&]() {
-                            info = kernelNamespace::cholQR2(
-                                cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                                V1_->l_data(), V1_->l_ld(),
+                            info = kernelNamespace::shiftedcholQR2(
+                                cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                                V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
                                 // V1_->getMpiGrid()->get_nccl_col_comm(),
                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                                     V1_->getMpiGrid()),
-                                d_work_, lwork_, A_->l_data(), devInfo_);
+                                d_work_, lwork_, A_->l_data());
                         });
                     }else
                     {

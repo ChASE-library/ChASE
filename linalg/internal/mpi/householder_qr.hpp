@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -31,6 +32,34 @@ namespace internal
 
 namespace
 {
+inline std::size_t mpi_qr_sub_nb_env(
+    const cpu_mpi::HouseQRTuning* tuning = nullptr, std::size_t default_nb = 8)
+{
+    if (tuning != nullptr && tuning->panel_sub_nb > 0)
+        return static_cast<std::size_t>(tuning->panel_sub_nb);
+    if (const char* env = std::getenv("CHASE_QR_SUB_NB"))
+    {
+        const long v = std::strtol(env, nullptr, 10);
+        if (v > 0)
+            return static_cast<std::size_t>(v);
+    }
+    return default_nb;
+}
+
+inline std::size_t mpi_qr_block_nb_env(
+    const cpu_mpi::HouseQRTuning* tuning = nullptr, std::size_t default_nb = 32)
+{
+    if (tuning != nullptr && tuning->outer_block_nb > 0)
+        return static_cast<std::size_t>(tuning->outer_block_nb);
+    if (const char* env = std::getenv("CHASE_QR_OUTER_BLOCK_NB"))
+    {
+        const long v = std::strtol(env, nullptr, 10);
+        if (v > 0)
+            return static_cast<std::size_t>(v);
+    }
+    return mpi_qr_sub_nb_env(tuning, default_nb);
+}
+
 /** For each global row r < tab_len, out[r] is segment index s with r in that
  *  segment; unowned rows stay nseg (sentinel). */
 inline void fill_pivot_row_seg_index(
@@ -705,24 +734,29 @@ void cpu_mpi::cpu_distributed_houseQR_formQ_block_cyclic_1d(
 }
 
 template <typename InputMultiVectorType>
-void cpu_mpi::cpu_distributed_houseQR_formQ(InputMultiVectorType& V)
+void cpu_mpi::cpu_distributed_houseQR_formQ(InputMultiVectorType& V,
+                                            const HouseQRTuning* tuning)
 {
     using Vt = typename InputMultiVectorType::value_type;
+    const std::size_t nb = mpi_qr_block_nb_env(tuning, 32);
+
+    // Keep old unblocked behavior by default (nb>=n or nb==0 naturally falls
+    // through to unblocked in blocked entry points).
     if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
                       InputMultiVectorType>::value)
     {
         const auto seg_g = V.m_contiguous_global_offs();
         const auto seg_l = V.m_contiguous_local_offs();
         const auto seg_n = V.m_contiguous_lens();
-        cpu_mpi::cpu_distributed_houseQR_formQ_block_cyclic_1d<Vt>(
+        cpu_mpi::cpu_distributed_blocked_houseQR_formQ_block_cyclic_1d<Vt>(
             V.g_rows(), V.g_cols(), seg_g, seg_l, seg_n, V.l_ld(), V.l_data(),
-            V.getMpiGrid()->get_col_comm());
+            V.getMpiGrid()->get_col_comm(), nb);
     }
     else
     {
-        cpu_mpi::cpu_distributed_houseQR_formQ_1d_block<Vt>(
+        cpu_mpi::cpu_distributed_blocked_houseQR_formQ_1d_block<Vt>(
             V.g_rows(), V.g_cols(), V.l_rows(), V.g_off(), V.l_ld(), V.l_data(),
-            V.getMpiGrid()->get_col_comm());
+            V.getMpiGrid()->get_col_comm(), nb);
     }
 }
 
