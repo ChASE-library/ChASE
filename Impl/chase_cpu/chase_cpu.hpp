@@ -307,6 +307,18 @@ public:
                         getRandomT<T>([&]() { return d(gen); });
                 }
             }
+            if (is_pseudoHerm_)
+            {
+                const std::size_t row_half = Vec1_.rows() / 2;
+                const std::size_t m_lower = Vec1_.rows() - row_half;
+                if (m_lower > 0)
+                {
+                    const T scale = T(0.001);
+                    chase::linalg::internal::cpu::scaleLowerBlockRows(
+                        Vec1_.data(), Vec1_.ld(), row_half, m_lower,
+                        Vec1_.cols(), scale);
+                }
+            }
         }
 
         chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), Vec1_.cols(),

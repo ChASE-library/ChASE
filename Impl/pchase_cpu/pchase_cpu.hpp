@@ -282,6 +282,24 @@ public:
                 auto rnd = getRandomT<T>([&]() { return d(gen); });
                 V1_->l_data()[j] = rnd;
             }
+
+            // Pseudo-Hermitian: dampen the global lower half of rows (same split
+            // as l_half()), same pattern as flipLowerHalfMatrixSign (t_scal per col).
+            if (is_pseudoHerm_)
+            {
+                const std::size_t half = V1_->l_half();
+                const std::size_t m_lower = V1_->l_rows() - half;
+                if (m_lower > 0)
+                {
+                    T scale = T(0.001);
+                    for (auto j = 0; j < V1_->l_cols(); j++)
+                    {
+                        chase::linalg::blaspp::t_scal(
+                            m_lower, &scale,
+                            V1_->l_data() + half + j * V1_->l_ld(), 1);
+                    }
+                }
+            }
         }
 
         chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols(),

@@ -10,6 +10,7 @@
 #include "algorithm/types.hpp"
 #include "flipSign.cuh"
 #include "linalg/matrix/matrix.hpp"
+#include <type_traits>
 
 namespace chase
 {
@@ -57,6 +58,41 @@ void flipLowerHalfMatrixSign(std::size_t m, std::size_t n, T* H_data,
 
     cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
     chase_flipLowerHalfMatrixSign(H_data, m, n, ldh, usedStream);
+}
+
+/**
+ * Scale the contiguous row block A[row_start + r, c] *= scale for
+ * r in [0, nrows_lower), c in [0, ncols), column-major with leading dimension
+ * lda (same layout as cublasTscal per column with incx = 1).
+ */
+template <typename T>
+void scaleLowerBlockRows(T* data, std::size_t lda, std::size_t row_start,
+                         std::size_t nrows_lower, std::size_t ncols, T scale,
+                         cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<T, float>)
+    {
+        chase_scaleLowerBlockRows(data, lda, row_start, nrows_lower, ncols,
+                                  scale, usedStream);
+    }
+    else if constexpr (std::is_same_v<T, double>)
+    {
+        chase_scaleLowerBlockRows(data, lda, row_start, nrows_lower, ncols,
+                                  scale, usedStream);
+    }
+    else if constexpr (std::is_same_v<T, std::complex<float>>)
+    {
+        chase_scaleLowerBlockRows(data, lda, row_start, nrows_lower, ncols,
+                                  scale, usedStream);
+    }
+    else if constexpr (std::is_same_v<T, std::complex<double>>)
+    {
+        chase_scaleLowerBlockRows(data, lda, row_start, nrows_lower, ncols,
+                                  scale, usedStream);
+    }
 }
 } // namespace cuda
 } // namespace internal

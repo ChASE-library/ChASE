@@ -157,6 +157,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                                                          &stream);
     cudaEventRecord(ev_allreduce);
 
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+
     int* devInfo = external_devInfo;
     bool owns_devInfo = false;
     if (devInfo == nullptr)

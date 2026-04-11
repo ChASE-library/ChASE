@@ -663,18 +663,19 @@ public:
                 seed, states_, V1_->l_data(), V1_->l_ld() * V1_->l_cols(),
                 (cudaStream_t)0);
 
-        /*    // Dampen components in the global lower half of rows (same split as l_half()).
-            const std::size_t m_lower = V1_->l_rows() - V1_->l_half();
-            if (m_lower > 0)
+            // Pseudo-Hermitian: dampen components in the global lower half of rows
+            // (same split as l_half()); standard Hermitian init leaves vectors unchanged.
+            if (is_pseudoHerm_)
             {
-                T scale = T(0.001);
-                for (std::size_t j = 0; j < V1_->l_cols(); ++j)
+                const std::size_t m_lower = V1_->l_rows() - V1_->l_half();
+                if (m_lower > 0)
                 {
-                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-                        cublasH_, m_lower, &scale,
-                        V1_->l_data() + V1_->l_half() + j * V1_->l_ld(), 1));
+                    const T scale = T(0.001);
+                    chase::linalg::internal::cuda::scaleLowerBlockRows(
+                        V1_->l_data(), V1_->l_ld(), V1_->l_half(), m_lower,
+                        V1_->l_cols(), scale, nullptr);
                 }
-            }*/
+            }
         }
         
 
@@ -960,7 +961,6 @@ public:
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         SCOPED_NVTX_RANGE();
-
         // Create CUDA events for detailed timing
         cudaEvent_t qr_start, qr_flip_sign, qr_cholqr_start, qr_cholqr_end, qr_lacpy_start, qr_end;
         cudaEventCreate(&qr_start);

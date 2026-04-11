@@ -110,6 +110,22 @@ void flipLowerHalfMatrixSign(std::size_t m, std::size_t n, T* A,
     }
 }
 
+/** Scale \f$A[\mathrm{row\_start}+r,\,c] \leftarrow \alpha A[\ldots]\f$ for
+ *  \f$r \in [0,\mathrm{nrows\_lower})\f$, \f$c \in [0,\mathrm{ncols})\f$
+ *  (column-major, lda). */
+template <typename T>
+void scaleLowerBlockRows(T* A, std::size_t lda, std::size_t row_start,
+                         std::size_t nrows_lower, std::size_t ncols, T scale)
+{
+    if (nrows_lower == 0 || ncols == 0)
+        return;
+    for (std::size_t j = 0; j < ncols; ++j)
+    {
+        chase::linalg::blaspp::t_scal(nrows_lower, &scale,
+                                      A + row_start + j * lda, 1);
+    }
+}
+
 /**
  * @brief Flip the sign of the right part of the matrix
  *

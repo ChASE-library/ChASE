@@ -70,6 +70,22 @@ void chase_flipMatrixSign(std::complex<float>* A, std::size_t m, std::size_t n,
 void chase_flipMatrixSign(std::complex<double>* A, std::size_t m, std::size_t n,
                           std::size_t lda, cudaStream_t stream_);
 
+/** Scale A[row_start + r, c] *= scale for r in [0, nrows_lower), c in [0, ncols). */
+void chase_scaleLowerBlockRows(float* A, std::size_t lda, std::size_t row_start,
+                               std::size_t nrows_lower, std::size_t ncols,
+                               float scale, cudaStream_t stream_);
+void chase_scaleLowerBlockRows(double* A, std::size_t lda, std::size_t row_start,
+                               std::size_t nrows_lower, std::size_t ncols,
+                               double scale, cudaStream_t stream_);
+void chase_scaleLowerBlockRows(std::complex<float>* A, std::size_t lda,
+                               std::size_t row_start, std::size_t nrows_lower,
+                               std::size_t ncols, std::complex<float> scale,
+                               cudaStream_t stream_);
+void chase_scaleLowerBlockRows(std::complex<double>* A, std::size_t lda,
+                               std::size_t row_start, std::size_t nrows_lower,
+                               std::size_t ncols, std::complex<double> scale,
+                               cudaStream_t stream_);
+
 /*
     void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t*
    off_n, std::size_t offsize, std::size_t ldH, float shift, cudaStream_t
