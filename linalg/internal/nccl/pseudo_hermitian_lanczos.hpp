@@ -13,6 +13,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cpu/utils.hpp"
+#include "linalg/internal/nccl/pseudo_hermitian_lanczos_diag.hpp"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
 #include <chrono>
 #include <cstring>
@@ -512,6 +513,13 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
     *upperb = ritzv[M - 1];
 
+    // Pseudo-Hermitian coupling diag: off unless CHASE_PH_LANCZOS_DIAG=1|true|on|yes
+    if (detail_nccl_ph_diag::ph_lanczos_diag_enabled())
+    {
+        detail_nccl_ph_diag::maybe_nccl_ph_lanczos_coupling_report(H, ritzv,
+                                                                   M * numvec);
+    }
+
     auto lanczos_end = std::chrono::high_resolution_clock::now();
     auto lanczos_duration =
         std::chrono::duration_cast<std::chrono::microseconds>(lanczos_end -
@@ -849,6 +857,12 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     }
 #endif
     *upperb = ritzv[M - 1];
+
+    if (detail_nccl_ph_diag::ph_lanczos_diag_enabled())
+    {
+        detail_nccl_ph_diag::maybe_nccl_ph_lanczos_coupling_report(H, ritzv.data(),
+                                                                   M);
+    }
 }
 
 } // namespace internal
