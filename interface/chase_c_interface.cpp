@@ -11,6 +11,8 @@
 #include <sstream>
 #include <type_traits>
 #include <cstring>
+#include <vector>
+#include <algorithm>
 
 #include "chase_config.h"  // For version info and configuration
 #include "algorithm/algorithm.hpp"
@@ -83,6 +85,23 @@ SeqSolverType<std::complex<float>,
               chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>*
     cchaseSeqPseudo = nullptr;
 
+std::vector<double> dVec_seq;
+std::vector<float> sVec_seq;
+std::vector<std::complex<float>> cVec_seq;
+std::vector<std::complex<double>> zVec_seq;
+
+std::vector<std::complex<float>> cVec_seq_pseudo;
+std::vector<std::complex<double>> zVec_seq_pseudo;
+
+std::unique_ptr<double[]> dRitz_ptr;
+std::unique_ptr<float[]> sRitz_ptr;
+
+template <typename T>
+inline void reset_vec(std::vector<T>& vec)
+{
+    std::vector<T>().swap(vec);
+}
+
 template <typename SeqMatrixType>
 class ChASE_SEQ
 {
@@ -107,8 +126,26 @@ int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
 {
     if (dchaseSeq)
         delete dchaseSeq;
+    double* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        dVec_seq.assign(ldv * static_cast<std::size_t>(nev + nex), 0.0);
+        vec_ptr = dVec_seq.data();
+    }
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
     dchaseSeq = new SeqSolverType<double, chase::matrix::Matrix<double, ARCH>>(
-        N, nev, nex, H, ldh, V, N, ritzv);
+        N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
@@ -120,8 +157,25 @@ int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(int N, int nev,
 {
     if (schaseSeq)
         delete schaseSeq;
+    float* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        sVec_seq.assign(ldv * static_cast<std::size_t>(nev + nex), 0.0f);
+        vec_ptr = sVec_seq.data();
+    }
+    float* fRitz = ritzv;
+    if (fRitz == nullptr)
+    {
+        sRitz_ptr = std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        fRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
     schaseSeq = new SeqSolverType<float, chase::matrix::Matrix<float, ARCH>>(
-        N, nev, nex, H, ldh, V, N, ritzv);
+        N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
 
@@ -132,10 +186,29 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Initialize(
 {
     if (zchaseSeq)
         delete zchaseSeq;
+    std::complex<double>* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        zVec_seq.assign(
+            ldv * static_cast<std::size_t>(nev + nex), std::complex<double>{});
+        vec_ptr = zVec_seq.data();
+    }
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
     zchaseSeq =
         new SeqSolverType<std::complex<double>,
                           chase::matrix::Matrix<std::complex<double>, ARCH>>(
-            N, nev, nex, H, ldh, V, N, ritzv);
+            N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
@@ -146,10 +219,28 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Initialize(
 {
     if (cchaseSeq)
         delete cchaseSeq;
+    std::complex<float>* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        cVec_seq.assign(
+            ldv * static_cast<std::size_t>(nev + nex), std::complex<float>{});
+        vec_ptr = cVec_seq.data();
+    }
+    float* fRitz = ritzv;
+    if (fRitz == nullptr)
+    {
+        sRitz_ptr = std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        fRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
     cchaseSeq =
         new SeqSolverType<std::complex<float>,
                           chase::matrix::Matrix<std::complex<float>, ARCH>>(
-            N, nev, nex, H, ldh, V, N, ritzv);
+            N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
 
@@ -163,10 +254,30 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
 {
     if (zchaseSeqPseudo)
         delete zchaseSeqPseudo;
+    std::complex<double>* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        zVec_seq_pseudo.assign(
+            ldv * static_cast<std::size_t>(2 * (nev + nex)),
+            std::complex<double>{});
+        vec_ptr = zVec_seq_pseudo.data();
+    }
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
     zchaseSeqPseudo = new SeqSolverType<
         std::complex<double>,
         chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>(
-        N, nev, nex, H, ldh, V, N, ritzv);
+        N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
@@ -177,10 +288,30 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
 {
     if (cchaseSeqPseudo)
         delete cchaseSeqPseudo;
+    std::complex<float>* vec_ptr = V;
+    if (vec_ptr == nullptr)
+    {
+        const std::size_t ldv = static_cast<std::size_t>(N);
+        cVec_seq_pseudo.assign(
+            ldv * static_cast<std::size_t>(2 * (nev + nex)),
+            std::complex<float>{});
+        vec_ptr = cVec_seq_pseudo.data();
+    }
+    float* fRitz = ritzv;
+    if (fRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        fRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
     cchaseSeqPseudo = new SeqSolverType<
         std::complex<float>,
         chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>(
-        N, nev, nex, H, ldh, V, N, ritzv);
+        N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
 
@@ -190,6 +321,8 @@ int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Finalize()
 {
     delete dchaseSeq;
     dchaseSeq = nullptr;
+    dRitz_ptr.reset();
+    reset_vec(dVec_seq);
     return 0;
 }
 
@@ -198,6 +331,8 @@ int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Finalize()
 {
     delete schaseSeq;
     schaseSeq = nullptr;
+    sRitz_ptr.reset();
+    reset_vec(sVec_seq);
     return 0;
 }
 
@@ -211,6 +346,9 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Finalize()
     // Then finalize regular types (deleting nullptr is safe)
     delete cchaseSeq;
     cchaseSeq = nullptr;
+    sRitz_ptr.reset();
+    reset_vec(cVec_seq);
+    reset_vec(cVec_seq_pseudo);
     return 0;
 }
 
@@ -224,6 +362,9 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Finalize()
     // Then finalize regular types (deleting nullptr is safe)
     delete zchaseSeq;
     zchaseSeq = nullptr;
+    dRitz_ptr.reset();
+    reset_vec(zVec_seq);
+    reset_vec(zVec_seq_pseudo);
     return 0;
 }
 
@@ -234,6 +375,8 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>,
 {
     delete zchaseSeqPseudo;
     zchaseSeqPseudo = nullptr;
+    dRitz_ptr.reset();
+    reset_vec(zVec_seq_pseudo);
     return 0;
 }
 
@@ -243,6 +386,8 @@ int ChASE_SEQ<
 {
     delete cchaseSeqPseudo;
     cchaseSeqPseudo = nullptr;
+    sRitz_ptr.reset();
+    reset_vec(cVec_seq_pseudo);
     return 0;
 }
 
@@ -340,6 +485,47 @@ void ChASE_SEQ_Solve(int* deg,
                   << "  |\n";
     std::cout << "\n\n\n";
 #endif
+}
+
+template <typename T>
+void copy_first_nev_results(T* vectors, const chase::Base<T>* ritzv_in,
+                            std::size_t local_rows, std::size_t ldv_in,
+                            std::size_t nev, T* v_out, int ldv_out,
+                            chase::Base<T>* ritz_out)
+{
+    if (vectors == nullptr || ritzv_in == nullptr || v_out == nullptr ||
+        ritz_out == nullptr || ldv_out <= 0)
+        return;
+
+    std::size_t copy_cols = nev;
+    std::size_t copy_rows = local_rows;
+
+    for (std::size_t j = 0; j < copy_cols; ++j)
+    {
+        const T* src_col = vectors + j * ldv_in;
+        T* dst_col = v_out + j * static_cast<std::size_t>(ldv_out);
+        std::copy(src_col, src_col + copy_rows, dst_col);
+    }
+    std::copy(ritzv_in, ritzv_in + copy_cols, ritz_out);
+}
+
+std::shared_ptr<chase::grid::MpiGrid2DBase> make_mpi_grid(
+    int dim0, int dim1, char* grid_major, MPI_Comm comm)
+{
+    if (*grid_major == 'R')
+    {
+        return std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor>>(
+            dim0, dim1, comm);
+    }
+    if (*grid_major == 'C')
+    {
+        return std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+            dim0, dim1, comm);
+    }
+
+    throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
 }
 
 template <typename MatrixType>
@@ -608,13 +794,36 @@ int ChASE_DIST<
     zHmat_cyclic =
         new chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>(
             N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);
-    zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, nev + nex, mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<double>,
+            chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, m, nev + nex, mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<double>,
+            chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, mbsize, mpi_grid);
+    }
+
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
 
     zchaseDist_cyclic = new DistSolverType<
         chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>(
-        nev, nex, zHmat_cyclic, zVec_cyclic, ritzv);
+        nev, nex, zHmat_cyclic, zVec_cyclic, dRitz);
 
     return 1;
 }
@@ -657,13 +866,34 @@ int ChASE_DIST<
     cHmat_cyclic =
         new chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>(
             N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);
-    cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, nev + nex, mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, m, nev + nex, mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, nev + nex, mbsize, mpi_grid);
+    }
+
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
 
     cchaseDist_cyclic = new DistSolverType<
         chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>(
-        nev, nex, cHmat_cyclic, cVec_cyclic, ritzv);
+        nev, nex, cHmat_cyclic, cVec_cyclic, sRitz);
 
     return 1;
 }
@@ -703,13 +933,34 @@ int ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::Initialize(
 
     sHmat_cyclic = new chase::distMatrix::BlockCyclicMatrix<float, ARCH>(
         N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);
-    sVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        float, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        N, m, nev + nex, mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        sVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            float, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, m, nev + nex, mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        sVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            float, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, mbsize, mpi_grid);
+    }
+
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
 
     schaseDist_cyclic =
         new DistSolverType<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>(
-            nev, nex, sHmat_cyclic, sVec_cyclic, ritzv);
+            nev, nex, sHmat_cyclic, sVec_cyclic, sRitz);
 
     return 1;
 }
@@ -749,13 +1000,34 @@ int ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::Initialize(
 
     dHmat_cyclic = new chase::distMatrix::BlockCyclicMatrix<double, ARCH>(
         N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);
-    dVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        double, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        N, m, nev + nex, mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        dVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            double, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, m, nev + nex, mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        dVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            double, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, mbsize, mpi_grid);
+    }
+
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
 
     dchaseDist_cyclic =
         new DistSolverType<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>(
-            nev, nex, dHmat_cyclic, dVec_cyclic, ritzv);
+            nev, nex, dHmat_cyclic, dVec_cyclic, dRitz);
 
     return 1;
 }
@@ -792,13 +1064,34 @@ int ChASE_DIST<
     zHmat_block =
         new chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>(
             m, n, ldh, H, mpi_grid);
-    zVec_block = new chase::distMultiVector::DistMultiVector1D<
-        std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, nev + nex, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        zVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<double>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(m, nev + nex, m, V, mpi_grid);
+    }
+    else
+    {
+        zVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<double>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, nev + nex, mpi_grid);
+    }
+
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
 
     zchaseDist_block = new DistSolverType<
         chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>(
-        nev, nex, zHmat_block, zVec_block, ritzv);
+        nev, nex, zHmat_block, zVec_block, dRitz);
 
     return 1;
 }
@@ -834,13 +1127,34 @@ int ChASE_DIST<chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::
     cHmat_block =
         new chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>(
             m, n, ldh, H, mpi_grid);
-    cVec_block = new chase::distMultiVector::DistMultiVector1D<
-        std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, nev + nex, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        cVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(m, nev + nex, m, V, mpi_grid);
+    }
+    else
+    {
+        cVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, nev + nex, mpi_grid);
+    }
+
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
 
     cchaseDist_block = new DistSolverType<
         chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>(
-        nev, nex, cHmat_block, cVec_block, ritzv);
+        nev, nex, cHmat_block, cVec_block, sRitz);
 
     return 1;
 }
@@ -874,13 +1188,34 @@ int ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::Initialize(
 
     sHmat_block = new chase::distMatrix::BlockBlockMatrix<float, ARCH>(
         m, n, ldh, H, mpi_grid);
-    sVec_block = new chase::distMultiVector::DistMultiVector1D<
-        float, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        m, nev + nex, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        sVec_block = new chase::distMultiVector::DistMultiVector1D<
+            float, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            m, nev + nex, m, V, mpi_grid);
+    }
+    else
+    {
+        sVec_block = new chase::distMultiVector::DistMultiVector1D<
+            float, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, mpi_grid);
+    }
+
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(nev + nex));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
 
     schaseDist_block =
         new DistSolverType<chase::distMatrix::BlockBlockMatrix<float, ARCH>>(
-            nev, nex, sHmat_block, sVec_block, ritzv);
+            nev, nex, sHmat_block, sVec_block, sRitz);
 
     return 1;
 }
@@ -914,13 +1249,34 @@ int ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::Initialize(
 
     dHmat_block = new chase::distMatrix::BlockBlockMatrix<double, ARCH>(
         m, n, ldh, H, mpi_grid);
-    dVec_block = new chase::distMultiVector::DistMultiVector1D<
-        double, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        m, nev + nex, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        dVec_block = new chase::distMultiVector::DistMultiVector1D<
+            double, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            m, nev + nex, m, V, mpi_grid);
+    }
+    else
+    {
+        dVec_block = new chase::distMultiVector::DistMultiVector1D<
+            double, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, mpi_grid);
+    }
+
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(nev + nex));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
 
     dchaseDist_block =
         new DistSolverType<chase::distMatrix::BlockBlockMatrix<double, ARCH>>(
-            nev, nex, dHmat_block, dVec_block, ritzv);
+            nev, nex, dHmat_block, dVec_block, dRitz);
 
     return 1;
 }
@@ -962,16 +1318,37 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
     // Store in PseudoHermitian-specific pointer
     zHmat_block_pseudo = new chase::distMatrix::PseudoHermitianBlockBlockMatrix<
         std::complex<double>, ARCH>(m, n, ldh, H, mpi_grid);
-    zVec_block = new chase::distMultiVector::DistMultiVector1D<
-        std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        zVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<double>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
+    }
+    else
+    {
+        zVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<double>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, 2 * (nev + nex), mpi_grid);
+    }
 
     // Create solver with PseudoHermitianBlockBlockMatrix type - solver will
     // detect PseudoHermitian at compile time
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
+
     zchaseDist_pseudo_block =
         new DistSolverType<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
             std::complex<double>, ARCH>>(nev, nex, zHmat_block_pseudo,
-                                         zVec_block, ritzv);
+                                         zVec_block, dRitz);
 
     return 1;
 }
@@ -1009,16 +1386,37 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
     // Store in PseudoHermitian-specific pointer
     cHmat_block_pseudo = new chase::distMatrix::PseudoHermitianBlockBlockMatrix<
         std::complex<float>, ARCH>(m, n, ldh, H, mpi_grid);
-    cVec_block = new chase::distMultiVector::DistMultiVector1D<
-        std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        cVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
+    }
+    else
+    {
+        cVec_block = new chase::distMultiVector::DistMultiVector1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, 2 * (nev + nex), mpi_grid);
+    }
 
     // Create solver with PseudoHermitianBlockBlockMatrix type - solver will
     // detect PseudoHermitian at compile time
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
+
     cchaseDist_pseudo_block =
         new DistSolverType<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
             std::complex<float>, ARCH>>(nev, nex, cHmat_block_pseudo,
-                                        cVec_block, ritzv);
+                                        cVec_block, sRitz);
 
     return 1;
 }
@@ -1070,16 +1468,39 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
         new chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
             std::complex<double>, ARCH>(N, N, m, n, mbsize, nbsize, ldh, H,
                                         mpi_grid);
-    zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<double>,
+            chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<double>,
+            chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, 2 * (nev + nex), mbsize, mpi_grid);
+    }
 
     // Create solver with PseudoHermitianBlockCyclicMatrix type - solver will
     // detect PseudoHermitian at compile time
+    double* dRitz = ritzv;
+    if (dRitz == nullptr)
+    {
+        dRitz_ptr =
+            std::make_unique<double[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        dRitz = dRitz_ptr.get();
+    }
+    else
+    {
+        dRitz_ptr.reset();
+    }
+
     zchaseDist_pseudo_cyclic =
         new DistSolverType<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
             std::complex<double>, ARCH>>(nev, nex, zHmat_cyclic_pseudo,
-                                         zVec_cyclic, ritzv);
+                                         zVec_cyclic, dRitz);
 
     return 1;
 }
@@ -1127,16 +1548,37 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
         new chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
             std::complex<float>, ARCH>(N, N, m, n, mbsize, nbsize, ldh, H,
                                        mpi_grid);
-    cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
+    if (V != nullptr)
+    {
+        cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
+    }
+    else
+    {
+        cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            std::complex<float>, chase::distMultiVector::CommunicatorType::column,
+            ARCH>(N, 2 * (nev + nex), mbsize, mpi_grid);
+    }
 
     // Create solver with PseudoHermitianBlockCyclicMatrix type - solver will
     // detect PseudoHermitian at compile time
+    float* sRitz = ritzv;
+    if (sRitz == nullptr)
+    {
+        sRitz_ptr =
+            std::make_unique<float[]>(static_cast<std::size_t>(2 * (nev + nex)));
+        sRitz = sRitz_ptr.get();
+    }
+    else
+    {
+        sRitz_ptr.reset();
+    }
+
     cchaseDist_pseudo_cyclic =
         new DistSolverType<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
             std::complex<float>, ARCH>>(nev, nex, cHmat_cyclic_pseudo,
-                                        cVec_cyclic, ritzv);
+                                        cVec_cyclic, sRitz);
 
     return 1;
 }
@@ -1253,6 +1695,7 @@ int ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<std::complex<double>,
     zHmat_cyclic = nullptr;
     delete zVec_cyclic;
     zVec_cyclic = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1266,6 +1709,7 @@ int ChASE_DIST<
     cHmat_cyclic = nullptr;
     delete cVec_cyclic;
     cVec_cyclic = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1278,6 +1722,7 @@ int ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::Finalize()
     dHmat_cyclic = nullptr;
     delete dVec_cyclic;
     dVec_cyclic = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1290,6 +1735,7 @@ int ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::Finalize()
     sHmat_cyclic = nullptr;
     delete sVec_cyclic;
     sVec_cyclic = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1304,6 +1750,7 @@ int ChASE_DIST<
     zHmat_block = nullptr;
     delete zVec_block;
     zVec_block = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1317,6 +1764,7 @@ int ChASE_DIST<
     cHmat_block = nullptr;
     delete cVec_block;
     cVec_block = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1329,6 +1777,7 @@ int ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::Finalize()
     dHmat_block = nullptr;
     delete dVec_block;
     dVec_block = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1341,6 +1790,7 @@ int ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::Finalize()
     sHmat_block = nullptr;
     delete sVec_block;
     sVec_block = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1355,6 +1805,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
     zHmat_block_pseudo = nullptr;
     delete zVec_block;
     zVec_block = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1368,6 +1819,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
     cHmat_block_pseudo = nullptr;
     delete cVec_block;
     cVec_block = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1382,6 +1834,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
     zHmat_cyclic_pseudo = nullptr;
     delete zVec_cyclic;
     zVec_cyclic = nullptr;
+    dRitz_ptr.reset();
     return 0;
 }
 
@@ -1395,6 +1848,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
     cHmat_cyclic_pseudo = nullptr;
     delete cVec_cyclic;
     cVec_cyclic = nullptr;
+    sRitz_ptr.reset();
     return 0;
 }
 
@@ -1645,32 +2099,71 @@ extern "C"
     void dchase_init_(int* N, int* nev, int* nex, double* H, int* ldh,
                       double* V, double* ritzv, int* init)
     {
+        reset_vec(dVec_seq);
         *init = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, V, ritzv);
+    }
+    void dchase_init_internal_(int* N, int* nev, int* nex, double* H, int* ldh,
+                               int* init)
+    {
+        reset_vec(dVec_seq);
+        *init = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
+            *N, *nev, *nex, H, *ldh, nullptr, nullptr);
     }
     void schase_init_(int* N, int* nev, int* nex, float* H, int* ldh, float* V,
                       float* ritzv, int* init)
     {
+        reset_vec(sVec_seq);
         *init = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, V, ritzv);
+    }
+    void schase_init_internal_(int* N, int* nev, int* nex, float* H, int* ldh,
+                               int* init)
+    {
+        reset_vec(sVec_seq);
+        *init = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(
+            *N, *nev, *nex, H, *ldh, nullptr, nullptr);
     }
 
     void cchase_init_(int* N, int* nev, int* nex, float _Complex* H, int* ldh,
                       float _Complex* V, float* ritzv, int* init)
     {
+        reset_vec(cVec_seq);
         *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv);
     }
+    void cchase_init_internal_(int* N, int* nev, int* nex, float _Complex* H,
+                               int* ldh, int* init)
+    {
+        reset_vec(cVec_seq);
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
+                       nullptr);
+    }
 
     void zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int* ldh,
                       double _Complex* V, double* ritzv, int* init)
     {
+        reset_vec(zVec_seq);
         *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv);
+    }
+
+    void zchase_init_internal_(int* N, int* nev, int* nex, double _Complex* H,
+                               int* ldh, int* init)
+    {
+        reset_vec(zVec_seq);
+
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr);
     }
 
     void dchase_finalize_(int* flag)
@@ -1736,22 +2229,47 @@ extern "C"
                              int* ldh, float _Complex* V, float* ritzv,
                              int* init)
     {
+        reset_vec(cVec_seq_pseudo);
         *init = ChASE_SEQ<
             chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv);
     }
+    void cchase_init_pseudo_internal_(int* N, int* nev, int* nex,
+                                      float _Complex* H, int* ldh, int* init)
+    {
+        reset_vec(cVec_seq_pseudo);
+        *init = ChASE_SEQ<
+            chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
+                       nullptr);
+    }
 
     void zchase_init_pseudo_(int* N, int* nev, int* nex, double _Complex* H,
                              int* ldh, double _Complex* V, double* ritzv,
                              int* init)
     {
+        reset_vec(zVec_seq_pseudo);
         *init = ChASE_SEQ<
             chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv);
+    }
+
+    void zchase_init_pseudo_internal_(int* N, int* nev, int* nex,
+                                      double _Complex* H, int* ldh, int* init)
+    {
+        reset_vec(zVec_seq_pseudo);
+
+        *init = ChASE_SEQ<
+            chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr);
     }
 
     void cchase_pseudo_(int* deg, float* tol, char* mode, char* opt, char* qr)
@@ -1802,6 +2320,91 @@ extern "C"
         zchase_pseudo_(deg, tol, mode, opt, qr);
     }
 
+    void dchase_get_eigenpairs_(double* LEigsV, int* ld, double* ritzv)
+    {
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::getChase();
+        if (single == nullptr || ld == nullptr)
+            return;
+        copy_first_nev_results(dVec_seq.data(), single->GetRitzv(),
+                               static_cast<std::size_t>(single->GetN()),
+                               static_cast<std::size_t>(single->GetN()),
+                               single->GetNev(), LEigsV, *ld, ritzv);
+    }
+
+    void schase_get_eigenpairs_(float* LEigsV, int* ld, float* ritzv)
+    {
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::getChase();
+        if (single == nullptr || ld == nullptr)
+            return;
+        copy_first_nev_results(sVec_seq.data(), single->GetRitzv(),
+                               static_cast<std::size_t>(single->GetN()),
+                               static_cast<std::size_t>(single->GetN()),
+                               single->GetNev(), LEigsV, *ld, ritzv);
+    }
+
+    void cchase_get_eigenpairs_(float _Complex* LEigsV, int* ld, float* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+        if (cchaseSeqPseudo != nullptr)
+        {
+            auto* single = ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
+                std::complex<float>, ARCH>>::getChase();
+            if (single == nullptr)
+                return;
+            copy_first_nev_results(
+                cVec_seq_pseudo.data(), single->GetRitzv(),
+                static_cast<std::size_t>(single->GetN()),
+                static_cast<std::size_t>(single->GetN()), single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+        else
+        {
+            auto* single = ChASE_SEQ<
+                chase::matrix::Matrix<std::complex<float>, ARCH>>::getChase();
+            if (single == nullptr)
+                return;
+            copy_first_nev_results(
+                cVec_seq.data(), single->GetRitzv(),
+                static_cast<std::size_t>(single->GetN()),
+                static_cast<std::size_t>(single->GetN()), single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+    }
+
+    void zchase_get_eigenpairs_(double _Complex* LEigsV, int* ld,
+                                double* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+
+        if (zchaseSeqPseudo != nullptr)
+        {
+            auto* single = ChASE_SEQ<
+                chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+                getChase();
+            if (single == nullptr)
+                return;
+            copy_first_nev_results(
+                zVec_seq_pseudo.data(), single->GetRitzv(),
+                static_cast<std::size_t>(single->GetN()),
+                static_cast<std::size_t>(single->GetN()), single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+        else
+        {
+            auto* single = ChASE_SEQ<
+                chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase();
+            if (single == nullptr)
+                return;
+            copy_first_nev_results(
+                zVec_seq.data(), single->GetRitzv(),
+                static_cast<std::size_t>(single->GetN()),
+                static_cast<std::size_t>(single->GetN()), single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+    }
+
     void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, double* H, int* ldh, double* V,
                                    double* ritzv, int* dim0, int* dim1,
@@ -1823,6 +2426,28 @@ extern "C"
         *init = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
             Initialize(*N, *nev, *nex, *mbsize, *nbsize, H, *ldh, V, ritzv,
                        *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
+    void pdchase_init_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, double* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize, H, *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, *irsrc, *icsrc,
+                       *comm);
+    }
+
+    void pdchase_init_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, double* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize, H, *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
     void pschase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
@@ -1848,6 +2473,28 @@ extern "C"
                        *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
+    void pschase_init_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize, H, *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, *irsrc, *icsrc,
+                       *comm);
+    }
+
+    void pschase_init_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize, H, *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
     void pcchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, float _Complex* H, int* ldh,
                                    float _Complex* V, float* ritzv, int* dim0,
@@ -1859,6 +2506,20 @@ extern "C"
             Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, *comm);
+    }
+
+    void pcchase_init_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, *irsrc, *icsrc, *comm);
     }
 
@@ -1877,6 +2538,21 @@ extern "C"
                        *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
+    void pcchase_init_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
     void pzchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, double _Complex* H, int* ldh,
                                    double _Complex* V, double* ritzv, int* dim0,
@@ -1888,6 +2564,20 @@ extern "C"
             Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, *comm);
+    }
+
+    void pzchase_init_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize,
+        double _Complex* H, int* ldh, int* dim0, int* dim1, char* grid_major,
+        int* irsrc, int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, *irsrc, *icsrc, *comm);
     }
 
@@ -1904,6 +2594,21 @@ extern "C"
             Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
+    void pzchase_init_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize,
+        double _Complex* H, int* ldh, int* dim0, int* dim1, char* grid_major,
+        int* irsrc, int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
@@ -1927,6 +2632,25 @@ extern "C"
                        grid_major, comm);
     }
 
+    void pdchase_init_internal_(int* N, int* nev, int* nex, int* m, int* n,
+                                double* H, int* ldh, int* dim0, int* dim1,
+                                char* grid_major, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n, H, *ldh, nullptr, nullptr,
+                       *dim0, *dim1, grid_major, *comm);
+    }
+
+    void pdchase_init_internal_f_(int* N, int* nev, int* nex, int* m, int* n,
+                                  double* H, int* ldh, int* dim0, int* dim1,
+                                  char* grid_major, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n, H, *ldh, nullptr, nullptr,
+                       *dim0, *dim1, grid_major, comm);
+    }
+
     void pschase_init_(int* N, int* nev, int* nex, int* m, int* n, float* H,
                        int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
                        char* grid_major, MPI_Comm* comm, int* init)
@@ -1946,6 +2670,25 @@ extern "C"
                        grid_major, comm);
     }
 
+    void pschase_init_internal_(int* N, int* nev, int* nex, int* m, int* n,
+                                float* H, int* ldh, int* dim0, int* dim1,
+                                char* grid_major, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n, H, *ldh, nullptr, nullptr,
+                       *dim0, *dim1, grid_major, *comm);
+    }
+
+    void pschase_init_internal_f_(int* N, int* nev, int* nex, int* m, int* n,
+                                  float* H, int* ldh, int* dim0, int* dim1,
+                                  char* grid_major, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n, H, *ldh, nullptr, nullptr,
+                       *dim0, *dim1, grid_major, comm);
+    }
+
     void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                        double _Complex* H, int* ldh, double _Complex* V,
                        double* ritzv, int* dim0, int* dim1, char* grid_major,
@@ -1956,6 +2699,20 @@ extern "C"
             Initialize(*N, *nev, *nex, *m, *n,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, *comm);
+    }
+
+    void pzchase_init_internal_(int* N, int* nev, int* nex, int* m, int* n,
+                                double _Complex* H, int* ldh, int* dim0,
+                                int* dim1, char* grid_major, MPI_Comm* comm,
+                                int* init)
+    {
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, *comm);
     }
 
@@ -1970,6 +2727,21 @@ extern "C"
             Initialize(*N, *nev, *nex, *m, *n,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, comm);
+    }
+
+    void pzchase_init_internal_f_(int* N, int* nev, int* nex, int* m, int* n,
+                                  double _Complex* H, int* ldh, int* dim0,
+                                  int* dim1, char* grid_major, MPI_Fint* fcomm,
+                                  int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, comm);
     }
 
@@ -2000,6 +2772,31 @@ extern "C"
                        *dim1, grid_major, comm);
     }
 
+    void pcchase_init_internal_(int* N, int* nev, int* nex, int* m, int* n,
+                                float _Complex* H, int* ldh, int* dim0,
+                                int* dim1, char* grid_major, MPI_Comm* comm,
+                                int* init)
+    {
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, *comm);
+    }
+
+    void pcchase_init_internal_f_(int* N, int* nev, int* nex, int* m, int* n,
+                                  float _Complex* H, int* ldh, int* dim0,
+                                  int* dim1, char* grid_major, MPI_Fint* fcomm,
+                                  int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<
+            chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::
+            Initialize(*N, *nev, *nex, *m, *n,
+                       reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
+                       nullptr, *dim0, *dim1, grid_major, comm);
+    }
+
     // PseudoHermitian initialization functions (BlockBlockMatrix)
     void pzchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
                               double _Complex* H, int* ldh, double _Complex* V,
@@ -2012,6 +2809,20 @@ extern "C"
                                reinterpret_cast<std::complex<double>*>(H), *ldh,
                                reinterpret_cast<std::complex<double>*>(V),
                                ritzv, *dim0, *dim1, grid_major, *comm);
+    }
+
+    void pzchase_init_pseudo_internal_(
+        int* N, int* nev, int* nex, int* m, int* n, double _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, MPI_Comm* comm,
+        int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+            std::complex<double>,
+            ARCH>>::Initialize(*N, *nev, *nex, *m, *n,
+                               reinterpret_cast<std::complex<double>*>(H), *ldh,
+                               nullptr,
+                               nullptr, *dim0,
+                               *dim1, grid_major, *comm);
     }
 
     void pzchase_init_pseudo_f_(int* N, int* nev, int* nex, int* m, int* n,
@@ -2027,6 +2838,21 @@ extern "C"
                                reinterpret_cast<std::complex<double>*>(H), *ldh,
                                reinterpret_cast<std::complex<double>*>(V),
                                ritzv, *dim0, *dim1, grid_major, comm);
+    }
+
+    void pzchase_init_pseudo_internal_f_(
+        int* N, int* nev, int* nex, int* m, int* n, double _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, MPI_Fint* fcomm,
+        int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+            std::complex<double>,
+            ARCH>>::Initialize(*N, *nev, *nex, *m, *n,
+                               reinterpret_cast<std::complex<double>*>(H), *ldh,
+                               nullptr,
+                               nullptr, *dim0,
+                               *dim1, grid_major, comm);
     }
 
     void pcchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
@@ -2056,6 +2882,33 @@ extern "C"
                                *dim0, *dim1, grid_major, comm);
     }
 
+    void pcchase_init_pseudo_internal_(
+        int* N, int* nev, int* nex, int* m, int* n, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, MPI_Comm* comm,
+        int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+            std::complex<float>,
+            ARCH>>::Initialize(*N, *nev, *nex, *m, *n,
+                               reinterpret_cast<std::complex<float>*>(H), *ldh,
+                               nullptr, nullptr, *dim0, *dim1, grid_major,
+                               *comm);
+    }
+
+    void pcchase_init_pseudo_internal_f_(
+        int* N, int* nev, int* nex, int* m, int* n, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, MPI_Fint* fcomm,
+        int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+            std::complex<float>,
+            ARCH>>::Initialize(*N, *nev, *nex, *m, *n,
+                               reinterpret_cast<std::complex<float>*>(H), *ldh,
+                               nullptr, nullptr, *dim0, *dim1, grid_major,
+                               comm);
+    }
+
     // PseudoHermitian initialization functions (BlockCyclicMatrix)
     void pzchase_init_pseudo_blockcyclic_(int* N, int* nev, int* nex,
                                           int* mbsize, int* nbsize,
@@ -2070,6 +2923,20 @@ extern "C"
             Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, *comm);
+    }
+
+    void pzchase_init_pseudo_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize,
+        double _Complex* H, int* ldh, int* dim0, int* dim1, char* grid_major,
+        int* irsrc, int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+            std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
                        *dim1, grid_major, *irsrc, *icsrc, *comm);
     }
 
@@ -2088,6 +2955,21 @@ extern "C"
                        *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
+    void pzchase_init_pseudo_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize,
+        double _Complex* H, int* ldh, int* dim0, int* dim1, char* grid_major,
+        int* irsrc, int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+            std::complex<double>, ARCH>>::
+            Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                       reinterpret_cast<std::complex<double>*>(H), *ldh,
+                       nullptr,
+                       nullptr, *dim0,
+                       *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
     void pcchase_init_pseudo_blockcyclic_(
         int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
         int* ldh, float _Complex* V, float* ritzv, int* dim0, int* dim1,
@@ -2098,6 +2980,20 @@ extern "C"
             ARCH>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                                reinterpret_cast<std::complex<float>*>(H), *ldh,
                                reinterpret_cast<std::complex<float>*>(V), ritzv,
+                               *dim0, *dim1, grid_major, *irsrc, *icsrc, *comm);
+    }
+
+    void pcchase_init_pseudo_blockcyclic_internal_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Comm* comm, int* init)
+    {
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+            std::complex<float>,
+            ARCH>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                               reinterpret_cast<std::complex<float>*>(H), *ldh,
+                               nullptr,
+                               nullptr,
                                *dim0, *dim1, grid_major, *irsrc, *icsrc, *comm);
     }
 
@@ -2112,6 +3008,21 @@ extern "C"
             ARCH>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize,
                                reinterpret_cast<std::complex<float>*>(H), *ldh,
                                reinterpret_cast<std::complex<float>*>(V), ritzv,
+                               *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
+    }
+
+    void pcchase_init_pseudo_blockcyclic_internal_f_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
+        int* ldh, int* dim0, int* dim1, char* grid_major, int* irsrc,
+        int* icsrc, MPI_Fint* fcomm, int* init)
+    {
+        MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+        *init = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+            std::complex<float>,
+            ARCH>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize,
+                               reinterpret_cast<std::complex<float>*>(H), *ldh,
+                               nullptr,
+                               nullptr,
                                *dim0, *dim1, grid_major, *irsrc, *icsrc, comm);
     }
 
@@ -2236,6 +3147,358 @@ extern "C"
                 std::complex<double>, ARCH>>::Solve(deg, tol, mode, opt, qr);
         }
     }
+
+    void pdchase_get_eigenpairs_(double* LEigsV, int* ld, double* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
+                dchaseDist_cyclic != nullptr)
+        {
+            auto* single =
+                ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
+                    getChase();
+            auto* vec =
+                ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::
+                    dVec_cyclic;
+            double* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld, single == nullptr ? 0 : single->GetNev(),
+                LEigsV, *ld, ritzv);
+        }
+        else
+        {
+            auto* single =
+                ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::
+                    getChase();
+            auto* vec =
+                ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::
+                    dVec_block;
+            double* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld, single == nullptr ? 0 : single->GetNev(),
+                LEigsV, *ld, ritzv);
+        }
+    }
+
+    void pschase_get_eigenpairs_(float* LEigsV, int* ld, float* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::
+                schaseDist_cyclic != nullptr)
+        {
+            auto* single =
+                ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::
+                    getChase();
+            auto* vec =
+                ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::
+                    sVec_cyclic;
+            float* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld, single == nullptr ? 0 : single->GetNev(),
+                LEigsV, *ld, ritzv);
+        }
+        else
+        {
+            auto* single =
+                ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::
+                    getChase();
+            auto* vec =
+                ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::
+                    sVec_block;
+            float* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld, single == nullptr ? 0 : single->GetNev(),
+                LEigsV, *ld, ritzv);
+        }
+    }
+
+    void pcchase_get_eigenpairs_(float _Complex* LEigsV, int* ld, float* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                std::complex<float>, ARCH>>::cchaseDist_pseudo_cyclic != nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                    std::complex<float>, ARCH>>::getChase();
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                    std::complex<float>, ARCH>>::cVec_cyclic;
+            std::complex<float>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data,
+                single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld,
+                single == nullptr ? 0 : single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+        else if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                     std::complex<float>, ARCH>>::cchaseDist_pseudo_block !=
+                 nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                    std::complex<float>, ARCH>>::getChase();
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                    std::complex<float>, ARCH>>::cVec_block;
+            std::complex<float>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data,
+                single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld,
+                single == nullptr ? 0 : single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+        else if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<
+                     std::complex<float>, ARCH>>::cchaseDist_cyclic != nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::
+                getChase();
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::
+                cVec_cyclic;
+            std::complex<float>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data,
+                single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld,
+                single == nullptr ? 0 : single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+        else
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::
+                getChase();
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::
+                cVec_block;
+            std::complex<float>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data,
+                single == nullptr ? nullptr : single->GetRitzv(),
+                host_rows, host_ld,
+                single == nullptr ? 0 : single->GetNev(),
+                reinterpret_cast<std::complex<float>*>(LEigsV), *ld, ritzv);
+        }
+    }
+
+    void pzchase_get_eigenpairs_(double _Complex* LEigsV, int* ld,
+                                 double* ritzv)
+    {
+        if (ld == nullptr)
+            return;
+
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                std::complex<double>, ARCH>>::zchaseDist_pseudo_cyclic != nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                    std::complex<double>, ARCH>>::getChase();
+            if (single == nullptr)
+                return;
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
+                    std::complex<double>, ARCH>>::zVec_cyclic;
+            std::complex<double>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single->GetRitzv(), host_rows, host_ld,
+                single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+        else if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                std::complex<double>, ARCH>>::zchaseDist_pseudo_block != nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                    std::complex<double>, ARCH>>::getChase();
+            if (single == nullptr)
+                return;
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::PseudoHermitianBlockBlockMatrix<
+                    std::complex<double>, ARCH>>::zVec_block;
+            std::complex<double>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single->GetRitzv(), host_rows, host_ld,
+                single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+        else if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<
+                     std::complex<double>, ARCH>>::zchaseDist_cyclic != nullptr)
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::
+                getChase();
+            if (single == nullptr)
+                return;
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::
+                zVec_cyclic;
+            std::complex<double>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single->GetRitzv(), host_rows, host_ld,
+                single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+        else
+        {
+            auto* single = ChASE_DIST<
+                chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::
+                getChase();
+            if (single == nullptr)
+                return;
+            auto* vec = ChASE_DIST<
+                chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::
+                zVec_block;
+            std::complex<double>* host_data = nullptr;
+            std::size_t host_rows = 0;
+            std::size_t host_ld = 0;
+            if (vec != nullptr)
+            {
+#ifdef HAS_CUDA
+                vec->D2H();
+#endif
+                host_data = vec->cpu_data();
+                host_rows = vec->l_rows();
+                host_ld = vec->cpu_ld();
+            }
+            copy_first_nev_results(
+                host_data, single->GetRitzv(), host_rows, host_ld,
+                single->GetNev(),
+                reinterpret_cast<std::complex<double>*>(LEigsV), *ld, ritzv);
+        }
+    }
+
     void pcchase_(int* deg, float* tol, char* mode, char* opt, char* qr)
     {
         // Check pseudo-Hermitian solvers first (inheritance allows unified

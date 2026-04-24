@@ -1278,6 +1278,20 @@ public:
             m_ = M_ - (dim - 1) * len;
         }
 
+        // Build per-rank row ranges used by K-conjugate communication setup.
+        // The external-data constructor must initialize these as well.
+        m_ranks_.resize(dim);
+        m_ranks_.assign(dim, len);
+        m_ranks_[dim - 1] = M_ - (dim - 1) * len;
+
+        off_ranks_.resize(dim);
+        lim_ranks_.resize(dim);
+        for (auto r = 0; r < dim; r++)
+        {
+            off_ranks_[r] = r * len;
+            lim_ranks_[r] = off_ranks_[r] + m_ranks_[r];
+        }
+
         off_ = coord * len;
 
         if (off_ + m_ > M_ / 2)
@@ -1287,6 +1301,11 @@ public:
         else
         {
             l_half_ = m_;
+        }
+        if constexpr (comm_type ==
+            chase::distMultiVector::CommunicatorType::column)
+        {
+            this->Init_Kconjugate();
         }
     }
     /**
