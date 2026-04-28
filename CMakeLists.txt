@@ -84,10 +84,6 @@ endif()
 # GPU-resident Lanczos (fused kernels + NCCL) is required for GPU Lanczos paths.
 set(CHASE_ENABLE_GPU_RESIDENT_LANCZOS ON)
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(WARNING "For prodution, please consider CMAKE_BUILD_TYPE to be Release or RelWithDebInfo")
-endif()
-
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()

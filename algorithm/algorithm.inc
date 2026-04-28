@@ -2047,7 +2047,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
-            oss << "[QR-HANG-TRACE][solve_pseudo] before QR: iter=" << iteration
+            oss << "[QR-TRACE][solve_pseudo] before QR: iter=" << iteration
                 << " locked=" << locked
                 << " unconverged=" << unconverged
                 << " cond=" << std::scientific << std::setprecision(6) << cond
@@ -2062,7 +2062,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
-            oss << "[QR-HANG-TRACE][solve_pseudo] after QR: iter=" << iteration
+            oss << "[QR-TRACE][solve_pseudo] after QR: iter=" << iteration
                 << " locked=" << locked
                 << " unconverged=" << unconverged
                 << '\n';
@@ -2083,19 +2083,27 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 #ifdef CHASE_OUTPUT
         {
             // Residual table at Info level
-            std::ostringstream oss_res;
-            oss_res << "unconverged = " << "\t" << unconverged << "\t"
-                    << "new_converged" << "\t" << prev_new_converged << "\n";
-            oss_res << "index\tdegrees\tresid\tresidLast\tritzv\n";
-
-            for (std::size_t i = 0; i < unconverged; ++i)
+            auto level = config.GetLogLevel();
+            if (!(level == LogLevel::Warn || level == LogLevel::Error)) 
             {
-                oss_res << index[i] << "\t" << degrees[index[i]] << "\t"
-                        << resid[index[i]] << "\t" << residLast[i] << "\t"
-                        << ritzv[index[i]] << "\n";
-            }
+                std::size_t max_to_print =
+                    (level == LogLevel::Debug || level == LogLevel::Trace)
+                        ? unconverged
+                        : std::min<std::size_t>(20, unconverged);
+                
+                std::ostringstream oss_res;
+                oss_res << "unconverged = " << "\t" << unconverged << "\t"
+                        << "new_converged" << "\t" << prev_new_converged << "\n";
+                oss_res << "index\tdegrees\tresid\tresidLast\tritzv\n";
 
-            single->Output(LogLevel::Info, oss_res.str(), "algorithm");
+                for (std::size_t i = 0; i < max_to_print; ++i)
+                {
+                    oss_res << index[i] << "\t" << degrees[index[i]] << "\t"
+                            << resid[index[i]] << "\t" << residLast[i] << "\t"
+                            << ritzv[index[i]] << "\n";
+                }
+                single->Output(level, oss_res.str(), "algorithm");
+            }
 
             // Symmetry check at Debug level
             std::ostringstream oss_sym;
@@ -2105,6 +2113,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                     << "\n";
 
             single->Output(LogLevel::Debug, oss_sym.str(), "algorithm");
+            
         }
 #endif
         std::iota(index_temp.begin(), index_temp.begin() + unconverged, 0);

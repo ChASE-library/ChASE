@@ -468,22 +468,25 @@ void ChASE_SEQ_Solve(int* deg,
     chase::Base<T>* ritzv = single->GetRitzv();
     chase::Base<T>* resid = single->GetResid();
 #ifdef CHASE_OUTPUT
-    performanceDecorator.GetPerfData().print();
-    std::cout << "\n\n";
-    std::cout << "Printing first 5 eigenvalues and residuals\n";
-    std::cout << "| Index |       Eigenvalue      |         Residual      |\n"
-              << "|-------|-----------------------|-----------------------|"
-                 "\n";
+    if (chase::GetLogger().GetLevel() >= chase::LogLevel::Info)
+    {
+        performanceDecorator.GetPerfData().print();
+    }
+
+    std::ostringstream oss;
+    oss << "\n\nPrinting first 20 eigenvalues and residuals\n"
+    << "| Index |       Eigenvalue      |         Residual      |\n"
+    << "|-------|-----------------------|-----------------------|\n";
     std::size_t width = 20;
-    std::cout << std::setprecision(12);
-    std::cout << std::setfill(' ');
-    std::cout << std::scientific;
-    std::cout << std::right;
-    for (auto i = 0; i < std::min(single->GetNev(), std::size_t(5)); ++i)
-        std::cout << "|  " << std::setw(4) << i + 1 << " | " << std::setw(width)
-                  << ritzv[i] << "  | " << std::setw(width) << resid[i]
-                  << "  |\n";
-    std::cout << "\n\n\n";
+    oss << std::setprecision(12) << std::setfill(' ') << std::scientific
+        << std::right;
+    for (auto i = 0; i < std::min(single->GetNev(), std::size_t(20)); ++i)
+        oss << "|  " << std::setw(4) << i + 1 << " | " << std::setw(width)
+            << ritzv[i] << "  | " << std::setw(width) << resid[i]
+            << "  |\n";
+    oss << "\n\n\n";
+    chase::GetLogger().Log(chase::LogLevel::Info, "interface", oss.str(),
+                        single->get_rank());
 #endif
 }
 
@@ -1894,7 +1897,10 @@ void ChASE_DIST<MatrixType>::Solve(
 #ifdef CHASE_OUTPUT
     if (single->get_rank() == 0)
     {
-        performanceDecorator.GetPerfData().print();
+        if (chase::GetLogger().GetLevel() >= chase::LogLevel::Info)
+        {
+            performanceDecorator.GetPerfData().print();
+        }
 
         std::ostringstream oss;
         oss << "\n\nPrinting first 20 eigenvalues and residuals\n"
@@ -1908,7 +1914,7 @@ void ChASE_DIST<MatrixType>::Solve(
                 << ritzv[i] << "  | " << std::setw(width) << resid[i]
                 << "  |\n";
         oss << "\n\n\n";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "interface", oss.str(),
+        chase::GetLogger().Log(chase::LogLevel::Info, "interface", oss.str(),
                               single->get_rank());
     }
 #endif
