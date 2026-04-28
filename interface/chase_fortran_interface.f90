@@ -1270,7 +1270,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            COMPLEX(c_float_complex)      :: h(*), v(*)
+            COMPLEX(c_float_complex)      :: h(ldh, *), v(ldh, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
