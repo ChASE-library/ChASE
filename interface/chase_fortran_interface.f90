@@ -5,6 +5,103 @@
 ! https://github.com/ChASE-library/ChASE
 
 MODULE chase_diag
+    PUBLIC :: dchase_init, schase_init, cchase_init, zchase_init
+    PUBLIC :: cchase_init_pseudo, zchase_init_pseudo
+    PUBLIC :: pdchase_init, pschase_init, pcchase_init, pzchase_init
+    PUBLIC :: pcchase_init_pseudo, pzchase_init_pseudo
+    PUBLIC :: pdchase_init_blockcyclic, pschase_init_blockcyclic, pcchase_init_blockcyclic, pzchase_init_blockcyclic
+    PUBLIC :: pcchase_init_pseudo_blockcyclic, pzchase_init_pseudo_blockcyclic
+
+    INTERFACE dchase_init
+        PROCEDURE :: dchase_init_internal
+        PROCEDURE :: dchase_init
+    END INTERFACE
+
+    INTERFACE schase_init
+        PROCEDURE :: schase_init_internal
+        PROCEDURE :: schase_init
+    END INTERFACE
+
+    INTERFACE cchase_init
+        PROCEDURE :: cchase_init_internal
+        PROCEDURE :: cchase_init
+    END INTERFACE
+
+    INTERFACE zchase_init
+        PROCEDURE :: zchase_init_internal
+        PROCEDURE :: zchase_init_with_buffers
+    END INTERFACE
+
+    INTERFACE cchase_init_pseudo
+        PROCEDURE :: cchase_init_pseudo_internal
+        PROCEDURE :: cchase_init_pseudo
+    END INTERFACE
+
+    INTERFACE zchase_init_pseudo
+        PROCEDURE :: zchase_init_pseudo_internal
+        PROCEDURE :: zchase_init_pseudo_with_buffers
+    END INTERFACE
+
+    INTERFACE pdchase_init
+        PROCEDURE :: pdchase_init_internal
+        PROCEDURE :: pdchase_init
+    END INTERFACE
+
+    INTERFACE pschase_init
+        PROCEDURE :: pschase_init_internal
+        PROCEDURE :: pschase_init
+    END INTERFACE
+
+    INTERFACE pcchase_init
+        PROCEDURE :: pcchase_init_internal
+        PROCEDURE :: pcchase_init
+    END INTERFACE
+
+    INTERFACE pzchase_init
+        PROCEDURE :: pzchase_init_internal
+        PROCEDURE :: pzchase_init_with_buffers
+    END INTERFACE
+
+    INTERFACE pcchase_init_pseudo
+        PROCEDURE :: pcchase_init_pseudo_internal
+        PROCEDURE :: pcchase_init_pseudo
+    END INTERFACE
+
+    INTERFACE pzchase_init_pseudo
+        PROCEDURE :: pzchase_init_pseudo_internal
+        PROCEDURE :: pzchase_init_pseudo_with_buffers
+    END INTERFACE
+
+    INTERFACE pdchase_init_blockcyclic
+        PROCEDURE :: pdchase_init_blockcyclic_internal
+        PROCEDURE :: pdchase_init_blockcyclic
+    END INTERFACE
+
+    INTERFACE pschase_init_blockcyclic
+        PROCEDURE :: pschase_init_blockcyclic_internal
+        PROCEDURE :: pschase_init_blockcyclic
+    END INTERFACE
+
+    INTERFACE pcchase_init_blockcyclic
+        PROCEDURE :: pcchase_init_blockcyclic_internal
+        PROCEDURE :: pcchase_init_blockcyclic
+    END INTERFACE
+
+    INTERFACE pzchase_init_blockcyclic
+        PROCEDURE :: pzchase_init_blockcyclic_internal
+        PROCEDURE :: pzchase_init_blockcyclic_with_buffers
+    END INTERFACE
+
+    INTERFACE pcchase_init_pseudo_blockcyclic
+        PROCEDURE :: pcchase_init_pseudo_blockcyclic_internal
+        PROCEDURE :: pcchase_init_pseudo_blockcyclic
+    END INTERFACE
+
+    INTERFACE pzchase_init_pseudo_blockcyclic
+        PROCEDURE :: pzchase_init_pseudo_blockcyclic_internal
+        PROCEDURE :: pzchase_init_pseudo_blockcyclic_with_buffers
+    END INTERFACE
+
     ! non-MPI
     INTERFACE
         SUBROUTINE dchase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'dchase_init_' )
@@ -29,6 +126,40 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
+        SUBROUTINE dchase_init_internal(n, nev, nex, h, ldh, init) bind( c, name = 'dchase_init_internal_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: n, nev, nex, init, ldh
+            REAL(c_double) :: h(n, *)
+        END SUBROUTINE dchase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE schase_init_internal(n, nev, nex, h, ldh, init) bind( c, name = 'schase_init_internal_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: n, nev, nex, init, ldh
+            REAL(c_float) :: h(n, *)
+        END SUBROUTINE schase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE cchase_init_internal(n, nev, nex, h, ldh, init) bind( c, name = 'cchase_init_internal_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: n, nev, nex, init, ldh
+            COMPLEX(c_float_complex) :: h(n, *)
+        END SUBROUTINE cchase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE zchase_init_internal(n, nev, nex, h, ldh, init) bind( c, name = 'zchase_init_internal_' )
+      !> Initialization of shared-memory ChASE (complex double precision) with internally managed workspace.
+      !> User only provides matrix `h`; eigenvector/eigenvalue work buffers are allocated in the interface layer.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
+            COMPLEX(c_double_complex)      :: h(n, *)
+        END SUBROUTINE zchase_init_internal
+    END INTERFACE
+
+    INTERFACE
       !> Finalize shared-memory ChASE with real scalar in double precison.
       !>    
       !>            
@@ -38,6 +169,41 @@ MODULE chase_diag
             INTEGER(c_int)      :: flag
 
         END SUBROUTINE dchase_finalize    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE dchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'dchase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            REAL(c_double) :: LEigsV(*), ritzv(*)
+        END SUBROUTINE dchase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE schase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'schase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            REAL(c_float) :: LEigsV(*), ritzv(*)
+        END SUBROUTINE schase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE cchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'cchase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            COMPLEX(c_float_complex) :: LEigsV(*)
+            REAL(c_float) :: ritzv(*)
+        END SUBROUTINE cchase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE zchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'zchase_get_eigenpairs_' )
+      !> Copy first `nev` converged eigenpairs from internal workspace to user buffers.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            COMPLEX(c_double_complex) :: LEigsV(*)
+            REAL(c_double) :: ritzv(*)
+        END SUBROUTINE zchase_get_eigenpairs
     END INTERFACE
 
     INTERFACE 
@@ -57,6 +223,24 @@ MODULE chase_diag
             CHARACTER(len=1,kind=c_char)  :: mode, opt, qr
 
         END SUBROUTINE dchase    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE cchase_init_pseudo_internal(n, nev, nex, h, ldh, init) bind( c, name = 'cchase_init_pseudo_internal_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: n, nev, nex, init, ldh
+            COMPLEX(c_float_complex) :: h(n, *)
+        END SUBROUTINE cchase_init_pseudo_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE zchase_init_pseudo_internal(n, nev, nex, h, ldh, init) bind( c, name = 'zchase_init_pseudo_internal_' )
+      !> Initialization of shared-memory pseudo-Hermitian ChASE (complex double precision)
+      !> with internally managed workspace.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
+            COMPLEX(c_double_complex)      :: h(n, *)
+        END SUBROUTINE zchase_init_pseudo_internal
     END INTERFACE
 
     INTERFACE
@@ -91,6 +275,90 @@ MODULE chase_diag
             INTEGER(c_int)      :: flag
 
         END SUBROUTINE schase_finalize    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pdchase_init_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            REAL(c_double) :: h(m, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pdchase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pschase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pschase_init_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            REAL(c_float) :: h(m, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pschase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pcchase_init_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_float_complex) :: h(m, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pcchase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pzchase_init_internal_f_' )
+      !> Initialization of distributed-memory ChASE (complex double, block-block)
+      !> with internally managed V/ritzv workspace.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_double_complex)      :: h(m, *)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+        END SUBROUTINE pzchase_init_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_init_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pdchase_init_blockcyclic_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            REAL(c_double) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pdchase_init_blockcyclic_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pschase_init_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pschase_init_blockcyclic_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            REAL(c_float) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pschase_init_blockcyclic_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pcchase_init_blockcyclic_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_float_complex) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pcchase_init_blockcyclic_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_init_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_blockcyclic_internal_f_' )
+      !> Initialization of distributed-memory ChASE (complex double, block-cyclic)
+      !> with internally managed V/ritzv workspace.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_double_complex) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pzchase_init_blockcyclic_internal
     END INTERFACE
 
     INTERFACE     
@@ -134,6 +402,41 @@ MODULE chase_diag
         END SUBROUTINE cchase_init    
     END INTERFACE
 
+    INTERFACE
+        SUBROUTINE pdchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'pdchase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            REAL(c_double) :: LEigsV(*), ritzv(*)
+        END SUBROUTINE pdchase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE   
+        SUBROUTINE pschase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'pschase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            REAL(c_float) :: LEigsV(*), ritzv(*)
+        END SUBROUTINE pschase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE   
+        SUBROUTINE pcchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'pcchase_get_eigenpairs_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            COMPLEX(c_float_complex) :: LEigsV(*)
+            REAL(c_float) :: ritzv(*)
+        END SUBROUTINE pcchase_get_eigenpairs
+    END INTERFACE
+
+    INTERFACE   
+        SUBROUTINE pzchase_get_eigenpairs(LEigsV, ld, ritzv) bind( c, name = 'pzchase_get_eigenpairs_' )
+      !> Copy first `nev` locally stored distributed eigenpairs to user local buffers.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: ld
+            COMPLEX(c_double_complex) :: LEigsV(*)
+            REAL(c_double) :: ritzv(*)
+        END SUBROUTINE pzchase_get_eigenpairs
+    END INTERFACE
+
     INTERFACE   
         SUBROUTINE cchase_finalize(flag) bind( c, name = 'cchase_finalize_' )
       !> Finalize shared-memory ChASE with complex scalar in single precison.
@@ -144,6 +447,50 @@ MODULE chase_diag
             INTEGER(c_int)      :: flag
 
         END SUBROUTINE cchase_finalize    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_pseudo_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pcchase_init_pseudo_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_float_complex) :: h(m, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pcchase_init_pseudo_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_init_pseudo_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pzchase_init_pseudo_internal_f_' )
+      !> Initialization of distributed pseudo-Hermitian ChASE (complex double, block-block)
+      !> with internally managed V/ritzv workspace.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_double_complex)      :: h(m, *)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+        END SUBROUTINE pzchase_init_pseudo_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_pseudo_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pcchase_init_pseudo_blockcyclic_internal_f_' )
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_float_complex) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pcchase_init_pseudo_blockcyclic_internal
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_init_pseudo_blockcyclic_internal(nn, nev, nex, mbsize, nbsize, h, ldh, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_pseudo_blockcyclic_internal_f_' )
+      !> Initialization of distributed pseudo-Hermitian ChASE (complex double, block-cyclic)
+      !> with internally managed V/ritzv workspace.
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int) :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_double_complex) :: h(ldh, *)
+            CHARACTER(len=1,kind=c_char) :: grid_major
+        END SUBROUTINE pzchase_init_pseudo_blockcyclic_internal
     END INTERFACE
 
     INTERFACE     
@@ -167,7 +514,7 @@ MODULE chase_diag
 
 
     INTERFACE  
-        SUBROUTINE zchase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_' )
+        SUBROUTINE zchase_init_with_buffers(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_' )
       !> Initialization of shard-memory ChASE with complex scalar in double precison.
       !> It is linked to single-GPU ChASE when CUDA is detected.      
       !>    
@@ -185,7 +532,7 @@ MODULE chase_diag
             COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
-        END SUBROUTINE zchase_init    
+        END SUBROUTINE zchase_init_with_buffers    
     END INTERFACE
 
     INTERFACE       
@@ -231,8 +578,8 @@ MODULE chase_diag
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
       !> @param[in] ldh a leading dimension of h      
-      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] v matrix of size `(n x 2*(nev+nex))`; first `nev` columns hold computed eigenvectors on output
+      !> @param[in,out] ritzv array of size `2*(nev+nex)`; first `nev` entries hold the desired positive eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex, init, ldh
@@ -263,7 +610,7 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE zchase_init_pseudo(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_pseudo_f_' )
+        SUBROUTINE zchase_init_pseudo_with_buffers(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_pseudo_f_' )
       !> Initialization of shared-memory ChASE with complex scalar in double precision for pseudo-Hermitian matrices.
       !> It is linked to single-GPU ChASE when CUDA is detected.
       !>    
@@ -273,15 +620,15 @@ MODULE chase_diag
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
       !> @param[in] ldh a leading dimension of h      
-      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] v matrix of size `(n x 2*(nev+nex))`; first `nev` columns hold computed eigenvectors on output
+      !> @param[in,out] ritzv array of size `2*(nev+nex)`; first `nev` entries hold the desired positive eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex, init, ldh
             COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
-        END SUBROUTINE zchase_init_pseudo    
+        END SUBROUTINE zchase_init_pseudo_with_buffers    
     END INTERFACE
 
 
@@ -328,7 +675,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized                 
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            REAL(c_double)      :: h(*), v(*)
+            REAL(c_double)      :: h(m, *), v(m, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pdchase_init
@@ -360,7 +707,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            REAL(c_double)      :: h(*), v(*)
+            REAL(c_double)      :: h(ldh, *), v(ldh, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
@@ -423,7 +770,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            REAL(c_float)      :: h(*), v(*)
+            REAL(c_float)      :: h(m, *), v(m, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pschase_init
@@ -455,7 +802,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            REAL(c_float)      :: h(*), v(*)
+            REAL(c_float)      :: h(ldh, *), v(ldh, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
@@ -494,7 +841,7 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE     
-        SUBROUTINE pzchase_init(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
+        SUBROUTINE pzchase_init_with_buffers(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
             bind( c, name = 'pzchase_init_f_' )
       !> Initialization of distributed-memory ChASE with complex scalar in double precison.
       !> The matrix to be diagonalized is already in block-block distribution.
@@ -517,14 +864,14 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            COMPLEX(c_double_complex)      :: h(*), v(*)
+            COMPLEX(c_double_complex)      :: h(m, *), v(m, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
-        END SUBROUTINE pzchase_init
+        END SUBROUTINE pzchase_init_with_buffers
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE pzchase_init_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+        SUBROUTINE pzchase_init_blockcyclic_with_buffers(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
             grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_blockcyclic_f_' )
       !> Initialization of distributed-memory ChASE with complex scalar in double precison.
       !> The matrix to be diagonalized is already in block-cyclic distribution.
@@ -549,11 +896,11 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            COMPLEX(c_double_complex)      :: h(*), v(*)
+            COMPLEX(c_double_complex)      :: h(ldh, *), v(ldh, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
-        END SUBROUTINE pzchase_init_blockcyclic
+        END SUBROUTINE pzchase_init_blockcyclic_with_buffers
     END INTERFACE
     
     INTERFACE   
@@ -613,7 +960,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized                  
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            COMPLEX(c_float_complex)      :: h(*), v(*)
+            COMPLEX(c_float_complex)      :: h(m, *), v(m, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pcchase_init
@@ -645,7 +992,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            COMPLEX(c_float_complex)      :: h(*), v(*)
+            COMPLEX(c_float_complex)      :: h(ldh, *), v(ldh, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
@@ -812,7 +1159,7 @@ MODULE chase_diag
 
     ! PseudoHermitian interfaces (BlockBlockMatrix)
     INTERFACE
-        SUBROUTINE pzchase_init_pseudo(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
+        SUBROUTINE pzchase_init_pseudo_with_buffers(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
             bind( c, name = 'pzchase_init_pseudo_f_' )
       !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex double precision, block-block distribution).
       !> The matrix to be diagonalized is already in block-block distribution.
@@ -833,10 +1180,10 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            COMPLEX(c_double_complex)      :: h(*), v(*)
+            COMPLEX(c_double_complex)      :: h(m, *), v(m, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
-        END SUBROUTINE pzchase_init_pseudo
+        END SUBROUTINE pzchase_init_pseudo_with_buffers
     END INTERFACE
 
     INTERFACE
@@ -861,7 +1208,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized                  
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
-            COMPLEX(c_float_complex)      :: h(*), v(*)
+            COMPLEX(c_float_complex)      :: h(m, *), v(m, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pcchase_init_pseudo
@@ -869,7 +1216,7 @@ MODULE chase_diag
 
     ! PseudoHermitian interfaces (BlockCyclicMatrix)
     INTERFACE
-        SUBROUTINE pzchase_init_pseudo_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+        SUBROUTINE pzchase_init_pseudo_blockcyclic_with_buffers(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
             grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_pseudo_blockcyclic_f_' )
       !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex double precision, block-cyclic distribution).
       !> The matrix to be diagonalized is already in block-cyclic distribution.
@@ -892,11 +1239,11 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            COMPLEX(c_double_complex)      :: h(*), v(*)
+            COMPLEX(c_double_complex)      :: h(ldh, *), v(ldh, *)
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
-        END SUBROUTINE pzchase_init_pseudo_blockcyclic
+        END SUBROUTINE pzchase_init_pseudo_blockcyclic_with_buffers
     END INTERFACE
 
     INTERFACE
@@ -923,7 +1270,7 @@ MODULE chase_diag
       !> @param[in,out] init a flag to indicate if ChASE has been initialized              
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
-            COMPLEX(c_float_complex)      :: h(*), v(*)
+            COMPLEX(c_float_complex)      :: h(ldh, *), v(ldh, *)
             REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 

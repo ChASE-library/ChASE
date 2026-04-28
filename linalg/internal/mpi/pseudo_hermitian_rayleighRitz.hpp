@@ -63,8 +63,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout << "Constructing the non-hermitian Rayleigh-Quotient..."
-                  << std::endl;
+        std::ostringstream oss;
+        oss << "Constructing the non-hermitian Rayleigh-Quotient...";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     using T = typename MatrixType::value_type;
@@ -166,9 +167,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout
-            << "Compute the eigenpairs of the non-hermitian rayleigh quotient"
-            << std::endl;
+        std::ostringstream oss;
+        oss << "Compute the eigenpairs of the non-hermitian rayleigh quotient";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
 
@@ -214,9 +215,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient "
-                     "computed with GEEV."
-                  << std::endl;
+        std::ostringstream oss;
+        oss << "Eigenvalues of the non-Hermitian rayleigh-quotient computed with GEEV.";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
 
@@ -298,6 +299,15 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
         throw std::invalid_argument("ritzv cannot be a nullptr.");
     }
 
+#ifdef CHASE_OUTPUT
+    if (H.grank() == 0)
+    {
+        std::ostringstream oss; 
+        oss << "Entering pseudo_hermitian_rayleighRitz_v2...";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+    }
+#endif
+
     std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>>
         A_ptr;
 
@@ -361,7 +371,11 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
     blaspp::t_trsm('R', 'L', 'C', 'N', subSize, subSize, &One, A->l_data(),
                    subSize, M, subSize);
 
-    // Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
+    // Flip sign of Rayleigh-Quotient M to order the eigenvalues in positive-negative order
+    T NegOne = T(-1.0);
+    blaspp::t_scal(subSize * subSize, &NegOne, M, 1);
+
+    // Compute the inverted ritz pairs of the Hermitian Rayleigh Quotient
 #ifdef RR_DOUBLE_PRECISION
     if constexpr (std::is_same<T, std::complex<float>>::value)
     {
@@ -402,6 +416,12 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
     }
 #endif
 
+    // Flip sign of ritz values for pseudo-Hermitian (H²) convention
+    chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
+    blaspp::t_scal(subSize, &ritz_neg_one, ritzv + offset, 1);
+
+    // TODO / TO DO : Solve with TRTRS here :
+
     blaspp::t_trsm('L', 'L', 'C', 'N', subSize, subSize, &One, A->l_data(),
                    subSize, M, subSize);
 
@@ -419,17 +439,17 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
         }
         ritzv[idx + offset] = 1.0 / ritzv[idx + offset];
     }
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         norms[idx] = T(1.0 / blaspp::t_nrm2(subSize, M + idx * subSize, 1));
     }
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         blaspp::t_scal(subSize, &norms[idx], M + idx * subSize, 1);
     }
     // GEMM for applying eigenvectors back to V1 from V2 * A
     chase::linalg::blaspp::t_gemm(
-        CblasColMajor, CblasNoTrans, CblasNoTrans, V2.l_rows(), subSize,
+        CblasColMajor, CblasNoTrans, CblasNoTrans, V2.l_rows(), subSize/2,
         subSize, &One, V2.l_data() + offset * V2.l_ld(), V2.l_ld(), M, subSize,
         &Zero, V1.l_data() + offset * V1.l_ld(), V1.l_ld());
 }

@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <iostream>  // For std::cout, std::endl
+#include <sstream>
 
+#include "algorithm/logger.hpp"
 #include "external/blaspp/blaspp.hpp"
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
@@ -62,7 +63,8 @@ int cholQR1(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
     {
         blaspp::t_trsm('R', 'U', 'N', 'N', m, n, &one, A, n, V, ldv);
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 1" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1\n", 0);
 #endif
         return info;
     }
@@ -110,7 +112,8 @@ int cholQR2(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
         info = lapackpp::t_potrf('U', n, A, n);
         blaspp::t_trsm('R', 'U', 'N', 'N', m, n, &one, A, n, V, ldv);
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 2" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 2", 0);
 #endif
         return info;
     }
@@ -150,7 +153,16 @@ int shiftedcholQR2(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
     blaspp::t_syherk('U', 'C', n, m, &one, V, ldv, &zero, A, n);
     Base<T> nrmf = 0.0;
     computeDiagonalAbsSum(n, n, A, n, &nrmf);
-    shift = std::sqrt(m) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+    if constexpr (std::is_same<Base<T>, float>::value)
+    {
+        shift = static_cast<Base<T>>(10.0) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(m)) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
     shiftMatrixDiagonal(n, n, A, n, (T)shift);
     info = lapackpp::t_potrf('U', n, A, n);
     if (info != 0)
@@ -168,7 +180,9 @@ int shiftedcholQR2(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
         blaspp::t_trsm('R', 'U', 'N', 'N', m, n, &one, A, n, V, ldv);
 
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 2, shift = " << shift << std::endl;
+        std::ostringstream oss;
+        oss << "choldegree: 2, shift = " << shift;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
 #endif
         return info;
     }
@@ -208,8 +222,9 @@ chase::Base<T> computeConditionNumber(std::size_t m, std::size_t n, T* V,
     // Basic parameter validation
     if (m == 0 || n == 0)
     {
-        std::cout << "Error: Invalid matrix dimensions m=" << m << ", n=" << n
-                  << std::endl;
+        std::ostringstream oss;
+        oss << "Error: Invalid matrix dimensions m=" << m << ", n=" << n;
+        chase::GetLogger().Log(chase::LogLevel::Error, "linalg", oss.str(), 0);
         return std::numeric_limits<chase::Base<T>>::infinity();
     }
 
@@ -221,23 +236,17 @@ chase::Base<T> computeConditionNumber(std::size_t m, std::size_t n, T* V,
     // Debug: Print singular values to understand what's happening
     if (min_mn > 0)
     {
-        std::cout << "SVD Debug: Matrix size " << m << "x" << n
-                  << ", min_mn=" << min_mn << std::endl;
-        std::cout << "First 5 singular values: ";
+        std::ostringstream oss;
+        oss << "SVD Debug: Matrix size " << m << "x" << n << ", min_mn=" << min_mn << "\nFirst 5 singular values: ";
         for (int i = 0; i < std::min(5, (int)min_mn); i++)
-        {
-            std::cout << S[i] << " ";
-        }
-        std::cout << std::endl;
+            oss << S[i] << " ";
         if (min_mn > 5)
         {
-            std::cout << "Last 5 singular values: ";
+            oss << "\nLast 5 singular values: ";
             for (int i = std::max(0, (int)min_mn - 5); i < (int)min_mn; i++)
-            {
-                std::cout << S[i] << " ";
-            }
-            std::cout << std::endl;
+                oss << S[i] << " ";
         }
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), 0);
     }
 #endif
     chase::Base<T> cond_num = std::numeric_limits<chase::Base<T>>::infinity();
@@ -251,9 +260,12 @@ chase::Base<T> computeConditionNumber(std::size_t m, std::size_t n, T* V,
             std::numeric_limits<chase::Base<T>>::epsilon();
         const chase::Base<T> tolerance = std::max(m, n) * sigma_max * eps;
 #ifdef CHASE_OUTPUT
-        std::cout << "Condition number debug: sigma_max=" << sigma_max
-                  << ", sigma_min=" << sigma_min << ", tolerance=" << tolerance
-                  << ", eps=" << eps << std::endl;
+        std::ostringstream oss_cond;
+        oss_cond << "Condition number debug: sigma_max=" << sigma_max
+                 << ", sigma_min=" << sigma_min << ", tolerance=" << tolerance
+                 << ", eps=" << eps;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+            oss_cond.str(), 0);
 #endif
         if (sigma_min > tolerance && sigma_min > 0)
         {

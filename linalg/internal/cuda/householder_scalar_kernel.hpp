@@ -1,0 +1,146 @@
+// This file is a part of ChASE.
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
+//   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
+// License is 3-clause BSD:
+// https://github.com/ChASE-library/ChASE
+
+#pragma once
+
+#include <cstddef>
+#include <complex>
+#include <cstdint>
+#include <cuda_runtime.h>
+#include "highprec_traits.cuh"
+
+namespace chase
+{
+namespace linalg
+{
+namespace internal
+{
+namespace cuda
+{
+
+// Implemented in householder_scalar_kernel.cu (compiled with nvcc).
+// Fused Householder scalars: x0, nrm_sq -> tau, inv_denom, neg_beta, denom_bcast, saved_rkk.
+template <typename T, typename RealT>
+void run_householder_scalar_kernel(cudaStream_t stream, int pivot_here,
+                                  const T* d_x0, const RealT* d_nrm_sq, T* d_tau,
+                                  T* d_inv_denom, T* d_neg_beta, T* d_denom_bcast,
+                                  T* d_saved_rkk);
+
+// After Allreduce(denom_bcast): d_inv_denom = 1/d_denom_bcast (or 0 if zero).
+template <typename T>
+void run_inv_denom_from_denom_bcast(cudaStream_t stream,
+                                    const T* d_denom_bcast, T* d_inv_denom);
+
+// If denom_bcast != 0: set inv_denom = 1/denom_bcast and scale d_V_col[0..n-1].
+// No-op when denom_bcast == 0. Avoids D2H for panel scal phase.
+template <typename T>
+void run_nonpivot_scal_if_denom_nonzero(cudaStream_t stream,
+                                       const T* d_denom_bcast, T* d_inv_denom,
+                                       T* d_V_col, int n);
+
+// After NCCL(tau, denom): multi-block scale of v_tail; pivot row (index
+// pivot_rel within tail, or -1) is set to 1 without a second launch.
+template <typename T>
+void run_bc1d_post_comm_scal_pivot(cudaStream_t stream, int pivot_here,
+                                   const T* d_denom_bcast, T* d_inv_denom,
+                                   T* d_v_tail, int vr, int pivot_rel);
+
+// Scale V_col with inv_denom only when tau != 0. On pivot row write neg_beta.
+template <typename T>
+void run_guarded_scaling(cudaStream_t stream, int n, const T* d_tau,
+                         const T* d_inv_denom, T* d_V_col, bool pivot_here,
+                         int pivot_loc, const T* d_neg_beta);
+
+// Batch save/restore upper-triangular panel entries for blocked Householder QR.
+template <typename T>
+void run_batch_save_restore_upper_triangular(cudaStream_t stream, T* d_V,
+                                             T* d_saved, std::size_t ldv,
+                                             std::size_t jb, std::size_t k,
+                                             std::size_t g_off,
+                                             std::size_t l_rows,
+                                             const T* d_one, const T* d_zero,
+                                             bool save_mode);
+
+// Initialize the distributed local tile as the identity matrix.
+template <typename T>
+void run_init_identity_distributed(cudaStream_t stream, T* d_V, std::size_t ldv,
+                                   std::size_t n, std::size_t g_off,
+                                   std::size_t l_rows);
+
+// Compact WY T-block from S = V^H V and tau (GPU-resident, no per-column gemv).
+// Tb: output nb x nb column-major; d_S: jb x jb column-major (overwritten temp);
+// d_tau: length jb (panel taus).
+template <typename T>
+void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
+                        int jb, int nb);
+
+template <typename T>
+constexpr std::size_t split_sync_scalar_count(std::size_t count)
+{
+    return count * (std::is_same<T, std::complex<float>>::value ||
+                    std::is_same<T, std::complex<double>>::value
+                        ? 2
+                        : 1);
+}
+
+// Split input to hi/lo double buffers (lo initialized to zero).
+template <typename T>
+void run_split_to_hilo(cudaStream_t stream, const T* d_in, std::size_t count,
+                       double* d_hi, double* d_lo);
+
+// Local renormalization: (hi, lo) <- two_sum(hi, lo)
+void run_renorm_hilo(cudaStream_t stream, double* d_hi, double* d_lo,
+                     std::size_t scalar_count);
+
+// Merge hi/lo back to output type T.
+template <typename T>
+void run_merge_hilo_to_out(cudaStream_t stream, const double* d_hi,
+                           const double* d_lo, T* d_out, std::size_t count);
+
+// In-place WY cleaning for one panel column: zero rows with global index <
+// pivot; at pivot copy *d_saved_rkk to d_r_diag_out and set v to 1 (if
+// d_r_diag_out == nullptr, skip peel). d_V_col0 = V(0, col).
+template <typename T>
+void run_split_and_pad_v_column(cudaStream_t stream, T* d_V_col0,
+                                const std::uint64_t* d_row_global, int l_rows,
+                                std::uint64_t pivot_global, int pivot_here,
+                                int pivot_loc, const T* d_saved_rkk,
+                                T* d_r_diag_out);
+
+// Stage-3 prep: fused finish kernel for block-cyclic panel column.
+// It performs post-comm scaling by denom, applies pivot fix-up (v[pivot]=1),
+// and optionally peels R_kk to d_r_diag_out in one launch.
+template <typename T>
+void run_fused_householder_finish_kernel(cudaStream_t stream, int pivot_here,
+                                         T* d_V_col0, int ldv,
+                                         const std::uint64_t* d_row_global,
+                                         int l_rows,
+                                         std::uint64_t pivot_global,
+                                         int pivot_loc,
+                                         int active_row_start,
+                                         const T* d_denom_bcast,
+                                         T* d_inv_denom,
+                                         const T* d_saved_rkk,
+                                         T* d_r_diag_out);
+
+template <typename T, typename RealT>
+void run_extract_real_part_from_scalar(cudaStream_t stream, const T* d_in,
+                                       RealT* d_out);
+
+template <typename T>
+void run_copy_scalar_kernel(cudaStream_t stream, const T* d_src, T* d_dst);
+
+// Before panel factor column loop: for V(:, k..k+jb-1), zero local rows with
+// global row < k only (no R peel, pivot unchanged). d_V_panel = V + k*ldv.
+template <typename T>
+void run_panel_pre_clean(cudaStream_t stream, T* d_V_panel, std::size_t ldv,
+                         const std::uint64_t* d_row_global, int l_rows,
+                         std::size_t k_col0, int jb_cols);
+
+} // namespace cuda
+} // namespace internal
+} // namespace linalg
+} // namespace chase

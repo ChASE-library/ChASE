@@ -12,8 +12,10 @@
 #include <memory>    // For std::unique_ptr, std::shared_ptr
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
+#include <sstream>
 #include <stdexcept> // For throwing runtime errors
 
+#include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
 #include "external/lapackpp/lapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -24,6 +26,7 @@
 #ifdef HAS_CUDA
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "external/cublaspp/cublaspp.hpp"
+#include "linalg/internal/cuda/conjugate.hpp"
 #include "linalg/internal/cuda/lacpy.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #include <cuda_runtime.h>
@@ -93,6 +96,17 @@ class DistMultiVector1D;
  */
 template <typename T, CommunicatorType comm_type, typename Platform>
 class DistMultiVectorBlockCyclic1D;
+
+template <typename MultiVector>
+struct is_block_cyclic_1d_multivector : std::false_type
+{
+};
+
+template <typename T, CommunicatorType comm_type, typename Platform>
+struct is_block_cyclic_1d_multivector<
+    DistMultiVectorBlockCyclic1D<T, comm_type, Platform>> : std::true_type
+{
+};
 
 /**
  * @brief Abstract base class for distributed multi-vectors.
@@ -309,8 +323,11 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Single precision matrix enabled in "
-                             "AbstractDistMultiVector. \n";
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Single precision matrix enabled in AbstractDistMultiVector.\n",
+                    this->grank());
+            }
         }
         else
         {
@@ -379,8 +396,11 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Single precision matrix disabled in "
-                         "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix disabled in AbstractDistMultiVector.\n",
+                this->grank());
+        }
 
         single_precision_multivec_.reset(); // Free the single precision memory
         is_single_precision_enabled_ = false;
@@ -508,14 +528,71 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Double precision matrix enabled in "
-                             "AbstractDistMultiVector. \n";
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Double precision matrix enabled in AbstractDistMultiVector.\n",
+                    this->grank());
+            }
         }
         else
         {
             throw std::runtime_error("Double precision already enabled.");
         }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void enableDoublePrecisionAsync(cudaStream_t* stream_ = nullptr)
+    {
+        if (!double_precision_multivec_)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            if constexpr (std::is_same<Derived<T, comm_type, Platform>,
+                                       chase::distMultiVector::
+                                           DistMultiVectorBlockCyclic1D<
+                                               T, comm_type, Platform>>::value)
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(), this->mb(),
+                        this->getMpiGrid_shared_ptr());
+            }
+            else
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(),
+                        this->getMpiGrid_shared_ptr());
+            }
+
+
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data(), double_precision_multivec_->l_data(),
+                this->l_cols() * this->l_rows(), stream_);
+            
+
+            is_double_precision_enabled_ = true;
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end - start);
+
+            if (this->grank() == 0)
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Double precision matrix enabled in AbstractDistMultiVector.\n",
+                    this->grank());
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Double precision already enabled.");
+        }
+    }
+#endif
 
     // Disable double precision for float types
     template <
@@ -574,9 +651,52 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Double precision matrix disabled in "
-                         "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix disabled in AbstractDistMultiVector.\n",
+                this->grank());
+        }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void disableDoublePrecisionAsync(bool copyback = false,
+                                     cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (copyback)
+        {
+            if (double_precision_multivec_)
+            {
+                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                    double_precision_multivec_->l_data(), this->l_data(),
+                    this->l_cols() * this->l_rows(), stream_);
+                
+            }
+            else
+            {
+                throw std::runtime_error("Double precision is not enabled.");
+            }
+        }
+
+        double_precision_multivec_.reset();
+        is_double_precision_enabled_ = false;
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix disabled in AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
 
     // Check if double precision is enabled
     template <
@@ -677,9 +797,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied back to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied back to double precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
     }
 
     // Copy from double to single precision (if T is float)
@@ -727,10 +850,45 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Double precision matrix copied back to single precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied back to single precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copybackAsync(cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            double_precision_multivec_->l_data(), this->l_data(),
+            this->l_cols() * this->l_rows(), stream_);
+        
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied back to single precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
 
     // Copy from double to single precision (if T is double)
     template <typename U = T,
@@ -778,9 +936,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied to single precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
     }
 
     // Copy from single to double precision (if T is float)
@@ -829,10 +990,45 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied to double precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyToAsync(cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            this->l_data(), double_precision_multivec_->l_data(),
+            this->l_cols() * this->l_rows(), stream_);
+        
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied to double precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
 
     // If T is neither float nor double, these methods should not be available
     template <typename U = T,
@@ -847,6 +1043,8 @@ public:
         throw std::runtime_error("[DistMultiVector]: CopyTo operations not "
                                  "supported for this type.");
     }
+
+    virtual void Kconjugate(std::size_t block, std::size_t offset) = 0;
 };
 
 /**
@@ -922,7 +1120,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         if (M_ % dim == 0)
@@ -941,6 +1139,18 @@ public:
         else
         {
             m_ = M_ - (dim - 1) * len;
+        }
+
+        m_ranks_.resize(dim);
+        m_ranks_.assign(dim, len);
+        m_ranks_[dim-1] = M_ - (dim - 1) * len;
+
+        off_ranks_.resize(dim);
+        lim_ranks_.resize(dim);
+        for(auto r = 0; r < dim; r++)
+        {
+            off_ranks_[r] = r * len;
+            lim_ranks_[r] = off_ranks_[r] + m_ranks_[r];
         }
 
         off_ = coord * len;
@@ -964,6 +1174,11 @@ public:
         else
         {
             l_half_ = m_;
+        }
+        if constexpr (comm_type ==
+            chase::distMultiVector::CommunicatorType::column)
+        {
+            this->Init_Kconjugate();
         }
     }
     /**
@@ -1000,7 +1215,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, comm);
@@ -1035,7 +1250,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         mb_ = m_;
@@ -1063,6 +1278,20 @@ public:
             m_ = M_ - (dim - 1) * len;
         }
 
+        // Build per-rank row ranges used by K-conjugate communication setup.
+        // The external-data constructor must initialize these as well.
+        m_ranks_.resize(dim);
+        m_ranks_.assign(dim, len);
+        m_ranks_[dim - 1] = M_ - (dim - 1) * len;
+
+        off_ranks_.resize(dim);
+        lim_ranks_.resize(dim);
+        for (auto r = 0; r < dim; r++)
+        {
+            off_ranks_[r] = r * len;
+            lim_ranks_[r] = off_ranks_[r] + m_ranks_[r];
+        }
+
         off_ = coord * len;
 
         if (off_ + m_ > M_ / 2)
@@ -1072,6 +1301,11 @@ public:
         else
         {
             l_half_ = m_;
+        }
+        if constexpr (comm_type ==
+            chase::distMultiVector::CommunicatorType::column)
+        {
+            this->Init_Kconjugate();
         }
     }
     /**
@@ -1228,6 +1462,28 @@ public:
         std::swap(this->double_precision_multivec_,
                   other.double_precision_multivec_);
     }
+
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap_l_data_ptr(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other)
+    {
+        if constexpr (comm_type != OtherCommType)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Communicator types do not match.");
+        }
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Platform types do not match.");
+        }
+        if (mpi_grid_.get() != other.mpi_grid_.get())
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: MPI grids do not match.");
+        }
+
+        local_matrix_.swapDataPointer(other.local_matrix_);
+    }
     /**
      * @brief Swaps columns i and j in the distributed multivector.
      *
@@ -1250,16 +1506,14 @@ public:
 #ifdef HAS_CUDA
         else
         {
-            T* tmp;
-            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
-            chase::linalg::internal::cuda::t_lacpy(
-                'A', m_, 1, this->l_data() + i * ld_, 1, tmp, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1,
-                                                   this->l_data() + j * ld_, 1,
-                                                   this->l_data() + i * ld_, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1, tmp, 1,
-                                                   this->l_data() + j * ld_, 1);
-            cudaFree(tmp);
+            static thread_local cublasHandle_t swap_handle = nullptr;
+            if (swap_handle == nullptr)
+            {
+                CHECK_CUBLAS_ERROR(cublasCreate(&swap_handle));
+            }
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTswap(
+                swap_handle, m_, this->l_data() + i * ld_, 1,
+                this->l_data() + j * ld_, 1));
         }
 #endif
     }
@@ -1461,6 +1715,402 @@ public:
     }
 
 #endif
+
+    /**
+     * @brief Initialize the K conjugate for the Column distributed DistMultiVector.
+     * Ranks, buffers and buffer sizes are initialized here for the K conjugate operation.
+     */
+    void Init_Kconjugate()
+    {
+        int r = 0;
+
+        chase::grid::MpiGrid2DBase* grid = this->getMpiGrid();
+        int col_size = 0;
+        MPI_Comm col_comm = grid->get_col_comm();
+        MPI_Comm_size(col_comm, &col_size);
+
+        std::size_t half = this->g_rows() / 2;
+
+        std::size_t upper_buffer_size = 0;
+        std::size_t lower_buffer_size = 0;
+        std::size_t send_upper_to_len = 0;
+        std::size_t send_lower_to_len = 0;
+
+        int send_upper_to_g_off = -1;
+        int send_lower_to_g_off = -1;
+        int send_upper_my_local_idx = 0;
+        int send_lower_my_local_idx = 0;
+
+        if (this->g_off() >= half)
+        {
+            send_upper_my_local_idx = 0;
+            send_upper_to_g_off = static_cast<int>(this->g_off() - half);
+            send_upper_to_len = this->l_rows();
+        }
+        else
+        {
+            send_lower_my_local_idx = 0;
+            send_lower_to_g_off = static_cast<int>(this->g_off() + half);
+            send_lower_to_len = this->l_rows();
+            if (this->g_off() + this->l_rows() > half)
+            {
+                send_upper_to_g_off = 0;
+                send_lower_to_len = half - this->g_off();
+                send_upper_to_len = this->l_rows() - send_lower_to_len;
+                send_upper_my_local_idx = send_lower_to_len;
+                send_lower_my_local_idx = 0;
+            }
+        }
+
+        r = 0;
+
+        this->send_upper_to_ranks_len.resize(col_size);
+        this->send_lower_to_ranks_len.resize(col_size);
+        this->send_upper_to_my_local_idx.resize(col_size);
+        this->send_lower_to_my_local_idx.resize(col_size);
+
+        while (r < col_size && send_upper_to_len > 0)
+        {
+            if (lim_ranks_[r] > static_cast<std::size_t>(send_upper_to_g_off))
+            {
+                this->send_upper_to_ranks.push_back(r);
+                if (off_ranks_[r] < static_cast<std::size_t>(send_upper_to_g_off))
+                {
+                    this->send_upper_to_ranks_len[r] = static_cast<std::size_t>(std::min(m_ranks_[r] - (send_upper_to_g_off - off_ranks_[r]), send_upper_to_len));
+                }
+                else
+                {
+                    this->send_upper_to_ranks_len[r] = static_cast<std::size_t>(std::min(m_ranks_[r], send_upper_to_len));
+                }
+                this->send_upper_to_my_local_idx[r] = send_upper_my_local_idx;
+                send_upper_to_len -= this->send_upper_to_ranks_len[r];
+                send_upper_my_local_idx += this->send_upper_to_ranks_len[r];
+            }
+            r++;
+        }
+
+        r = 0;
+        while (r < col_size && send_lower_to_len > 0)
+        {
+            if (lim_ranks_[r] > static_cast<std::size_t>(send_lower_to_g_off))
+            {
+                this->send_lower_to_ranks.push_back(r);
+                if (off_ranks_[r] < static_cast<std::size_t>(send_lower_to_g_off))
+                {
+                    this->send_lower_to_ranks_len[r] = static_cast<std::size_t>(std::min(m_ranks_[r] - (send_lower_to_g_off - off_ranks_[r]), send_lower_to_len));
+                }
+                else
+                {
+                    this->send_lower_to_ranks_len[r] = static_cast<std::size_t>(std::min(m_ranks_[r], send_lower_to_len));
+                }
+                this->send_lower_to_my_local_idx[r] = send_lower_my_local_idx;
+                send_lower_to_len -= this->send_lower_to_ranks_len[r];
+                send_lower_my_local_idx += this->send_lower_to_ranks_len[r];
+            }
+            r++;
+        }
+
+        if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+        {       
+            this->send_upper_to_buffers_cpu.resize(this->send_upper_to_ranks.size());
+            this->send_lower_to_buffers_cpu.resize(this->send_lower_to_ranks.size());
+
+            for (std::size_t i = 0; i < this->send_upper_to_ranks.size(); i++)
+            {
+                auto r = this->send_upper_to_ranks[i];
+                this->send_upper_to_buffers_cpu[i] = std::make_unique<chase::matrix::Matrix<T, chase::platform::CPU>>(this->send_upper_to_ranks_len[r], this->l_cols());
+            }
+            for (std::size_t i = 0; i < this->send_lower_to_ranks.size(); i++)
+            {
+                auto r = this->send_lower_to_ranks[i];
+                this->send_lower_to_buffers_cpu[i] = std::make_unique<chase::matrix::Matrix<T, chase::platform::CPU>>(this->send_lower_to_ranks_len[r], this->l_cols());
+            }
+        }
+#ifdef HAS_CUDA
+        else
+        {
+            this->send_upper_to_buffers_gpu.resize(this->send_upper_to_ranks.size());
+            this->send_lower_to_buffers_gpu.resize(this->send_lower_to_ranks.size());
+            for (std::size_t i = 0; i < this->send_upper_to_ranks.size(); i++)
+            {
+                auto r = this->send_upper_to_ranks[i];
+                this->send_upper_to_buffers_gpu[i] = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(this->send_upper_to_ranks_len[r], this->l_cols());
+            }
+            for (std::size_t i = 0; i < this->send_lower_to_ranks.size(); i++)
+            {
+                auto r = this->send_lower_to_ranks[i];
+                this->send_lower_to_buffers_gpu[i] = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(this->send_lower_to_ranks_len[r], this->l_cols());
+            }
+        }
+#endif
+        /*
+        int my_rank = 0;
+        MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+        for(auto r = 0; r < col_size; ++r)
+        {
+            if(r == my_rank)
+            {
+                std::cout << "--------------------------------" << std::endl;
+                std::cout << "col_rank: " << r << " with l_row = " << this->l_rows() << " , g_off = " << this->g_off() << " , " << lim_ranks_[r] << std::endl;
+                std::cout << "Sending upper info : number of sendrecv : " << this->send_upper_to_ranks.size() << std::endl;
+                for(auto i = 0; i < this->send_upper_to_ranks.size(); ++i)
+                {
+                    std::cout << "sendrecv_rank: " << this->send_upper_to_ranks[i] << " sendrecv_len: " << this->send_upper_to_ranks_len[this->send_upper_to_ranks[i]]
+                    << " my_local_idx: " << this->send_upper_to_my_local_idx[this->send_upper_to_ranks[i]] << std::endl;
+                }
+
+                std::cout << "Sending lower info : number of sendrecv : " << this->send_lower_to_ranks.size() << std::endl;
+                for(auto i = 0; i < this->send_lower_to_ranks.size(); ++i)
+                {
+                    std::cout << "sendrecv_rank: " << this->send_lower_to_ranks[i] << " sendrecv_len: " << this->send_lower_to_ranks_len[this->send_lower_to_ranks[i]]
+                    << " my_local_idx: " << this->send_lower_to_my_local_idx[this->send_lower_to_ranks[i]] << std::endl;
+                }
+                std::cout << "--------------------------------" << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }*/
+    }
+    /**
+     * @brief Apply the K conjugate to the Column distributed DistMultiVector.
+     *
+     * @param block  The block size (should be <= ncols/2).
+     * @param offset The offset from which performing the K conjugate operation.
+     */
+    void Kconjugate(std::size_t block, std::size_t offset) override
+    {
+        int col_rank = 0;
+        chase::grid::MpiGrid2DBase* grid = this->getMpiGrid();
+        MPI_Comm col_comm = grid->get_col_comm();
+        MPI_Comm_rank(col_comm, &col_rank);
+
+        std::size_t col_second = this->g_cols() - offset - block;
+
+        T* send_ptr = nullptr;
+        T* recv_ptr = nullptr;
+        std::size_t sendrecv_ptr_ld = 0;
+
+        for (std::size_t i = 0; i < this->send_upper_to_ranks.size(); i++)
+        {
+            int sendrecv_rank = this->send_upper_to_ranks[i];
+            int sendrecv_len = this->send_upper_to_ranks_len[sendrecv_rank];
+            if (sendrecv_rank == col_rank)
+            {
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    chase::linalg::lapackpp::t_lacpy('A', this->send_upper_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + this->send_upper_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + 0, this->l_ld());
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', this->send_upper_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + this->send_upper_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + 0, this->l_ld());
+                }
+#endif
+            }
+            else
+            {
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    sendrecv_ptr_ld = this->send_upper_to_buffers_cpu[i]->ld();
+                    send_ptr = this->send_upper_to_buffers_cpu[i]->data();
+                    recv_ptr = this->send_upper_to_buffers_cpu[i]->data() + col_second * sendrecv_ptr_ld;
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', sendrecv_len, 1,
+                                this->l_data() + (offset + j) * this->l_ld() + this->send_upper_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                                send_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld);
+                    }
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    sendrecv_ptr_ld = this->send_upper_to_buffers_gpu[i]->ld();
+                    send_ptr = this->send_upper_to_buffers_gpu[i]->data();
+                    recv_ptr = this->send_upper_to_buffers_gpu[i]->data() + col_second * sendrecv_ptr_ld;
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', sendrecv_len, 1,
+                                this->l_data() + (offset + j) * this->l_ld() + this->send_upper_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                                send_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld);
+                    }
+                }
+                cudaDeviceSynchronize();
+#endif
+            if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+            {
+                MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                    recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                    col_comm, MPI_STATUS_IGNORE);
+            }
+#ifdef HAS_CUDA
+            else
+            {
+#ifdef HAS_NCCL
+
+            CHECK_NCCL_ERROR(chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                                                              recv_ptr, sendrecv_len * block, sendrecv_rank,
+                                                              this->mpi_grid_->get_nccl_col_comm()));
+
+#else
+            MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                col_comm, MPI_STATUS_IGNORE);
+#endif
+            }
+#endif
+
+#ifdef HAS_CUDA
+                cudaDeviceSynchronize();
+#endif
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', sendrecv_len, 1,
+                                recv_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld,
+                                this->l_data() + (col_second + j) * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], this->l_ld());
+                    }
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', sendrecv_len, 1,
+                            recv_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld,
+                            this->l_data() + (col_second + j) * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], this->l_ld());
+                    }
+                }
+#endif
+            }
+
+        }
+
+        for (std::size_t i = 0; i < send_lower_to_ranks.size(); i++)
+        {
+            int sendrecv_rank = send_lower_to_ranks[i];
+            int sendrecv_len = this->send_lower_to_ranks_len[sendrecv_rank];
+            if (sendrecv_rank == col_rank)
+            {
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    chase::linalg::lapackpp::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + 0, this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + send_lower_to_ranks_len[sendrecv_rank], this->l_ld());
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + 0, this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + send_lower_to_ranks_len[sendrecv_rank], this->l_ld());
+                }
+#endif
+            }
+            else
+            {
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    sendrecv_ptr_ld = this->send_lower_to_buffers_cpu[i]->ld();
+                    send_ptr = this->send_lower_to_buffers_cpu[i]->data();
+                    recv_ptr = this->send_lower_to_buffers_cpu[i]->data() + col_second * sendrecv_ptr_ld;
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', sendrecv_len, 1,
+                                this->l_data() + (offset + j) * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                                send_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld);
+                    }
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    sendrecv_ptr_ld = this->send_lower_to_buffers_gpu[i]->ld();
+                    send_ptr = this->send_lower_to_buffers_gpu[i]->data();
+                    recv_ptr = this->send_lower_to_buffers_gpu[i]->data() + col_second * sendrecv_ptr_ld;
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', sendrecv_len, 1,
+                                this->l_data() + (offset + j) * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                                send_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld);
+                    }
+                }
+                cudaDeviceSynchronize();
+#endif
+
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                        recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                        col_comm, MPI_STATUS_IGNORE);
+                }
+#ifdef HAS_CUDA
+                else
+                {
+#ifdef HAS_NCCL
+                CHECK_NCCL_ERROR(chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                                                                  recv_ptr, sendrecv_len * block, sendrecv_rank,
+                                                                  this->mpi_grid_->get_nccl_col_comm()));
+#else
+                MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                    recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                    col_comm, MPI_STATUS_IGNORE);
+#endif
+                }
+#endif
+
+#ifdef HAS_CUDA
+                cudaDeviceSynchronize();
+#endif
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', sendrecv_len, 1,
+                                recv_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld,
+                                this->l_data() + (col_second + j) * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], this->l_ld());
+                    }
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    for(std::size_t j = 0; j < block; ++j)
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', sendrecv_len, 1,
+                            recv_ptr + j * sendrecv_ptr_ld, sendrecv_ptr_ld,
+                            this->l_data() + (col_second + j) * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], this->l_ld());
+                    }
+                }
+#endif
+            }
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+            for (std::size_t j = 0; j < block; ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    this->l_data()[(j + col_second) * this->l_ld() + i] =
+                        conjugate(this->l_data()[(j + col_second) * this->l_ld() + i]);
+                }
+            }
+        }
+#ifdef HAS_CUDA
+        else
+        {
+            chase::linalg::internal::cuda::conjugate_inplace(this->l_data() + col_second * this->l_ld(),
+                                                             this->l_rows(), block, this->l_ld(), 0);
+
+            cudaDeviceSynchronize();
+        }
+#endif
+
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
     /**
      * @brief Get the number of rows in the global matrix.
      *
@@ -1639,6 +2289,63 @@ private:
      */
     std::size_t l_half_;
 
+     /**
+     * @brief The number of rows in the local matrix for each rank.
+     */
+    std::vector<std::size_t> m_ranks_;
+    /**
+     * @brief The global offset for the local data for each rank.
+     */
+    std::vector<std::size_t> off_ranks_;
+    /**
+     * @brief The global limit for the local data for each rank.
+     */
+    std::vector<std::size_t> lim_ranks_;
+
+     /**
+     * @brief The local displacements for the send upper ranks in the K conjugate
+     * operation for pseudo-Hermitian matrix.
+     */
+    std::vector<int> send_upper_to_my_local_idx;
+    /**
+     * @brief The local displacements for the send lower ranks in the K conjugate
+     * operation for pseudo-Hermitian matrix.
+     */
+    std::vector<int> send_lower_to_my_local_idx;
+    /**
+    * @brief The length of the send upper ranks in the K conjugate
+    */
+    std::vector<std::size_t> send_upper_to_ranks_len;
+    /**
+    * @brief The length of the send lower ranks in the K conjugate
+    */
+    std::vector<std::size_t> send_lower_to_ranks_len;
+    /**
+    * @brief The ranks for the send upper ranks in the K conjugate
+    */
+    std::vector<int> send_upper_to_ranks;
+    /**
+    * @brief The ranks for the send lower ranks in the K conjugate
+    */
+    std::vector<int> send_lower_to_ranks;
+    /**
+    * @brief The CPU contiguous buffers for the send upper ranks in the K conjugate 
+    */
+    std::vector<std::unique_ptr<chase::matrix::Matrix<T, chase::platform::CPU>>> send_upper_to_buffers_cpu;
+    /**
+    * @brief The CPU contiguous buffers for the send lower ranks in the K conjugate
+    */
+    std::vector<std::unique_ptr<chase::matrix::Matrix<T, chase::platform::CPU>>> send_lower_to_buffers_cpu;
+#ifdef HAS_CUDA
+    /**
+    * @brief The GPU contiguous buffers for the send upper ranks in the K conjugate
+    */
+    std::vector<std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>>> send_upper_to_buffers_gpu;
+    /**
+    * @brief The GPU contiguous buffers for the send lower ranks in the K conjugate
+    */
+    std::vector<std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>>> send_lower_to_buffers_gpu;
+#endif
     // typename chase::platform::MatrixTypePlatform<T, Platform>::type
     // local_matrix_;
     /**
@@ -2065,7 +2772,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2090,7 +2797,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -2101,7 +2808,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2160,7 +2867,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2184,7 +2891,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -2195,7 +2902,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -2495,6 +3202,30 @@ public:
                   other.double_precision_multivec_);
     }
 
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap_l_data_ptr(
+        DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>& other)
+    {
+        if constexpr (comm_type != OtherCommType)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Communicator types do not match.");
+        }
+
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Platform types do not match.");
+        }
+        if (mpi_grid_.get() != other.mpi_grid_.get())
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: MPI grids do not match.");
+        }
+
+        local_matrix_.swapDataPointer(other.local_matrix_);
+    }
+
     /**
      * @brief Swaps columns i and j in the local matrix.
      *
@@ -2517,16 +3248,14 @@ public:
 #ifdef HAS_CUDA
         else
         {
-            T* tmp;
-            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
-            chase::linalg::internal::cuda::t_lacpy(
-                'A', m_, 1, this->l_data() + i * ld_, 1, tmp, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1,
-                                                   this->l_data() + j * ld_, 1,
-                                                   this->l_data() + i * ld_, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1, tmp, 1,
-                                                   this->l_data() + j * ld_, 1);
-            cudaFree(tmp);
+            static thread_local cublasHandle_t swap_handle = nullptr;
+            if (swap_handle == nullptr)
+            {
+                CHECK_CUBLAS_ERROR(cublasCreate(&swap_handle));
+            }
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTswap(
+                swap_handle, m_, this->l_data() + i * ld_, 1,
+                this->l_data() + j * ld_, 1));
         }
 #endif
     }
@@ -2717,6 +3446,180 @@ public:
         this->redistributeImplAsync(targetMultiVector, 0, this->n_, stream_);
     }
 #endif
+
+    void Kconjugate(std::size_t block, std::size_t offset) override
+    {
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+            chase::grid::MpiGrid2DBase* grid = this->getMpiGrid();
+
+            int col_rank = 0;
+            int col_size = 0;
+
+            MPI_Comm col_comm = grid->get_col_comm();
+            MPI_Comm_rank(col_comm, &col_rank);
+            MPI_Comm_size(col_comm, &col_size);
+
+            std::size_t half = this->g_rows() / 2;
+            std::size_t col_second = this->g_cols() - offset - block;
+
+            std::size_t send_upper_to_len = 0;
+            std::size_t send_lower_to_len = 0;
+
+            int send_upper_to_g_off = -1;
+            int send_lower_to_g_off = -1;
+
+            int send_upper_my_local_idx = 0;
+            int send_lower_my_local_idx = 0;
+
+            if (this->g_off() >= half)
+            {
+                send_upper_my_local_idx = 0;
+                send_upper_to_g_off = static_cast<int>(this->g_off() - half);
+                send_upper_to_len = this->l_rows();
+            }
+            else
+            {
+                send_lower_my_local_idx = 0;
+                send_lower_to_g_off = static_cast<int>(this->g_off() + half);
+                send_lower_to_len = this->l_rows();
+                if (this->g_off() + this->l_rows() > half)
+                {
+                    send_upper_to_g_off = 0;
+                    send_lower_to_len = half - this->g_off();
+                    send_upper_to_len = this->l_rows() - send_lower_to_len;
+                    send_upper_my_local_idx = send_lower_to_len;
+                    send_lower_my_local_idx = 0;
+                }
+            }
+
+            std::vector<int> send_upper_to_ranks;
+            std::vector<int> send_lower_to_ranks;
+            std::vector<int> send_upper_to_ranks_len(col_size);
+            std::vector<int> send_lower_to_ranks_len(col_size);
+            std::vector<int> send_upper_to_my_local_idx(col_size);
+            std::vector<int> send_lower_to_my_local_idx(col_size);
+
+            int r = 0;
+            bool non_contiguous = false;
+            while (r < col_size && send_upper_to_len > 0)
+            {
+                if (lim_ranks_[r] > static_cast<std::size_t>(send_upper_to_g_off))
+                {
+                    send_upper_to_ranks.push_back(r);
+                    if (off_ranks_[r] < static_cast<std::size_t>(send_upper_to_g_off))
+                        send_upper_to_ranks_len[r] = static_cast<int>(m_ranks_[r] - (send_upper_to_g_off - off_ranks_[r]));
+                    else
+                        send_upper_to_ranks_len[r] = static_cast<int>(std::min(m_ranks_[r], send_upper_to_len));
+                    if (send_upper_to_ranks_len[r] != static_cast<int>(this->l_rows()))
+                        non_contiguous = true;
+                    send_upper_to_my_local_idx[r] = send_upper_my_local_idx;
+                    send_upper_to_len -= send_upper_to_ranks_len[r];
+                    send_upper_my_local_idx += send_upper_to_ranks_len[r];
+                }
+                r++;
+            }
+
+            for (std::size_t i = 0; i < send_upper_to_ranks.size(); i++)
+            {
+                int sendrecv_rank = send_upper_to_ranks[i];
+                if (sendrecv_rank == col_rank)
+                {
+                    chase::linalg::lapackpp::t_lacpy('A', send_upper_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + 0, this->l_ld());
+                }
+                else if (non_contiguous)
+                {
+                    int len = send_upper_to_ranks_len[sendrecv_rank];
+                    int l_ld = static_cast<int>(this->l_ld());
+                    MPI_Datatype strided_block;
+                    MPI_Type_vector(block, len, l_ld, chase::mpi::getMPI_Type<T>(), &strided_block);
+                    MPI_Type_commit(&strided_block);
+                    T* send_ptr = this->l_data() + offset * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
+                    T* recv_ptr = this->l_data() + col_second * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
+                    MPI_Sendrecv(send_ptr, 1, strided_block, sendrecv_rank, 0,
+                                 recv_ptr, 1, strided_block, sendrecv_rank, 1,
+                                 col_comm, MPI_STATUS_IGNORE);
+                    MPI_Type_free(&strided_block);
+                }
+                else
+                {
+                    MPI_Sendrecv(this->l_data() + offset * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                                this->l_data() + col_second * this->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                                col_comm, MPI_STATUS_IGNORE);
+                }
+            }
+
+            r = 0;
+            non_contiguous = false;
+            while (r < col_size && send_lower_to_len > 0)
+            {
+                if (lim_ranks_[r] > static_cast<std::size_t>(send_lower_to_g_off))
+                {
+                    send_lower_to_ranks.push_back(r);
+                    if (off_ranks_[r] < static_cast<std::size_t>(send_lower_to_g_off))
+                        send_lower_to_ranks_len[r] = static_cast<int>(m_ranks_[r] - (send_lower_to_g_off - off_ranks_[r]));
+                    else
+                        send_lower_to_ranks_len[r] = static_cast<int>(std::min(m_ranks_[r], send_lower_to_len));
+                    if (send_lower_to_ranks_len[r] != static_cast<int>(this->l_rows()))
+                        non_contiguous = true;
+                    send_lower_to_my_local_idx[r] = send_lower_my_local_idx;
+                    send_lower_to_len -= send_lower_to_ranks_len[r];
+                    send_lower_my_local_idx += send_lower_to_ranks_len[r];
+                }
+                r++;
+            }
+
+            for (std::size_t i = 0; i < send_lower_to_ranks.size(); i++)
+            {
+                int sendrecv_rank = send_lower_to_ranks[i];
+                if (sendrecv_rank == col_rank)
+                {
+                    chase::linalg::lapackpp::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
+                        this->l_data() + offset * this->l_ld() + 0, this->l_ld(),
+                        this->l_data() + col_second * this->l_ld() + send_lower_to_ranks_len[sendrecv_rank], this->l_ld());
+                }
+                else if (non_contiguous)
+                {
+                    int len = send_lower_to_ranks_len[sendrecv_rank];
+                    int l_ld = static_cast<int>(this->l_ld());
+                    MPI_Datatype strided_block;
+                    MPI_Type_vector(block, len, l_ld, chase::mpi::getMPI_Type<T>(), &strided_block);
+                    MPI_Type_commit(&strided_block);
+                    T* send_ptr = this->l_data() + offset * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
+                    T* recv_ptr = this->l_data() + col_second * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
+                    MPI_Sendrecv(send_ptr, 1, strided_block, sendrecv_rank, 1,
+                                 recv_ptr, 1, strided_block, sendrecv_rank, 0,
+                                 col_comm, MPI_STATUS_IGNORE);
+                    MPI_Type_free(&strided_block);
+                }
+                else
+                {
+                    MPI_Sendrecv(this->l_data() + offset * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                                this->l_data() + col_second * this->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                                col_comm, MPI_STATUS_IGNORE);
+                }
+            }
+
+            for (std::size_t j = 0; j < block; ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    this->l_data()[(j + col_second) * this->l_ld() + i] =
+                        conjugate(this->l_data()[(j + col_second) * this->l_ld() + i]);
+                }
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Kconjugate not implemented for this platform");
+        }
+    }
 
     /**
      * @brief Get the global number of rows in the matrix.
@@ -2913,6 +3816,19 @@ private:
      */
     std::size_t mblocks_;
 
+     /**
+     * @brief The number of rows in the local matrix for each rank.
+     */
+     std::vector<std::size_t> m_ranks_;
+     /**
+      * @brief The global offset for the local data for each rank.
+      */
+     std::vector<std::size_t> off_ranks_;
+     /**
+      * @brief The global limit for the local data for each rank.
+      */
+     std::vector<std::size_t> lim_ranks_;
+
     /**
      * @brief The local matrix stored in the current process.
      *
@@ -2980,6 +3896,36 @@ private:
                 m_contiguous_lens_.push_back(nr);
             }
         }
+
+        /* ================ TODO AREA: BEGIN ================ */
+
+        /* This area has to be carefully checked. This is for  
+        *  future usage for the Kconjugate operation in ph case.
+        */
+        std::size_t len;
+        if (M_ % dim == 0)
+        {
+            len = M_ / dim;
+        }
+        else
+        {
+            len = std::min(M_, M_ / dim + 1);
+        }
+
+        m_ranks_.resize(dim);
+        m_ranks_.assign(dim, len);
+        m_ranks_[dim-1] = M_ - (dim - 1) * len;
+
+        off_ranks_.resize(dim);
+        lim_ranks_.resize(dim);
+        for(auto r = 0; r < dim; r++)
+        {
+            off_ranks_[r] = r * len;
+            lim_ranks_[r] = off_ranks_[r] + m_ranks_[r];
+        }
+
+        /* ================ TODO AREA: END ================ */
+
 
         m_contiguous_local_offs_.resize(mblocks_);
 
@@ -3432,7 +4378,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -3457,7 +4403,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -3468,7 +4414,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -3533,7 +4479,7 @@ private:
                         this->l_data() + offset * this->ld_, this->ld_,
                         targetMultiVector->l_data() +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }
@@ -3557,7 +4503,7 @@ private:
                     chase::linalg::internal::cuda::t_lacpy(
                         'A', orig_lens[i], subsetSize,
                         this->l_data() + offset * this->ld_ + orig_disps[i],
-                        this->ld_, buff->data(), orig_lens[i]);
+                        this->ld_, buff->data(), orig_lens[i], &stream);
 
                     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
                         buff->data(), orig_lens[i] * subsetSize, orig_srcs[i],
@@ -3568,7 +4514,7 @@ private:
                         orig_lens[i],
                         targetMultiVector->l_data() + target_disps[i] +
                             offset * targetMultiVector->l_ld(),
-                        targetMultiVector->l_ld());
+                        targetMultiVector->l_ld(), &stream);
                 }
             }
         }

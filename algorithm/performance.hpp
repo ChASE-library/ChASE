@@ -52,8 +52,8 @@ class ChasePerfData
 
 public:
     ChasePerfData(int matrix_type = 0)
-        : chase_iteration_count(0), chase_filtered_vecs(0), timings(7),
-          start_points(7), end_points(7), chase_iter_blocksizes(0),
+        : chase_iteration_count(0), chase_filtered_vecs(0), timings(8),
+          start_points(8), end_points(8), chase_iter_blocksizes(0),
           matrix_type(matrix_type)
     {
     }
@@ -64,6 +64,7 @@ public:
         InitVecs,
         Lanczos,
         Filter,
+        ApplyKconjugate,
         Qr,
         Rr,
         Resids_Locking
@@ -355,7 +356,7 @@ public:
 
         std::vector<std::string> output_names = {
             "MPI procs", "Iterations", "Vecs", "All", "Init Vecs",
-            "Lanczos",   "Filter",     "QR",   "RR",  "Resid"};
+            "Lanczos",   "Filter",     "Kconjugate", "QR",   "RR",  "Resid"};
 
         std::vector<std::string> all_values = {
             std::to_string(nprocs), std::to_string(chase_iteration_count),
@@ -551,17 +552,37 @@ public:
 
     void Shift(T c, bool isunshift = false)
     {
-        if (isunshift)
-            perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
-        else
-            perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);
-
+        // Filter timing is unified via FilterPhaseStart/FilterPhaseEnd for both
+        // Hermitian and pseudo-Hermitian paths; Shift only updates the matrix.
         chase_->Shift(c, isunshift);
     }
-    void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset)
+    void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0)
     {
-        chase_->HEMM(nev, alpha, beta, offset);
-        perf_.add_filtered_vecs(nev);
+        chase_->HEMM(nev, alpha, beta, offset_left, offset_right);
+        perf_.add_filtered_vecs(nev - offset_right);
+    }
+    void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
+                 std::size_t offset_left, std::size_t offset_right = 0)
+    {
+        chase_->HEMM_H2(nev, alpha, beta, gamma, offset_left, offset_right);
+        perf_.add_filtered_vecs(2 * (nev - offset_right));
+    }
+    void ApplyKconjugate(std::size_t block) override
+    {
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+        chase_->ApplyKconjugate(block);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+    }
+    void FilterPhaseStart() override
+    {
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);
+        chase_->FilterPhaseStart();
+    }
+    void FilterPhaseEnd() override
+    {
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
+        chase_->FilterPhaseEnd();
     }
 
     void QR(std::size_t fixednev, Base<T> cond)
@@ -657,6 +678,10 @@ public:
     std::size_t GetN() const { return chase_->GetN(); }
     std::size_t GetNev() { return chase_->GetNev(); }
     std::size_t GetNex() { return chase_->GetNex(); }
+    std::size_t GetRitzvBlockSize() const
+    {
+        return chase_->GetRitzvBlockSize();
+    }
     Base<T>* GetRitzv() { return chase_->GetRitzv(); }
     Base<T>* GetResid() { return chase_->GetResid(); }
     std::size_t GetLanczosIter() { return chase_->GetLanczosIter(); }
@@ -665,7 +690,8 @@ public:
     ChasePerfData<T>& GetPerfData() { return perf_; }
 
 #ifdef CHASE_OUTPUT
-    void Output(std::string str) { chase_->Output(str); }
+    void Output(LogLevel level, std::string str,
+                const char* category = "performance") { chase_->Output(level, str, category); }
 #endif
 
 private:

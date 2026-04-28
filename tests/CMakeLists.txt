@@ -63,10 +63,30 @@ else()
   setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_cpu)
 endif()
 
+# Pseudo-Hermitian (BSE) solve: Solve_pseudo with BSE matrix from build dir
+if(TARGET chase_gpu)
+  setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_gpu chase_cpu)
+else()
+  setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_cpu)
+endif()
+target_compile_definitions(ChaseSerialSolvePseudoBSETest PRIVATE
+  CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
+
 if(TARGET pchase_gpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_gpu pchase_cpu)
 elseif(TARGET pchase_cpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_cpu)
+endif()
+
+# Distributed Solve_pseudo with BSE matrix (same as serial BSE test); pchase_gpu uses NCCL
+if(TARGET pchase_gpu)
+  setup_test(ChaseDistributedSolvePseudoBSETest chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_gpu pchase_cpu)
+  target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
+    CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
+elseif(TARGET pchase_cpu)
+  setup_test(ChaseDistributedSolvePseudoBSETest chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_cpu)
+  target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
+    CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -95,6 +115,7 @@ if(TARGET chase_f)
 endif()
 
 # -----------------------------------------------------------------------------
+add_subdirectory(algorithm)
 add_subdirectory(linalg)
 add_subdirectory(matrix)
 if(TARGET mpi_grid)

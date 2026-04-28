@@ -379,6 +379,45 @@ cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n,
                        reinterpret_cast<const cuDoubleComplex*>(alpha),
                        reinterpret_cast<cuDoubleComplex*>(x), incx);
 }
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Swaps two vectors element-wise.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param x Pointer to input/output vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTswap(cublasHandle_t handle, std::size_t n, float* x,
+                           std::size_t incx, float* y, std::size_t incy)
+{
+    return cublasSswap(handle, n, x, incx, y, incy);
+}
+
+cublasStatus_t cublasTswap(cublasHandle_t handle, std::size_t n, double* x,
+                           std::size_t incx, double* y, std::size_t incy)
+{
+    return cublasDswap(handle, n, x, incx, y, incy);
+}
+
+cublasStatus_t cublasTswap(cublasHandle_t handle, std::size_t n,
+                           std::complex<float>* x, std::size_t incx,
+                           std::complex<float>* y, std::size_t incy)
+{
+    return cublasCswap(handle, n, reinterpret_cast<cuComplex*>(x), incx,
+                       reinterpret_cast<cuComplex*>(y), incy);
+}
+
+cublasStatus_t cublasTswap(cublasHandle_t handle, std::size_t n,
+                           std::complex<double>* x, std::size_t incx,
+                           std::complex<double>* y, std::size_t incy)
+{
+    return cublasZswap(handle, n, reinterpret_cast<cuDoubleComplex*>(x), incx,
+                       reinterpret_cast<cuDoubleComplex*>(y), incy);
+}
 /**
  * @ingroup cuBlasFunctions
  * @brief Performs a matrix-vector product: y = alpha * A * x + beta * y.

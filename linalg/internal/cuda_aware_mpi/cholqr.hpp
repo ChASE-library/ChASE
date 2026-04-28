@@ -13,14 +13,17 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "mpi.h"
+#include "algorithm/logger.hpp"
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
+#include "linalg/internal/cuda_aware_mpi/householder_qr.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -132,13 +135,8 @@ int cuda_mpi::cholQR1(cublasHandle_t cublas_handle,
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
 #ifdef CHASE_OUTPUT
-
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1\n", 0);
 #endif
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
@@ -241,13 +239,10 @@ int cuda_mpi::cholQR1(cublasHandle_t cublas_handle,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.l_rows(), V.l_cols(), &one, A,
             V.l_cols(), V.l_data(), V.l_ld()));
 #ifdef CHASE_OUTPUT
-
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
+            grank);
 #endif
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
@@ -377,10 +372,8 @@ int cuda_mpi::cholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 2" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
+            grank);
 #endif
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
@@ -467,8 +460,10 @@ int cuda_mpi::cholQR2(cublasHandle_t cublas_handle,
     if constexpr (std::is_same<T, double>::value ||
                   std::is_same<T, std::complex<double>>::value)
     {
-        std::cout << "In cholqr2, the first cholqr using Single Precision"
-                  << std::endl;
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "In cholqr2, the first cholqr using Single Precision", grank);
         using singlePrecisionT =
             typename chase::ToSinglePrecisionTrait<T>::Type;
         V.enableSinglePrecision();
@@ -611,8 +606,16 @@ int cuda_mpi::shiftedcholQR2(cublasHandle_t cublas_handle,
                                                 (cudaStream_t)0);
     CHECK_CUDA_ERROR(cudaMemcpy(&nrmf, d_nrmf, sizeof(chase::Base<T>),
                                 cudaMemcpyDeviceToHost));
-    shift =
-        std::sqrt(N) * nrmf * std::numeric_limits<chase::Base<T>>::epsilon();
+    if constexpr (std::is_same<chase::Base<T>, float>::value)
+    {
+        shift = static_cast<chase::Base<T>>(10.0) * nrmf *
+                std::numeric_limits<chase::Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(N)) * nrmf *
+                std::numeric_limits<chase::Base<T>>::epsilon();
+    }
 
     chase::linalg::internal::cuda::chase_shift_matrix(A, n, n, shift,
                                                       (cudaStream_t)0);
@@ -675,11 +678,9 @@ int cuda_mpi::shiftedcholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    if (grank == 0)
-    {
-        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift
-                  << std::endl;
-    }
+    std::ostringstream oss;
+    oss << std::setprecision(2) << "choldegree: 2, shift = " << shift;
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), grank);
 #endif
     CHECK_CUDA_ERROR(cudaFree(devInfo));
 
@@ -900,10 +901,8 @@ int cuda_mpi::modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    if (grank == 0)
-    {
-        std::cout << "Use Modified Gram-Schmidt QR" << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+        "Use Modified Gram-Schmidt QR", grank);
 #endif
     return info;
 }
@@ -956,7 +955,7 @@ void cuda_mpi::houseHoulderQR(InputMultiVectorType& V)
     V.H2D();
 
 #else
-    std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
+    throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
                        "ScaLAPACK, which is not detected\n");
 #endif
 }

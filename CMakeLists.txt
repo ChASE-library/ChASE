@@ -51,13 +51,38 @@ option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
+option(CHASE_PANEL_HIPREC "Enable Split-Sync-Fix and high-precision panel protection" OFF)
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
-#XZ: Will be removed once performance is confirmed
-option(CHASE_ENABLE_GPU_RESIDENT_LANCZOS "Enable GPU-resident Lanczos with fused kernels and NCCL (experimental)" ON)
+# Optional NCCL warm-up in pChASEGPU constructor (cholQR1 + Lanczos); skews startup timing.
+option(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
+  "Enable NCCL warm-up in pChASEGPU constructor (benchmarks only; extra startup cost)" OFF)
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(WARNING "For prodution, please consider CMAKE_BUILD_TYPE to be Release or RelWithDebInfo")
+set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE OFF)
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
+  if(CMAKE_BUILD_TYPE)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _CHASE_BT_UPPER)
+    if(_CHASE_BT_UPPER STREQUAL "RELEASE" OR _CHASE_BT_UPPER STREQUAL "RELWITHDEBINFO")
+      message(WARNING
+        "CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP is ignored for CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} "
+        "(Release and RelWithDebInfo builds never enable this warm-up).")
+    else()
+      set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE ON)
+    endif()
+  else()
+    # Multi-config generators may leave CMAKE_BUILD_TYPE empty; honor the option if set.
+    set(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE ON)
+  endif()
 endif()
+
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE)
+  target_compile_definitions(chase_algorithm INTERFACE CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=1)
+  message(STATUS "GPU constructor benchmark warm-up (pChASEGPU): ON")
+else()
+  message(STATUS "GPU constructor benchmark warm-up (pChASEGPU): OFF")
+endif()
+
+# GPU-resident Lanczos (fused kernels + NCCL) is required for GPU Lanczos paths.
+set(CHASE_ENABLE_GPU_RESIDENT_LANCZOS ON)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
@@ -100,6 +125,10 @@ if(CHASE_RR_DOUBLE_PRECISION)
   target_compile_definitions(chase_algorithm INTERFACE "-DRR_DOUBLE_PRECISION")
 endif()
 
+if(CHASE_PANEL_HIPREC)
+  target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_PANEL_HIPREC=1")
+endif()
+
 if(ChASE_DISPLAY_COND_V_SVD)
     target_compile_definitions(chase_algorithm INTERFACE "-DChASE_DISPLAY_COND_V_SVD")
 endif()
@@ -107,11 +136,8 @@ endif()
 if(CHASE_SAVE_RESIDUALS)
     target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_SAVE_RESIDUALS")
 endif()
-# XZ: Will be removed once performance is confirmed
-if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
-    target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
-    message(STATUS "GPU-resident Lanczos with fused kernels enabled (experimental)")
-endif()
+target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+message(STATUS "GPU-resident Lanczos (required for distributed GPU Lanczos)")
 
 add_subdirectory(external)
 add_subdirectory(grid)
@@ -192,14 +218,18 @@ endif()
 if(CHASE_RR_DOUBLE_PRECISION)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DRR_DOUBLE_PRECISION")
 endif()
+if(CHASE_PANEL_HIPREC)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_PANEL_HIPREC=1")
+endif()
 if(ChASE_DISPLAY_COND_V_SVD)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DChASE_DISPLAY_COND_V_SVD")
 endif()
 if(CHASE_SAVE_RESIDUALS)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_SAVE_RESIDUALS")
 endif()
-if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
-    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+if(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP_EFFECTIVE)
+  set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=1")
 endif()
 
 set(CHASE_LINK_LIBRARIES "")

@@ -12,7 +12,6 @@
 #include "tests/linalg/internal/utils.hpp"
 #include <complex>
 #include <gtest/gtest.h>
-#include <random>
 
 template <typename T>
 class PseudoHermitianRayleighRitzCPUTest : public ::testing::Test
@@ -20,10 +19,6 @@ class PseudoHermitianRayleighRitzCPUTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-
-        std::mt19937 gen(1337.0);
-        std::normal_distribution<> d;
-
         // Standard variables init
         H = new chase::matrix::PseudoHermitianMatrix<T, chase::platform::CPU>(
             N, N);

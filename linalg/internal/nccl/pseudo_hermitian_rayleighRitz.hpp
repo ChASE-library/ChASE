@@ -5,8 +5,10 @@
 // https://github.com/ChASE-library/ChASE
 
 #pragma once
+#include <limits>
 #include <numeric> //std::iota
 
+#include "algorithm/logger.hpp"
 #include "external/blaspp/blaspp.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
@@ -14,6 +16,9 @@
 #include "grid/mpiTypes.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include "linalg/internal/cuda/forceHermitian.hpp"
+#include "linalg/internal/cuda/lanczos_kernels.hpp"
+#include "linalg/internal/cuda/shiftDiagonal.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "mpi.h"
@@ -69,11 +74,8 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
 {
 
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout << "Constructing the non-hermitian Rayleigh-Quotient..."
-                  << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+        "Constructing the non-hermitian Rayleigh-Quotient...", H.grank());
 #endif
     using T = typename MatrixType::value_type;
 
@@ -212,12 +214,9 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
 #ifdef XGEEV_EXISTS
 
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout
-            << "Compute the eigenpairs of the non-hermitian rayleigh quotient"
-            << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+        "Compute the eigenpairs of the non-hermitian rayleigh quotient",
+        H.grank());
 #endif
     if constexpr (0 && std::is_same<T, std::complex<float>>::value)
     {
@@ -287,12 +286,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
         }
 
 #ifdef CHASE_OUTPUT
-        if (H.grank() == 0)
-        {
-            std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient "
-                         "computed with GEEV."
-                      << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+            "Eigenvalues of the non-Hermitian rayleigh-quotient computed with "
+            "GEEV.",
+            H.grank());
 #endif
 
         // std::cout << "Copying the complex ritz values back to cpu" <<
@@ -316,12 +313,9 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
     }
 #else
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU "
-                     "with Lapack..."
-                  << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+        "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack...",
+        H.grank());
 #endif
 
     if constexpr (0 && std::is_same<T, std::complex<float>>::value)
@@ -456,15 +450,23 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
                                        chase::platform::GPU>* A)
 {
     using T = typename MatrixType::value_type;
-
-    cudaStream_t usedStream;
-    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t compute_stream = nullptr;
+    cudaStream_t copy_stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_ritz_ready = nullptr;
+    cudaEvent_t evt_end_compute = nullptr;
 
     T One = T(1.0);
     T Zero = T(0.0);
-
+    T NegOne = T(-1.0);
+    chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
+    chase::Base<T> shift = std::numeric_limits<chase::Base<T>>::epsilon() *
+                           chase::Base<T>(10.0);
     std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>
         A_ptr;
+    bool owns_workspace = false;
 
     if (A == nullptr)
     {
@@ -475,9 +477,23 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         A = A_ptr.get();
     }
 
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(
+        cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(
+        cudaStreamCreateWithFlags(&compute_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(
+        cudaStreamCreateWithFlags(&copy_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end_compute));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(compute_stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, compute_stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, compute_stream));
+
     T* M = A->l_data() + subSize * subSize;
 
-    std::unique_ptr<T, chase::cuda::utils::CudaDeleter> work_ptr = nullptr;
     std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
 
     if (workspace == nullptr)
@@ -503,10 +519,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
             lwork = upperTriangularSize;
         }
 
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
-
-        work_ptr.reset(workspace);
-        workspace = work_ptr.get();
+        CHECK_CUDA_ERROR(
+            cudaMallocAsync((void**)&workspace, sizeof(T) * lwork,
+                            compute_stream));
+        owns_workspace = true;
     }
 
     // Perform the distributed matrix-matrix multiplication
@@ -515,7 +531,7 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
                                                        V2, W2, offset, subSize);
 
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset,
-                                                                subSize);
+                                                                subSize, compute_stream);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, subSize, subSize, W2.l_rows(),
@@ -534,14 +550,41 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
 
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         A->l_data(), A->l_data(), subSize * subSize, ncclSum,
-        A->getMpiGrid()->get_nccl_row_comm()));
+        A->getMpiGrid()->get_nccl_row_comm(), &compute_stream));
+
+    // Fixed diagonal shift before Cholesky (no trace): A(ii) += 10 * eps.
+    chase::linalg::internal::cuda::add_diagonal_shift(
+        A->l_data(), subSize, shift, compute_stream);
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_LOWER, subSize, A->l_data(), subSize,
         workspace, lwork, devInfo));
 
+    int info = 0;
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+    if (info != 0)
+    {
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(
+            cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+        if (owns_workspace)
+            CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+        throw std::runtime_error(
+            "cusolver POTRF failed in Pseudo-Hermitian RayleighRitz, return "
+            "value: " +
+            std::to_string(info));
+    }
+
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V1, offset,
-                                                                subSize);
+                                                                subSize, compute_stream);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, subSize, subSize, V2.l_rows(),
@@ -558,7 +601,7 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
 
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         M, M, subSize * subSize, ncclSum,
-        A->getMpiGrid()->get_nccl_col_comm()));
+        A->getMpiGrid()->get_nccl_col_comm(), &compute_stream));
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
         cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N,
@@ -569,35 +612,47 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
         CUBLAS_DIAG_NON_UNIT, subSize, subSize, &One, A->l_data(), subSize, M,
         subSize));
+
+    // G = L^-1 M L^-H in M; enforce Hermitian symmetry before heevd (TRSM noise).
+    /*chase::linalg::internal::cuda::force_hermitian(M, subSize, subSize,
+                                                   compute_stream);*/
+
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, subSize * subSize, &NegOne, M, 1));
+
 #ifdef RR_DOUBLE_PRECISION
-    if constexpr (std::is_same<T, std::complex<float>>::value)
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
     {
         if (A->isDoublePrecisionEnabled())
         {
-            A->copyToSubBlock(subSize * subSize, subSize * subSize);
+            A->copyToSubBlockAsync(subSize * subSize, subSize * subSize,
+                                   &compute_stream);
         }
         else
         {
-            A->enableDoublePrecision();
+            A->enableDoublePrecisionAsync(&compute_stream);
         }
 
         if (!ritzv.isDoublePrecisionEnabled())
         {
-            ritzv.enableDoublePrecision();
+            ritzv.enableDoublePrecisionAsync(&compute_stream);
         }
         auto A_d = A->getDoublePrecisionMatrix();
         auto ritzv_d = ritzv.getDoublePrecisionMatrix();
-        std::complex<double>* workspace_d;
-        cudaMalloc((void**)&workspace_d, sizeof(std::complex<double>) * lwork);
+        typename chase::ToDoublePrecisionTrait<T>::Type* workspace_d;
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace_d,
+                                         sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork,
+                                         compute_stream));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
             cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
             subSize, A_d->l_data() + subSize * subSize, subSize,
             ritzv_d->l_data() + offset, workspace_d, lwork, devInfo));
 
-        ritzv.disableDoublePrecision(true);
-        A->copyBackSubBlock(subSize * subSize, subSize * subSize);
-        cudaFree(workspace_d);
+        ritzv.disableDoublePrecisionAsync(true, &compute_stream);
+        A->copyBackSubBlockAsync(subSize * subSize, subSize * subSize,
+                                 &compute_stream);
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace_d, compute_stream));
     }
     else
     {
@@ -610,12 +665,23 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
     }
 #endif
 
-    int info;
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
 
     if (info != 0)
     {
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(
+            cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+        if (owns_workspace)
+            CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
         throw std::runtime_error("cusolver HEEVD failed in Pseudo-Hermitian "
                                  "RayleighRitz, return value: " +
                                  std::to_string(info));
@@ -627,36 +693,50 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         subSize));
 
     chase::linalg::internal::cuda::chase_inverse_entries(
-        ritzv.l_data() + offset, subSize, usedStream);
+        ritzv.l_data() + offset, subSize, compute_stream);
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(ritzv.cpu_data() + offset, ritzv.l_data() + offset,
-                   subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, subSize, &ritz_neg_one, ritzv.l_data() + offset, 1));
 
-    std::vector<chase::Base<T>> vectorNorms(subSize);
-    std::vector<T> norm_divider(subSize);
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_ritz_ready, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(copy_stream, evt_ritz_ready, 0));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(ritzv.cpu_data() + offset,
+                                     ritzv.l_data() + offset,
+                                     subSize * sizeof(chase::Base<T>),
+                                     cudaMemcpyDeviceToHost, copy_stream));
 
-    for (auto idx = 0; idx < subSize; idx++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, subSize, M + idx * subSize, 1, &vectorNorms[idx]));
-    }
-
-    for (auto idx = 0; idx < subSize; idx++)
-    {
-        norm_divider[idx] = T(1 / vectorNorms[idx]);
-    }
-
-    for (auto idx = 0; idx < subSize; idx++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, subSize, &norm_divider[idx], M + idx * subSize, 1));
-    }
+    using RealT = chase::Base<T>;
+    using chase::linalg::internal::cuda::fusedNormSquaredNormalize;
+    RealT* d_col_norms = nullptr;
+    CHECK_CUDA_ERROR(cudaMallocAsync((void**)&d_col_norms,
+                                     (subSize / 2) * sizeof(RealT),
+                                     compute_stream));
+    fusedNormSquaredNormalize(M, d_col_norms, static_cast<int>(subSize),
+                              static_cast<int>(subSize / 2),
+                              static_cast<int>(subSize), &compute_stream);
+    CHECK_CUDA_ERROR(cudaFreeAsync(d_col_norms, compute_stream));
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V2.l_rows(), subSize, subSize,
+        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V2.l_rows(), subSize/2, subSize,
         &One, V2.l_data() + offset * V2.l_ld(), V2.l_ld(), M, subSize, &Zero,
         V1.l_data() + offset * V1.l_ld(), V1.l_ld()));
+
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end_compute, compute_stream));
+    CHECK_CUDA_ERROR(
+        cudaStreamWaitEvent(stream_orig_cublas, evt_end_compute, 0));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(copy_stream));
+
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle,
+                                             stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
 }
 
 } // namespace internal

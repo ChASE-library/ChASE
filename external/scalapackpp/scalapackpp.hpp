@@ -7,6 +7,7 @@
 #pragma once
 
 #include <complex>
+#include <mpi.h>
 
 #include "algorithm/types.hpp"
 

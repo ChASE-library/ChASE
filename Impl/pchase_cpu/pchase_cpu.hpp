@@ -13,13 +13,13 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
+#include <algorithm>
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <vector>
-#ifdef HAS_SCALAPACK
-#include "external/scalapackpp/scalapackpp.hpp"
-#endif
 #include "../../linalg/internal/typeTraits.hpp"
 #include "algorithm/types.hpp"
 
@@ -106,6 +106,21 @@ public:
                                      "eigenvectors mapped to same MPI grid");
         }
 
+        // Pseudo-Hermitian support currently assumes block-block data layout.
+        // Block-cyclic 1D multivectors are not supported for pseudo-Hermitian.
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              InputMultiVectorType>::value)
+            {
+                throw std::runtime_error(
+                    "Pseudo-Hermitian pChASECPU currently supports only "
+                    "block-block distributed multivectors (block-cyclic 1D not "
+                    "supported).");
+            }
+        }
+
         Hmat_ = H;
         V1_ = V;
 
@@ -115,31 +130,41 @@ public:
         W1_ = V1_->template clone2<ResultMultiVectorType>();
         W2_ = V1_->template clone2<ResultMultiVectorType>();
 
-        ritzv_ = std::make_unique<
-            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
-            nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
-        resid_ = std::make_unique<
-            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
-            nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
+        // Set matrix type before allocating ritzv_/resid_/A_/ (pseudo uses 2*nevex)
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            // Pseudo Hermitian matrices require more space for the dual basis
-            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
-                nevex_, 3 * nevex_, Hmat_->getMpiGrid_shared_ptr());
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+        }
+
+        const std::size_t block_size =
+            is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+        ritzv_ = std::make_unique<
+            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
+            block_size, 1, block_size, ritzv, Hmat_->getMpiGrid_shared_ptr());
+        resid_ = std::make_unique<
+            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
+            block_size, 1, Hmat_->getMpiGrid_shared_ptr());
+
+        if (is_pseudoHerm_)
+        {
+            // Pseudo Hermitian: align with serial (3*2*nevex_, 2*nevex_)
+            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
+                3 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
+        }
+        else
+        {
             A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
                 nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
         }
@@ -193,6 +218,11 @@ public:
 
     std::size_t GetNex() override { return nex_; }
 
+    std::size_t GetRitzvBlockSize() const override
+    {
+        return is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+    }
+
     std::size_t GetLanczosIter() override { return lanczosIter_; }
 
     std::size_t GetNumLanczos() override { return numLanczos_; }
@@ -215,12 +245,10 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
     {
-        if (my_rank_ == 0)
-        {
-            std::cout << str;
-        }
+        chase::GetLogger().Log(level, category, str, get_rank());
     }
 #endif
     bool checkSymmetryEasy() override
@@ -254,12 +282,52 @@ public:
                 auto rnd = getRandomT<T>([&]() { return d(gen); });
                 V1_->l_data()[j] = rnd;
             }
+
+            // Pseudo-Hermitian: dampen the global lower half of rows (same split
+            // as l_half()), same pattern as flipLowerHalfMatrixSign (t_scal per col).
+            if (is_pseudoHerm_)
+            {
+                const std::size_t half = V1_->l_half();
+                const std::size_t m_lower = V1_->l_rows() - half;
+                if (m_lower > 0)
+                {
+                    T scale = T(0.001);
+                    for (auto j = 0; j < V1_->l_cols(); j++)
+                    {
+                        chase::linalg::blaspp::t_scal(
+                            m_lower, &scale,
+                            V1_->l_data() + half + j * V1_->l_ld(), 1);
+                    }
+                }
+            }
         }
 
         chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols(),
                                          V1_->l_data(), V1_->l_ld(),
                                          V2_->l_data(), V2_->l_ld());
         next_ = NextOp::bAc;
+    }
+
+    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+                      std::size_t n_indices) override
+    {
+        if (n_indices == 0)
+            return;
+        std::mt19937 gen(4242.0 + coords_[0]);
+        std::normal_distribution<> d;
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            for (std::size_t i = 0; i < V1_->l_rows(); ++i)
+                V1_->l_data()[i + j * V1_->l_ld()] =
+                    getRandomT<T>([&]() { return d(gen); });
+        }
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            for (std::size_t i = 0; i < V2_->l_rows(); ++i)
+                V2_->l_data()[i + j * V2_->l_ld()] = V1_->l_data()[i + j * V1_->l_ld()];
+        }
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override
@@ -329,15 +397,23 @@ public:
             // Message on enabling single precision
             if (shouldEnableSP && my_rank_ == 0 && !isunshift)
             {
-                std::cout << "Enable Single Precision in Filter" << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    "Enable Single Precision in Filter", my_rank_);
             }
         }
 #endif
     }
 
-    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
+    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0) override
     {
-
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value ||
                       std::is_same<T, std::complex<double>>::value)
@@ -365,7 +441,8 @@ public:
                     chase::linalg::internal::cpu_mpi::
                         MatrixMultiplyMultiVectors(&alpha_sp, *Hmat_sp, *V1_sp,
                                                    &beta_sp, *W1_sp,
-                                                   offset + locked_, block);
+                                                   offset_left + locked_,
+                                                   ncols);
                     next_ = NextOp::cAb;
                 }
                 else
@@ -373,7 +450,7 @@ public:
                     chase::linalg::internal::cpu_mpi::
                         MatrixMultiplyMultiVectors<singlePrecisionT>(
                             &alpha_sp, *Hmat_sp, *W1_sp, &beta_sp, *V1_sp,
-                            offset + locked_, block);
+                            offset_left + locked_, ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -383,16 +460,16 @@ public:
                 {
                     chase::linalg::internal::cpu_mpi::
                         MatrixMultiplyMultiVectors(&alpha, *Hmat_, *V1_, &beta,
-                                                   *W1_, offset + locked_,
-                                                   block);
+                                                   *W1_, offset_left + locked_,
+                                                   ncols);
                     next_ = NextOp::cAb;
                 }
                 else
                 {
                     chase::linalg::internal::cpu_mpi::
                         MatrixMultiplyMultiVectors(&alpha, *Hmat_, *W1_, &beta,
-                                                   *V1_, offset + locked_,
-                                                   block);
+                                                   *V1_, offset_left + locked_,
+                                                   ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -403,15 +480,92 @@ public:
             if (next_ == NextOp::bAc)
             {
                 chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                    &alpha, *Hmat_, *V1_, &beta, *W1_, offset + locked_, block);
+                    &alpha, *Hmat_, *V1_, &beta, *W1_, offset_left + locked_,
+                    ncols);
                 next_ = NextOp::cAb;
             }
             else
             {
                 chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                    &alpha, *Hmat_, *W1_, &beta, *V1_, offset + locked_, block);
+                    &alpha, *Hmat_, *W1_, &beta, *V1_, offset_left + locked_,
+                    ncols);
                 next_ = NextOp::bAc;
             }
+        }
+    }
+
+    void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
+                 std::size_t offset_left,
+                 std::size_t offset_right = 0) override
+    {
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
+        const std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        if (next_ == NextOp::bAc)
+        {
+            // tmp = H*V1[cols] -> W2_ (column-comm input => row-comm result)
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &one, *Hmat_, *V1_, &zero, *W1_, col0, ncols);
+            // V2_[cols] = alpha * H * W2[cols] + beta * V2_[cols]
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &alpha, *Hmat_, *W1_, &beta, *V2_, col0, ncols);
+            // V2_[cols] += gamma*V1_[cols]
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                chase::linalg::blaspp::t_axpy(
+                    V2_->l_rows(), &gamma,
+                    V1_->l_data() + col * V1_->l_ld(), 1,
+                    V2_->l_data() + col * V2_->l_ld(), 1);
+            }
+            next_ = NextOp::cAb;
+        }else{
+            // tmp = H*V2[cols] -> W2_ (column-comm input => row-comm result)
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
+            // V1_[cols] = alpha * H * W2[cols] + beta * V1_[cols]
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);
+            // V1_[cols] += gamma*V2_[cols]
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                chase::linalg::blaspp::t_axpy(
+                    V1_->l_rows(), &gamma,
+                    V2_->l_data() + col * V2_->l_ld(), 1,
+                    V1_->l_data() + col * V1_->l_ld(), 1);
+            }
+            next_ = NextOp::bAc;
+        }
+    }
+
+    void ApplyKconjugate(std::size_t block) override {
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            V1_->Kconjugate(block, locked_);
+
+            std::size_t col_second = V1_->g_cols() - locked_ - block;
+            
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), block,
+                V1_->l_data() + V1_->l_ld() * col_second, V1_->l_ld(),
+                V2_->l_data() + V2_->l_ld() * col_second, V2_->l_ld());
+
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            //First, we need to know to whom each rank has to send and receive data.
         }
     }
 
@@ -433,13 +587,41 @@ public:
             cond_threshold_lower = std::atof(chol_threshold);
         }
 
+        unsigned int householder_nb = 32u;
+        if (const char* hh_nb_env = std::getenv("CHASE_HOUSEHOLDER_NB"))
+        {
+            const long parsed = std::strtol(hh_nb_env, nullptr, 10);
+            if (parsed > 0)
+                householder_nb = static_cast<unsigned int>(parsed);
+        }
+        chase::linalg::internal::cpu_mpi::HouseQRTuning hh_tuning{};
+        hh_tuning.outer_block_nb = static_cast<int>(householder_nb);
+
+        auto call_householder = [&](auto& vec) {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              std::decay_t<decltype(vec)>>::value)
+            {
+#ifdef HAS_SCALAPACK
+                chase::linalg::internal::cpu_mpi::houseHoulderQR(vec);
+#else
+                chase::linalg::internal::cpu_mpi::cpu_distributed_houseQR_formQ(
+                    vec, &hh_tuning);
+#endif
+            }
+            else
+            {
+                chase::linalg::internal::cpu_mpi::cpu_distributed_houseQR_formQ(
+                    vec, &hh_tuning);
+            }
+        };
+
         // int display_bounds = 0;
         // char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         // if (display_bounds_env)
         //{
         //     display_bounds = std::atoi(display_bounds_env);
         // }
-
+        
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
@@ -447,11 +629,29 @@ public:
              * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
              * against the current subspace By flipping the sign of the lower
              * part of the locked vectors. */
-            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
-                                                                      locked_);
+
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
+                         
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(),
+            V1_->l_ld());
+
+            /* The right eigenvectors are not orthonormal in the QH case, but
+             * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
+             * against the current subspace By flipping the sign of the lower
+             * part of the locked vectors. First, we need to copy the unconverged 
+               vectors to the end of the vector space*/
+
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap_l_data_ptr(*V2_);
+
+            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
+                2*locked_);
         }
 
 #ifdef ChASE_DISPLAY_COND_V_SVD
@@ -475,23 +675,32 @@ public:
         }
 #endif
 
-        if (disable == 1)
+        if (disable == 1 && cond != static_cast<Base<T>>(1.0))
         {
-#ifdef HAS_SCALAPACK
-            chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
-#else
-            throw std::runtime_error(
-                "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                "which is not detected\n");
+#ifdef QR_DOUBLE_PRECISION
+            if constexpr (std::is_same<T, std::complex<float>>::value ||
+                          std::is_same<T, float>::value)
+            {
+                V1_->copyTo();
+                auto V1_d = V1_->getDoublePrecisionMatrix();
+                call_householder(*V1_d);
+                V1_->copyback();
+            }
+            else
 #endif
+            {
+                call_householder(*V1_);
+            }
         }
         else
         {
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << std::endl;
+                std::ostringstream oss;
+                oss << std::setprecision(2) << "cond(V): " << cond;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    oss.str(), my_rank_);
             }
 #endif
             // if (display_bounds != 0)
@@ -519,10 +728,21 @@ public:
                 else
                 {
 #endif
-                    info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
-                        V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    if constexpr (std::is_same<T, std::complex<float>>::value ||
+                                  std::is_same<T, float>::value)
+                    {
+                        info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
+                            V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    }
+                    else
+                    {
+                        info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(
+                            V1_->g_rows(), V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            V1_->getMpiGrid()->get_col_comm(), A_->l_data());
+                    }
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -581,30 +801,67 @@ public:
 
             if (info != 0)
             {
-#ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "CholeskyQR doesn't work, Househoulder QR "
-                                 "will be used."
-                              << std::endl;
+                    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                        "CholeskyQR doesn't work, Householder QR will be used.",
+                        my_rank_);
                 }
 #endif
-                chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
-#else
-                throw std::runtime_error(
-                    "For ChASE-MPI, distributed Householder QR requires "
-                    "ScaLAPACK, which is not detected\n");
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    V1_->copyTo();
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    call_householder(*V1_d);
+                    V1_->copyback();
+                }
+                else
 #endif
+                {
+                    call_householder(*V1_);
+                }
             }
         }
 
-        chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
-                                         V2_->l_data(), V2_->l_ld(),
-                                         V1_->l_data(), V1_->l_ld());
+        std::size_t unconverged_cols = 0;
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
+            V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap_l_data_ptr(*V2_);
+
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data(), V1_->l_ld(),
+            V2_->l_data(), V2_->l_ld());
+
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + (V2_->l_cols() - locked_ ) * V2_->l_ld(), V2_->l_ld());
+
+            /*chase::linalg::lapackpp::t_lacpy(
+            'A', V1_->l_rows(), locked_,
+            V2_->l_data() + (V2_->g_cols() - locked_) * V2_->l_ld(),
+            V2_->l_ld(),
+            V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
+            V1_->l_ld());*/
+
+            unconverged_cols = GetRitzvBlockSize() - 2*locked_;
+        }else{
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V2_->l_data(), V2_->l_ld(),
+            V1_->l_data(), V1_->l_ld());
+            
+            unconverged_cols = GetRitzvBlockSize() - locked_;
+        }
 
         chase::linalg::lapackpp::t_lacpy(
-            'A', V2_->l_rows(), nevex_ - locked_,
+            'A', V2_->l_rows(), unconverged_cols,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
     }
@@ -617,23 +874,25 @@ public:
 #ifdef XGEEV_EXISTS
             chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
-                block, A_.get());
+                2*block, A_.get());
 #else
             chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
-                block, A_.get());
+                2*block, A_.get());
 #endif
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), 2*block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
         else
         {
             chase::linalg::internal::cpu_mpi::rayleighRitz(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
                 block, A_.get());
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
-
-        chase::linalg::lapackpp::t_lacpy(
-            'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
-            V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
@@ -644,9 +903,15 @@ public:
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
+        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
+        /*std::size_t subSize =
+        (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;*/
+        std::size_t subSize = nevex_ - locked_;
+
         chase::linalg::internal::cpu_mpi::residuals(
             *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), resid_->l_data(),
-            locked_, nevex_ - locked_);
+            locked_, subSize);
+        
     }
 
     void Swap(std::size_t i, std::size_t j) override

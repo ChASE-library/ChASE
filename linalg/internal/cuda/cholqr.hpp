@@ -8,6 +8,7 @@
 
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
+#include "algorithm/logger.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.hpp"
@@ -15,6 +16,7 @@
 #include "linalg/matrix/matrix.hpp"
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 namespace chase
 {
@@ -48,105 +50,40 @@ template <typename T>
 int cholQR1(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             chase::matrix::Matrix<T, chase::platform::GPU>& V,
             T* workspace = nullptr, int lwork = 0,
-            chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr)
+            chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr,
+            int* external_devInfo = nullptr)
 {
     SCOPED_NVTX_RANGE();
-    /*
-            T one = T(1.0);
-            T zero = T(0.0);
-            int info = 1;
-            chase::Base<T> One = Base<T>(1.0);
-            chase::Base<T> Zero = Base<T>(0.0);
-            std::unique_ptr<T[]> ptr;
-
-            A->allocate_cpu_data();
-
-            cublasOperation_t transa;
-            if (sizeof(T) == sizeof(Base<T>))
-            {
-                transa = CUBLAS_OP_T;
-            }
-            else
-            {
-                transa = CUBLAS_OP_C;
-            }
-
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle,
-                                                                      CUBLAS_FILL_MODE_UPPER,
-                                                                      transa,
-                                                                      V.cols(),
-                                                                      V.rows(),
-                                                                      &One,
-                                                                      V.data(),
-                                                                      V.ld(),
-                                                                      &Zero,
-                                                                      A->data(),
-                                                                      V.cols()));
-
-            V.D2H();
-            V.saveToBinaryFile("V.bin");
-            A->D2H();
-            A->saveToBinaryFile("A.bin");
-            //V.D2H();
-
-            //blaspp::t_syherk('U', 'C', V.cols(), V.rows(), &one, V.cpu_data(),
-    V.cpu_ld(), &zero, A->cpu_data(), V.cols());
-            //info = lapackpp::t_potrf('U', V.cols(), A->cpu_data(), V.cols());
-            int* devInfo;
-            //A->H2D();
-            CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
-            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle,
-                                                                             CUBLAS_FILL_MODE_UPPER,
-                                                                             V.cols(),
-                                                                             A->data(),
-                                                                             V.cols(),
-                                                                             workspace,
-                                                                             lwork,
-                                                                             devInfo));
-            CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int),
-    cudaMemcpyDeviceToHost));
-
-            if(info != 0)
-            {
-                return info;
-            }
-            else
-            {
-                //blaspp::t_trsm('R', 'U', 'N', 'N', V.rows(), V.cols(), &one,
-    A->cpu_data(), V.cols(), V.cpu_data(), V.cpu_ld());
-                //V.H2D();
-                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,
-                                                                        CUBLAS_SIDE_RIGHT,
-                                                                        CUBLAS_FILL_MODE_UPPER,
-                                                                        CUBLAS_OP_N,
-                                                                        CUBLAS_DIAG_NON_UNIT,
-                                                                        V.rows(),
-                                                                        V.cols(),
-                                                                        &one,
-                                                                        A->data(),
-                                                                        A->ld(),
-                                                                        V.data(),
-                                                                        V.ld()));
-    #ifdef CHASE_OUTPUT
-                std::cout << "choldegree: 1" << std::endl;
-    #endif
-                return info;
-            }
-
-    */
-
+   
     T one = T(1.0);
-    // T zero = T(0.0);
     chase::Base<T> One = Base<T>(1.0);
     chase::Base<T> Zero = Base<T>(0.0);
 
     int info = 1;
+    bool owns_A = false;
+    bool owns_workspace = false;
+    bool owns_devInfo = false;
 
     if (A == nullptr)
     {
-        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(),
-                                                               V.cols());
+        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
+        owns_A = true;
     }
+
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_end = nullptr;
+
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
 
     if (workspace == nullptr)
     {
@@ -155,7 +92,8 @@ int cholQR1(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
                 cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(),
                 V.cols(), &lwork));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace, sizeof(T) * lwork, stream));
+        owns_workspace = true;
     }
 
     cublasOperation_t transa;
@@ -172,30 +110,49 @@ int cholQR1(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
         V.data(), V.ld(), &Zero, A->data(), V.cols()));
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&devInfo, sizeof(int), stream));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
         workspace, lwork, devInfo));
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
-    if (info != 0)
-    {
-        return info;
-    }
-    else
+    if (info == 0)
     {
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one,
             A->data(), V.cols(), V.data(), V.ld()));
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 1" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1\n", 0);
 #endif
-        return info;
     }
+
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+    if (owns_devInfo)
+        CHECK_CUDA_ERROR(cudaFreeAsync(devInfo, stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+    if (owns_A)
+        delete A;
+
+    return info;
 }
 
 /**
@@ -222,22 +179,39 @@ template <typename T>
 int cholQR2(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             chase::matrix::Matrix<T, chase::platform::GPU>& V,
             T* workspace = nullptr, int lwork = 0,
-            chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr)
+            chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr,
+            int* external_devInfo = nullptr)
 {
     SCOPED_NVTX_RANGE();
 
     T one = T(1.0);
-    // T zero = T(0.0);
     chase::Base<T> One = Base<T>(1.0);
     chase::Base<T> Zero = Base<T>(0.0);
-
     int info = 1;
+    bool owns_A = false;
+    bool owns_workspace = false;
+    bool owns_devInfo = false;
+
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_end = nullptr;
 
     if (A == nullptr)
     {
-        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(),
-                                                               V.cols());
+        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
+        owns_A = true;
     }
+
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
 
     if (workspace == nullptr)
     {
@@ -246,7 +220,8 @@ int cholQR2(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
                 cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(),
                 V.cols(), &lwork));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace, sizeof(T) * lwork, stream));
+        owns_workspace = true;
     }
 
     cublasOperation_t transa;
@@ -263,20 +238,21 @@ int cholQR2(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
         V.data(), V.ld(), &Zero, A->data(), V.cols()));
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&devInfo, sizeof(int), stream));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
         workspace, lwork, devInfo));
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
-    if (info != 0)
-    {
-        return info;
-    }
-    else
+    if (info == 0)
     {
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
@@ -290,16 +266,40 @@ int cholQR2(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
             cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(),
             V.cols(), workspace, lwork, devInfo));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                         cudaMemcpyDeviceToHost, stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-            cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
-            CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one,
-            A->data(), V.cols(), V.data(), V.ld()));
+        if (info == 0)
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+                cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one,
+                A->data(), V.cols(), V.data(), V.ld()));
+        }
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 2" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 2", 0);
 #endif
-        return info;
     }
+
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+    if (owns_devInfo)
+        CHECK_CUDA_ERROR(cudaFreeAsync(devInfo, stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+    if (owns_A)
+        delete A;
+
+    return info;
 }
 /**
  * @brief Performs a shifted Cholesky-based QR factorization with a degree of 2.
@@ -326,7 +326,8 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
                    cusolverDnHandle_t cusolver_handle,
                    chase::matrix::Matrix<T, chase::platform::GPU>& V,
                    T* workspace = nullptr, int lwork = 0,
-                   chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr)
+                   chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr,
+                   int* external_devInfo = nullptr)
 {
     SCOPED_NVTX_RANGE();
 
@@ -335,13 +336,32 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
 
     chase::Base<T> One = Base<T>(1.0);
     chase::Base<T> Zero = Base<T>(0.0);
-    chase::Base<T> shift;
+    chase::Base<T> shift_scale;
+    int info = 1;
+    bool owns_A = false;
+    bool owns_workspace = false;
+    bool owns_devInfo = false;
+
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_end = nullptr;
 
     if (A == nullptr)
     {
-        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(),
-                                                               V.cols());
+        A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
+        owns_A = true;
     }
+
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
 
     if (workspace == nullptr)
     {
@@ -350,7 +370,8 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
                 cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(),
                 V.cols(), &lwork));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace, sizeof(T) * lwork, stream));
+        owns_workspace = true;
     }
 
     cublasOperation_t transa;
@@ -363,80 +384,120 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
         transa = CUBLAS_OP_C;
     }
 
-    int info = 1;
-
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
         V.data(), V.ld(), &Zero, A->data(), V.cols()));
 
-    chase::Base<T> nrmf = 0.0;
-    chase::Base<T>* d_nrmf;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_nrmf, sizeof(chase::Base<T>)));
-    chase::linalg::internal::cuda::absTrace(*A, d_nrmf);
-    CHECK_CUDA_ERROR(cudaMemcpy(&nrmf, d_nrmf, sizeof(chase::Base<T>),
-                                cudaMemcpyDeviceToHost));
-    shift = std::sqrt(V.rows()) * nrmf *
-            std::numeric_limits<chase::Base<T>>::epsilon();
-
-    chase::linalg::internal::cuda::shiftDiagonal(A, shift);
-
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
-
-    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
-        cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
-        workspace, lwork, devInfo));
-
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
-
-    if (info != 0)
+    chase::Base<T>* d_nrmf = nullptr;
+    CHECK_CUDA_ERROR(cudaMallocAsync((void**)&d_nrmf, sizeof(chase::Base<T>), stream));
+    chase::linalg::internal::cuda::absTrace(*A, d_nrmf, &stream);
+#ifdef CHASE_OUTPUT
+    bool return_shift_enabled = false;
+    if(chase::GetLogger().GetLevel() >= chase::LogLevel::Info)
     {
-        return info;
+        return_shift_enabled = true;
+    }
+    chase::Base<T> nrmf_host = 0.0;
+    if(return_shift_enabled)
+    {       
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(&nrmf_host, d_nrmf, sizeof(chase::Base<T>),
+                                        cudaMemcpyDeviceToHost, stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+        if constexpr (std::is_same<chase::Base<T>, float>::value)
+        {
+            shift_scale = static_cast<chase::Base<T>>(10.0) * nrmf_host *
+                          std::numeric_limits<chase::Base<T>>::epsilon();
+        }
+        else
+        {
+            shift_scale = std::sqrt(static_cast<double>(V.rows())) * nrmf_host *
+                          std::numeric_limits<chase::Base<T>>::epsilon();
+        }
+    }
+#endif
+    chase::linalg::internal::cuda::shiftDiagonalFromDeviceShift(
+        A, d_nrmf, &stream, V.rows());
+    CHECK_CUDA_ERROR(cudaFreeAsync(d_nrmf, stream));
+
+    int* devInfo = external_devInfo;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&devInfo, sizeof(int), stream));
+        owns_devInfo = true;
     }
 
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
-        CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
-        V.data(), V.ld()));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
-        cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
-        V.data(), V.ld(), &Zero, A->data(), V.cols()));
-
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
         workspace, lwork, devInfo));
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
-    if (info != 0)
+    if (info == 0)
     {
-        return info;
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+            cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
+            CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
+            V.data(), V.ld()));
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
+            cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
+            V.data(), V.ld(), &Zero, A->data(), V.cols()));
+
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
+            cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
+            workspace, lwork, devInfo));
+
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                         cudaMemcpyDeviceToHost, stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+
+        if (info == 0)
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+                cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
+                CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
+                V.data(), V.ld()));
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
+                cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
+                V.data(), V.ld(), &Zero, A->data(), V.cols()));
+
+            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
+                cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
+                workspace, lwork, devInfo));
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+                cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
+                CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
+                V.data(), V.ld()));
+        }
     }
 
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
-        CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
-        V.data(), V.ld()));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
-        cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, V.cols(), V.rows(), &One,
-        V.data(), V.ld(), &Zero, A->data(), V.cols()));
-
-    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
-        cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.cols(), A->data(), V.cols(),
-        workspace, lwork, devInfo));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
-        CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one, A->data(), V.cols(),
-        V.data(), V.ld()));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+    if (owns_devInfo)
+        CHECK_CUDA_ERROR(cudaFreeAsync(devInfo, stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+    if (owns_A)
+        delete A;
 
 #ifdef CHASE_OUTPUT
-    std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift
-              << std::endl;
+    std::ostringstream oss;
+    oss << std::setprecision(2)
+        << "\ncholdegree: 2, shift computed on device (scale=" << shift_scale
+        << ", nrmf(device->host)=" << nrmf_host
+        << ", final_shift=" << (nrmf_host * shift_scale) << ")\n";
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
 #endif
     return info;
 }

@@ -8,9 +8,11 @@
 
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
+#include "algorithm/logger.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "residuals.cuh"
+#include <sstream>
 
 namespace chase
 {
@@ -72,17 +74,60 @@ void residuals(cublasHandle_t cublas_handle,
     T alpha = T(1.0);
     T beta = T(0.0);
 
+    bool enable_timing = false;
+#ifdef CHASE_OUTPUT
+    enable_timing = chase::GetLogger().GetLevel() >= chase::LogLevel::Trace;
+#endif
+    cudaEvent_t ev_gemm_start = nullptr, ev_gemm_end = nullptr;
+    cudaEvent_t ev_resid_start = nullptr, ev_resid_end = nullptr;
+    if (enable_timing)
+    {
+        CHECK_CUDA_ERROR(cudaEventCreate(&ev_gemm_start));
+        CHECK_CUDA_ERROR(cudaEventCreate(&ev_gemm_end));
+        CHECK_CUDA_ERROR(cudaEventCreate(&ev_resid_start));
+        CHECK_CUDA_ERROR(cudaEventCreate(&ev_resid_end));
+        CHECK_CUDA_ERROR(cudaEventRecord(ev_gemm_start, 0));
+    }
+
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), subSize, H->cols(),
         &alpha, H->data(), H->ld(), V1.data() + offset * V1.ld(), V1.ld(),
         &beta, V2->data() + offset * V2->ld(), V2->ld()));
+    if (enable_timing)
+    {
+        CHECK_CUDA_ERROR(cudaEventRecord(ev_gemm_end, 0));
+    }
 
     cudaStream_t usedStream;
     CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
+    if (enable_timing)
+    {
+        CHECK_CUDA_ERROR(cudaEventRecord(ev_resid_start, usedStream));
+    }
 
     residual_gpu(V2->rows(), subSize, V2->data() + offset * V2->ld(), V2->ld(),
                  V1.data() + offset * V1.ld(), V1.ld(), d_ritzv + offset,
                  d_resids + offset, true, usedStream);
+    if (enable_timing)
+    {
+        CHECK_CUDA_ERROR(cudaEventRecord(ev_resid_end, usedStream));
+        CHECK_CUDA_ERROR(cudaEventSynchronize(ev_resid_end));
+        float gemm_ms = 0.0f, resid_ms = 0.0f;
+        CHECK_CUDA_ERROR(cudaEventElapsedTime(&gemm_ms, ev_gemm_start, ev_gemm_end));
+        CHECK_CUDA_ERROR(cudaEventElapsedTime(&resid_ms, ev_resid_start, ev_resid_end));
+
+#ifdef CHASE_OUTPUT
+        std::ostringstream oss;
+        oss << "\n[RESIDUALS TIMING] subSize=" << subSize
+            << ", GEMM(H*V): " << gemm_ms << " ms"
+            << ", residual_gpu: " << resid_ms << " ms\n";
+        chase::GetLogger().Log(chase::LogLevel::Trace, "linalg", oss.str(), 0);
+#endif
+        CHECK_CUDA_ERROR(cudaEventDestroy(ev_gemm_start));
+        CHECK_CUDA_ERROR(cudaEventDestroy(ev_gemm_end));
+        CHECK_CUDA_ERROR(cudaEventDestroy(ev_resid_start));
+        CHECK_CUDA_ERROR(cudaEventDestroy(ev_resid_end));
+    }
 }
 
 } // namespace cuda

@@ -14,8 +14,10 @@
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "mpi.h"
+#include "algorithm/logger.hpp"
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -78,10 +80,11 @@ int cpu_mpi::cholQR1(std::size_t m, std::size_t n, T* V, int ldv, MPI_Comm comm,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                "choldegree: 1\n", 0);
         }
+
 #endif
         return info;
     }
@@ -144,9 +147,9 @@ int cpu_mpi::cholQR2(std::size_t m, std::size_t n, T* V, int ldv, MPI_Comm comm,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 2" << std::endl;
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
+                0);
         }
 #endif
         return info;
@@ -208,9 +211,9 @@ int cpu_mpi::cholQR1(InputMultiVectorType& V,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
+                grank);
         }
 #endif
         return info;
@@ -269,8 +272,12 @@ int cpu_mpi::cholQR2(InputMultiVectorType& V,
     if constexpr (std::is_same<T, double>::value ||
                   std::is_same<T, std::complex<double>>::value)
     {
-        std::cout << "In cholqr2, the first cholqr using Single Precision"
-                  << std::endl;
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                "In cholqr2, the first cholqr using Single Precision", 0);
+        }
         V.enableSinglePrecision();
         auto V_sp = V.getSinglePrecisionMatrix();
         info = cholQR1(*V_sp);
@@ -335,7 +342,16 @@ int cpu_mpi::shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T* V,
                   comm);
     Base<T> nrmf = 0.0;
     chase::linalg::internal::cpu::computeDiagonalAbsSum(n, n, A, n, &nrmf);
-    shift = std::sqrt(N) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+    if constexpr (std::is_same<Base<T>, float>::value)
+    {
+        shift = static_cast<Base<T>>(10.0) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
+    else
+    {
+        shift = std::sqrt(static_cast<double>(N)) * nrmf *
+                std::numeric_limits<Base<T>>::epsilon();
+    }
     chase::linalg::internal::cpu::shiftMatrixDiagonal(n, n, A, n, (T)shift);
     info = lapackpp::t_potrf('U', n, A, n);
     if (info != 0)
@@ -359,9 +375,10 @@ int cpu_mpi::shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T* V,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 2, shift = " << shift << std::endl;
+        std::ostringstream oss;
+        oss << "choldegree: 2, shift = " << shift;
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
         }
 #endif
         return info;
@@ -400,7 +417,7 @@ void cpu_mpi::houseHoulderQR(InputMultiVectorType& V)
                                        V.l_data(), one, one, desc, tau.data());
 
 #else
-    std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
+    throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
                        "ScaLAPACK, which is not detected\n");
 #endif
 }
@@ -482,11 +499,10 @@ cpu_mpi::computeConditionNumber(InputMultiVectorType& V)
     // Basic parameter validation
     if (m == 0 || n == 0)
     {
-        if (grank == 0)
-        {
-            std::cout << "Error: Invalid matrix dimensions m=" << m
-                      << ", n=" << n << std::endl;
-        }
+        std::ostringstream oss;
+        oss << "Error: Invalid matrix dimensions m=" << m << ", n=" << n;
+        chase::GetLogger().Log(chase::LogLevel::Error, "linalg", oss.str(),
+            grank);
         return std::numeric_limits<BaseT>::infinity();
     }
 
@@ -499,61 +515,47 @@ cpu_mpi::computeConditionNumber(InputMultiVectorType& V)
 
     if (info != 0)
     {
-        if (grank == 0)
+        std::ostringstream oss;
+        oss << "SVD computation failed with info = " << info << "\n";
+        oss << "SVD Error Details:\n";
+        oss << "  Matrix dimensions: " << m << "x" << n << "\n";
+        oss << "  jobu = '" << jobu << "', jobvt = '" << jobvt << "'\n";
+        oss << "  Descriptor A: [";
+        for (int i = 0; i < 9; i++)
         {
-            std::cout << "SVD computation failed with info = " << info
-                      << std::endl;
-            std::cout << "SVD Error Details:" << std::endl;
-            std::cout << "  Matrix dimensions: " << m << "x" << n << std::endl;
-            std::cout << "  jobu = '" << jobu << "', jobvt = '" << jobvt << "'"
-                      << std::endl;
-            std::cout << "  Descriptor A: [";
-            for (int i = 0; i < 9; i++)
-            {
-                std::cout << desc_a[i];
-                if (i < 8)
-                    std::cout << ", ";
-            }
-            std::cout << "]" << std::endl;
-
-            // Print common ScaLAPACK error meanings
-            if (info < 0)
-            {
-                std::cout << "  Error: Parameter " << -info
-                          << " had an illegal value" << std::endl;
-            }
-            else if (info > 0)
-            {
-                std::cout << "  Error: " << info
-                          << " superdiagonals of an intermediate bidiagonal "
-                             "form did not converge"
-                          << std::endl;
-            }
+            oss << desc_a[i];
+            if (i < 8)
+                oss << ", ";
         }
-        // Return infinity for failed SVD computation
+        oss << "]\n";
+        if (info < 0)
+            oss << "  Error: Parameter " << -info
+                << " had an illegal value\n";
+        else if (info > 0)
+            oss << "  Error: " << info
+                << " superdiagonals of an intermediate bidiagonal form did not "
+                   "converge\n";
+        chase::GetLogger().Log(chase::LogLevel::Error, "linalg", oss.str(),
+            grank);
         return std::numeric_limits<BaseT>::infinity();
     }
 #ifdef CHASE_OUTPUT
     // Debug: Print singular values to understand what's happening
-    if (grank == 0 && min_mn > 0)
+    if (min_mn > 0)
     {
-        std::cout << "SVD Debug: Matrix size " << m << "x" << n
-                  << ", min_mn=" << min_mn << std::endl;
-        std::cout << "First 5 singular values: ";
+        std::ostringstream oss;
+        oss << "SVD Debug: Matrix size " << m << "x" << n
+            << ", min_mn=" << min_mn << "\nFirst 5 singular values: ";
         for (int i = 0; i < std::min(5, (int)min_mn); i++)
-        {
-            std::cout << s[i] << " ";
-        }
-        std::cout << std::endl;
+            oss << s[i] << " ";
         if (min_mn > 5)
         {
-            std::cout << "Last 5 singular values: ";
+            oss << "\nLast 5 singular values: ";
             for (int i = std::max(0, (int)min_mn - 5); i < (int)min_mn; i++)
-            {
-                std::cout << s[i] << " ";
-            }
-            std::cout << std::endl;
+                oss << s[i] << " ";
         }
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+            grank);
     }
 #endif
     // Compute condition number as ratio of largest to smallest singular value
@@ -569,13 +571,12 @@ cpu_mpi::computeConditionNumber(InputMultiVectorType& V)
         const BaseT eps = std::numeric_limits<BaseT>::epsilon();
         const BaseT tolerance = std::max(m, n) * sigma_max * eps;
 #ifdef CHASE_OUTPUT
-        if (grank == 0)
-        {
-            std::cout << "Condition number debug: sigma_max=" << sigma_max
-                      << ", sigma_min=" << sigma_min
-                      << ", tolerance=" << tolerance << ", eps=" << eps
-                      << std::endl;
-        }
+        std::ostringstream oss_cond;
+        oss_cond << "Condition number debug: sigma_max=" << sigma_max
+                 << ", sigma_min=" << sigma_min << ", tolerance=" << tolerance
+                 << ", eps=" << eps;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+            oss_cond.str(), grank);
 #endif
         if (sigma_min > tolerance && sigma_min > 0)
         {

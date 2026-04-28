@@ -12,7 +12,20 @@
 #include <type_traits>
 #include <vector>
 
+#include "algorithm/algorithm.hpp"
 #include "algorithm/performance.hpp"
+
+#if defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/mpi/shiftDiagonal.hpp"
+#include "linalg/internal/mpi/flipSign.hpp"
+#elif defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/cuda/shiftDiagonal.hpp"
+#include "linalg/internal/cuda/flipSign.hpp"
+#elif !defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/cpu/utils.hpp"
+#elif defined(HAS_NCCL)
+#include "linalg/internal/nccl/flipSign.hpp"
+#endif
 
 #ifdef HAS_NCCL
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
@@ -59,6 +72,8 @@ struct BSE_DriverProblemConfig
 
     std::string path_in; // path to the matrix input files
     bool isdouble;
+    double shiftDiag; // shift applied to the matrix diagonal (e.g. for BSE)
+    bool saveResonant = false; // if true, save first diagonal block (N/2 x N/2) to file (distributed BlockBlock only)
 };
 
 template <typename T>
@@ -71,6 +86,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     std::size_t maxDeg = conf.maxDeg;
     std::size_t maxIter = conf.maxIter;
     std::size_t extraDeg = conf.extraDeg;
+    T shiftDiag = T(chase::Base<T>(conf.shiftDiag));
     chase::Base<T> tol; // desired tolerance
     std::string opt = conf.opt;
     std::string mode = conf.mode;
@@ -143,14 +159,22 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     std::chrono::high_resolution_clock::time_point start, end;
     std::chrono::duration<double> elapsed;
 
-    auto Lambda = std::vector<chase::Base<T>>(nev + nex);
+    // For pseudo-Hermitian (Solve_pseudo), subspace and ritzv buffer size is 2*(nev+nex).
+    const std::size_t nevex = nev + nex;
+    const std::size_t ritzv_size =
+#ifdef USE_PSEUDO_HERMITIAN
+        2 * nevex;
+#else
+        nevex;
+#endif
+    auto Lambda = std::vector<chase::Base<T>>(ritzv_size);
 
 #if defined(USE_MPI) || defined(HAS_NCCL)
 
 #ifdef USE_BLOCKCYCLIC
     auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        N, nev + nex, mb, mpi_grid);
+        N, ritzv_size, mb, mpi_grid);
 #ifdef USE_PSEUDO_HERMITIAN
     auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
@@ -164,7 +188,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     // auto ldh = m;
     // auto LV = new T[m*(nev+nex)]();
     auto Vec = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, ritzv_size,
                                                                    mpi_grid);
     // auto Vec = chase::distMultiVector::DistMultiVector1D<T,
     // chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m,
@@ -183,15 +207,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #endif
 #endif
 #ifdef HAS_NCCL
-    auto single =
-        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
-            nev, nex, &Hmat, &Vec, Lambda.data());
-
     Hmat.allocate_cpu_data();
-#else
-    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
-
     start = std::chrono::high_resolution_clock::now();
     Hmat.readFromBinaryFile(path_in);
     end = std::chrono::high_resolution_clock::now();
@@ -201,12 +218,88 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << "Time taken to read matrix: " << elapsed.count()
                   << " seconds" << std::endl;
     }
+#ifndef USE_BLOCKCYCLIC
+    if (conf.saveResonant)
+    {
+        std::string path_block = path_in;
+        std::size_t dot = path_in.find_last_of('.');
+        if (dot != std::string::npos)
+            path_block = path_in.substr(0, dot) + "_resonant" + path_in.substr(dot);
+        else
+            path_block = path_in + "_resonant.bin";
+        Hmat.saveFirstDiagonalBlockToBinaryFile(path_block);
+        if (world_rank == 0)
+            std::cout << "Saved first diagonal block (N/2 x N/2) to " << path_block << std::endl;
+    }
+#endif
+
+#ifdef HAS_NCCL
+    auto single =
+        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+            nev, nex, &Hmat, &Vec, Lambda.data());
+#else
+    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
+#endif
+
 #ifdef HAS_NCCL
     Hmat.H2D();
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        if (world_rank == 0)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the first diagonal element: " << Hmat.cpu_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the last diagonal element: " << Hmat.cpu_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+        single.Shift(shiftDiag);
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+        Hmat.D2H();
+        if (world_rank == 0)
+        {
+            std::cout << "AFTER SHIFT : Value of the first diagonal element: " << Hmat.cpu_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "AFTER SHIFT : Value of the last diagonal element: " << Hmat.cpu_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+    }
+#else
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        if (world_rank == 0)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the first diagonal element: " << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the last diagonal element: " << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+        
+        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
+        chase::linalg::internal::cpu_mpi::shiftDiagonal(Hmat, shiftDiag);
+        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
+        if (world_rank == 0)
+        {
+            std::cout << "AFTER SHIFT : Value of the first diagonal element: " << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "AFTER SHIFT : Value of the last diagonal element: " << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+    }
 #endif
 
 #else
-    std::vector<T> V(N * (nev + nex));
+    std::vector<T> V(N * ritzv_size);
+
+
 
 #ifdef USE_PSEUDO_HERMITIAN
     using MatrixType = chase::matrix::PseudoHermitianMatrix<T, ARCH>;
@@ -217,13 +310,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     auto Hmat = new MatrixType(N, N);
 
 #ifdef HAS_CUDA
-    auto single = chase::Impl::ChASEGPU<T, MatrixType>(
-        N, nev, nex, Hmat, V.data(), N, Lambda.data());
-
     Hmat->allocate_cpu_data();
-#else
-    auto single = chase::Impl::ChASECPU<T, MatrixType>(
-        N, nev, nex, Hmat, V.data(), N, Lambda.data());
 #endif
     start = std::chrono::high_resolution_clock::now();
     Hmat->readFromBinaryFile(path_in);
@@ -236,25 +323,36 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     }
 
 #ifdef HAS_CUDA
-    Hmat->H2D();
+    auto single = chase::Impl::ChASEGPU<T, MatrixType>(
+        N, nev, nex, Hmat, V.data(), N, Lambda.data());
+#else
+    auto single = chase::Impl::ChASECPU<T, MatrixType>(
+        N, nev, nex, Hmat, V.data(), N, Lambda.data());
+#endif
+
+#ifdef HAS_CUDA
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
+        chase::linalg::internal::cuda::shiftDiagonal(Hmat, chase::Base<T>(std::real(shiftDiag)), nullptr);
+        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
+    }
+#else
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N, N, Hmat->data(),
+                                                             Hmat->ld());
+        chase::linalg::internal::cpu::shiftMatrixDiagonal(
+            N, N, Hmat->data(), Hmat->ld(), static_cast<T>(shiftDiag));
+        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N, N, Hmat->data(),
+                                                             Hmat->ld());
+    }
 #endif
 
 #endif
 
 #ifndef USE_PSEUDO_HERMITIAN
     // single.symOrHermMatrix('L');
-/*
-#ifdef HAS_NCCL
-        //chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
-        //Hmat.D2H();
-#elif defined(HAS_CUDA)
-        //chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat);
-        //Hmat->D2H();
-#elif defined(USE_MPI)
-        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
-#else
-        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Hmat);
-#endif*/
 #endif
 
     if (world_rank == 0)
@@ -280,13 +378,19 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << config << std::endl;
     }
     PerformanceDecoratorChase<T> performanceDecorator(&single);
+#ifdef USE_PSEUDO_HERMITIAN
+    chase::Solve_pseudo(&performanceDecorator);
+#else
     chase::Solve(&performanceDecorator);
+#endif
     if (world_rank == 0)
     {
         performanceDecorator.GetPerfData().print(N, lanczosIter, numLanczos);
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";
+        // For pseudo-Hermitian, first GetNev() entries are the requested positive eigenvalues.
+        std::size_t n_ev_print = single.GetNev() + single.GetNex();
         std::cout << "Printing first 20 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
@@ -297,9 +401,9 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::scientific;
         std::cout << std::right;
 #ifndef NDEBUG
-        for (auto i = 0; i < nev + nex; ++i)
+        for (auto i = 0; i < n_ev_print; ++i)
 #else
-        for (auto i = 0; i < std::min(std::size_t(20), nev + nex); ++i)
+        for (auto i = 0; i < std::min(n_ev_print, n_ev_print); ++i)
 #endif
         {
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
@@ -370,6 +474,12 @@ int main(int argc, char** argv)
     desc.add<Value<float>>("", "lowerb_decay",
                            "Sets the decaying rate for the lower bound", 1.0,
                            &conf.lowerb_decay);
+    desc.add<Value<double>>("", "shiftDiag",
+                           "Sets the shift value for the diagonal", 0.0,
+                           &conf.shiftDiag);
+    desc.add<Value<bool>>("", "saveResonant",
+                          "Save first diagonal block (N/2 x N/2) to path_in_resonant.bin (BlockBlock only)", false,
+                          &conf.saveResonant);
     auto path_in_options = desc.add<Value<std::string>, Attribute::required>(
         "", "path_in", "Path to the input matrix/matrices", "d", &conf.path_in);
 

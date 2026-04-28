@@ -7,6 +7,7 @@
 #ifndef CHASE_ALGORITHM_CONFIGURATION_HPP
 #define CHASE_ALGORITHM_CONFIGURATION_HPP
 
+#include "logger.hpp"
 #include <complex>
 #include <cstring>
 #include <iomanip>
@@ -173,8 +174,12 @@ public:
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
           max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0),
-          upperb_scale_rate_(1.0), cluster_aware_degrees_(true)
+          upperb_scale_rate_(1.0), cluster_aware_degrees_(true),
+          log_level_(chase::LogLevelFromEnv()),
+          log_rank_(chase::LogRankFromEnv())
     {
+        chase::GetLogger().SetLevel(log_level_);
+        chase::GetLogger().SetRankFilter(log_rank_);
         SetMaxDeg(chase_config_helper::initMaxDeg<T>(approx_, optimization_));
         SetDeg(chase_config_helper::initDeg<T>(approx_, optimization_));
         lanczos_iter_ =
@@ -490,6 +495,26 @@ public:
         upperb_scale_rate_ = upperbScaleRate;
     }
 
+    //! Set verbosity threshold for ChASE logging (Error < Warn < Info < Debug < Trace).
+    void SetVerbosity(LogLevel level)
+    {
+        log_level_ = level;
+        chase::GetLogger().SetLevel(level);
+    }
+
+    //! Get current log level threshold.
+    LogLevel GetLogLevel() const { return log_level_; }
+
+    //! Set which MPI rank may log: 0 = only rank 0, -1 = all ranks.
+    void SetLogRank(int rank)
+    {
+        log_rank_ = rank;
+        chase::GetLogger().SetRankFilter(rank);
+    }
+
+    //! Get current log rank filter.
+    int GetLogRank() const { return log_rank_; }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigensolver
@@ -638,6 +663,9 @@ private:
         is set to true.
      */
     bool cluster_aware_degrees_;
+
+    LogLevel log_level_;
+    int log_rank_;
 };
 
 template <typename T>

@@ -89,6 +89,8 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
 
     int* coords = input_multiVector.getMpiGrid()->get_coords();
     T beta_tmp;
+    cudaStream_t used_stream = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &used_stream));
     // from here, for overlappings
     /*        cudaStream_t stream_compute_1, stream_compute_2;
             cudaStream_t stream_comm_1, stream_comm_2;
@@ -297,7 +299,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                input_multiVector, offset, subSize);
+                input_multiVector, offset, subSize, used_stream);
         }
 
         if (beta_tmp != T(0.0))
@@ -314,7 +316,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
             {
 
                 chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                    result_multiVector, offset, subSize);
+                    result_multiVector, offset, subSize, used_stream);
             }
         }
 
@@ -334,7 +336,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld() * subSize, ncclSum,
-            input_multiVector.getMpiGrid()->get_nccl_col_comm()));
+            input_multiVector.getMpiGrid()->get_nccl_col_comm(), &used_stream));
 
         if constexpr (std::is_same<
                           MatrixType,
@@ -347,7 +349,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                input_multiVector, offset, subSize);
+                input_multiVector, offset, subSize, used_stream);
         }
 
         if constexpr (std::is_same<
@@ -361,7 +363,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                result_multiVector, offset, subSize);
+                result_multiVector, offset, subSize, used_stream);
         }
     }
     else // InputCommType is CommunicatorType::column
@@ -391,7 +393,7 @@ void cuda_nccl::MatrixMultiplyMultiVectors(
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld() * subSize, ncclSum,
-            input_multiVector.getMpiGrid()->get_nccl_row_comm()));
+            input_multiVector.getMpiGrid()->get_nccl_row_comm(), &used_stream));
     }
 }
 
@@ -511,6 +513,8 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
 
     T One = T(1.0);
     T Zero = T(0.0);
+    cudaStream_t used_stream = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &used_stream));
 
     if constexpr (ExtractCommType<InputMultiVectorType>::value ==
                   chase::distMultiVector::CommunicatorType::column)
@@ -526,7 +530,7 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                input_multiVector, offset, subSize);
+                input_multiVector, offset, subSize, used_stream);
         }
 
         // Perform the matrix multiplication using BLAS
@@ -544,7 +548,7 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld() * subSize, ncclSum,
-            input_multiVector.getMpiGrid()->get_nccl_col_comm()));
+            input_multiVector.getMpiGrid()->get_nccl_col_comm(), &used_stream));
 
         if constexpr (std::is_same<
                           MatrixType,
@@ -557,7 +561,7 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                input_multiVector, offset, subSize);
+                input_multiVector, offset, subSize, used_stream);
         }
 
         if constexpr (std::is_same<
@@ -571,7 +575,7 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
         {
 
             chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(
-                result_multiVector, offset, subSize);
+                result_multiVector, offset, subSize, used_stream);
         }
     }
     else // InputCommType is CommunicatorType::column
@@ -591,12 +595,12 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld() * subSize, ncclSum,
-            input_multiVector.getMpiGrid()->get_nccl_row_comm()));
+            input_multiVector.getMpiGrid()->get_nccl_row_comm(), &used_stream));
     }
 
     src_multiVector.redistributeImplAsync(
         &target_multiVector, offset,
-        subSize); // computation of gemm, and redistribute can be overlapped,
+        subSize, &used_stream); // computation of gemm, and redistribute can be overlapped,
                   // wiil do later
 }
 

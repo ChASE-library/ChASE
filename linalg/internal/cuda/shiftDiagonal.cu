@@ -5,6 +5,7 @@
 // https://github.com/ChASE-library/ChASE
 
 #include "shiftDiagonal.cuh"
+#include <cfloat>
 
 #define blockSize 256
 
@@ -46,6 +47,54 @@ __global__ void zshift_matrix(cuDoubleComplex* A, std::size_t n,
     std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n)
         A[(idx)*lda + idx].x += shift;
+}
+
+__global__ void sshift_matrix_from_device_shift(float* A, std::size_t n,
+                                                std::size_t lda,
+                                                const float* d_shift,
+                                                std::size_t shift_scale_num_rows)
+{
+    (void)shift_scale_num_rows;
+    const float scale = 10.0f * FLT_EPSILON;
+    std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n)
+        A[(idx)*lda + idx] += (*d_shift) * scale;
+}
+
+__global__ void dshift_matrix_from_device_shift(double* A, std::size_t n,
+                                                std::size_t lda,
+                                                const double* d_shift,
+                                                std::size_t shift_scale_num_rows)
+{
+    const double scale =
+        sqrt(static_cast<double>(shift_scale_num_rows)) * DBL_EPSILON;
+    std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n)
+        A[(idx)*lda + idx] += (*d_shift) * scale;
+}
+
+__global__ void cshift_matrix_from_device_shift(cuComplex* A, std::size_t n,
+                                                std::size_t lda,
+                                                const float* d_shift,
+                                                std::size_t shift_scale_num_rows)
+{
+    (void)shift_scale_num_rows;
+    const float scale = 10.0f * FLT_EPSILON;
+    std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n)
+        A[(idx)*lda + idx].x += (*d_shift) * scale;
+}
+
+__global__ void zshift_matrix_from_device_shift(cuDoubleComplex* A, std::size_t n,
+                                                std::size_t lda,
+                                                const double* d_shift,
+                                                std::size_t shift_scale_num_rows)
+{
+    const double scale =
+        sqrt(static_cast<double>(shift_scale_num_rows)) * DBL_EPSILON;
+    std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n)
+        A[(idx)*lda + idx].x += (*d_shift) * scale;
 }
 
 __global__ void sshift_mgpu_matrix(float* A, std::size_t* off_m,
@@ -290,6 +339,51 @@ void chase_shift_matrix(std::complex<double>* A, std::size_t n, std::size_t lda,
     std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
     zshift_matrix<<<num_blocks, blockSize, 0, stream_>>>(
         reinterpret_cast<cuDoubleComplex*>(A), n, lda, shift);
+}
+
+void chase_shift_matrix_from_device_shift(float* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_)
+{
+    std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+    sshift_matrix_from_device_shift<<<num_blocks, blockSize, 0, stream_>>>(
+        A, n, lda, d_shift, shift_scale_num_rows);
+}
+
+void chase_shift_matrix_from_device_shift(double* A, std::size_t n,
+                                          std::size_t lda,
+                                          const double* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_)
+{
+    std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+    dshift_matrix_from_device_shift<<<num_blocks, blockSize, 0, stream_>>>(
+        A, n, lda, d_shift, shift_scale_num_rows);
+}
+
+void chase_shift_matrix_from_device_shift(std::complex<float>* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_)
+{
+    std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+    cshift_matrix_from_device_shift<<<num_blocks, blockSize, 0, stream_>>>(
+        reinterpret_cast<cuComplex*>(A), n, lda, d_shift, shift_scale_num_rows);
+}
+
+void chase_shift_matrix_from_device_shift(std::complex<double>* A,
+                                          std::size_t n, std::size_t lda,
+                                          const double* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_)
+{
+    std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+    zshift_matrix_from_device_shift<<<num_blocks, blockSize, 0, stream_>>>(
+        reinterpret_cast<cuDoubleComplex*>(A), n, lda, d_shift,
+        shift_scale_num_rows);
 }
 
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,

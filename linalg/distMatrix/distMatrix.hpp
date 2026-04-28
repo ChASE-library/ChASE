@@ -13,8 +13,10 @@
 #include <memory>   // For std::unique_ptr, std::shared_ptr
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
+#include <sstream>
 #include <stdexcept> // For throwing runtime errors
 
+#include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
 #include "external/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -386,9 +388,13 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Single precision matrix enabled in "
-                             "AbstractDistMatrix in "
-                          << elapsed.count() << " s\n";
+            {
+                std::ostringstream oss;
+                oss << "Single precision matrix enabled in AbstractDistMatrix in "
+                    << elapsed.count() << " s";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    oss.str(), this->grank());
+            }
         }
         else
         {
@@ -461,15 +467,88 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Double precision matrix enabled in "
-                             "AbstractDistMatrix in "
-                          << elapsed.count() << " s\n";
+            {
+                std::ostringstream oss;
+                oss << "Double precision matrix enabled in AbstractDistMatrix in "
+                    << elapsed.count() << " s";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    oss.str(), this->grank());
+            }
         }
         else
         {
             throw std::runtime_error("Double precision already enabled.");
         }
     }
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void enableDoublePrecisionAsync(cudaStream_t* stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            start = std::chrono::high_resolution_clock::now();
+
+            if constexpr (std::is_same<Derived<T, Platform>,
+                                       chase::distMatrix::BlockCyclicMatrix<
+                                           T, Platform>>::value)
+            {
+                double_precision_matrix_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(), this->mb(), this->nb(),
+                        this->getMpiGrid_shared_ptr());
+            }
+            else
+            {
+                double_precision_matrix_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(),
+                        this->getMpiGrid_shared_ptr());
+            }
+
+            if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+            {
+#pragma omp parallel for
+                for (std::size_t j = 0; j < this->l_cols(); ++j)
+                {
+                    for (std::size_t i = 0; i < this->l_rows(); ++i)
+                    {
+                        double_precision_matrix_->l_data()
+                            [j * double_precision_matrix_.get()->l_ld() + i] =
+                            chase::convertToDoublePrecision(
+                                this->l_data()[j * this->l_ld() + i]);
+                    }
+                }
+            }
+            else
+            {
+                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                    this->l_data(), double_precision_matrix_->l_data(),
+                    this->l_cols() * this->l_rows(), stream_);
+            }
+            is_double_precision_enabled_ = true;
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end - start);
+
+            if (this->grank() == 0)
+            {
+                std::ostringstream oss;
+                oss << "Double precision matrix enabled in AbstractDistMatrix in "
+                    << elapsed.count() << " s";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    oss.str(), this->grank());
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Double precision already enabled.");
+        }
+    }
+#endif
 
     // Disable single precision for double types
     /**
@@ -529,9 +608,13 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix disabled in AbstractDistMatrix in "
-                << elapsed.count() << " s\n";
+        {
+            std::ostringstream oss;
+            oss << "Single precision matrix disabled in AbstractDistMatrix in "
+                << elapsed.count() << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss.str(), this->grank());
+        }
         single_precision_matrix_.reset(); // Free the single precision memory
         is_single_precision_enabled_ = false;
     }
@@ -594,12 +677,76 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Double precision matrix disabled in AbstractDistMatrix in "
-                << elapsed.count() << " s\n";
+        {
+            std::ostringstream oss;
+            oss << "Double precision matrix disabled in AbstractDistMatrix in "
+                << elapsed.count() << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss.str(), this->grank());
+        }
         double_precision_matrix_.reset(); // Free the double precision memory
         is_double_precision_enabled_ = false;
     }
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void disableDoublePrecisionAsync(bool copyback = false,
+                                     cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (copyback)
+        {
+            if (double_precision_matrix_)
+            {
+                if constexpr (std::is_same<Platform,
+                                           chase::platform::CPU>::value)
+                {
+#pragma omp parallel for
+                    for (std::size_t j = 0; j < this->l_cols(); ++j)
+                    {
+                        for (std::size_t i = 0; i < this->l_rows(); ++i)
+                        {
+                            this->l_data()[j * this->l_ld() + i] =
+                                chase::convertToSinglePrecision<T>(
+                                    double_precision_matrix_
+                                        ->l_data()[j * double_precision_matrix_
+                                                           .get()
+                                                           ->l_ld() +
+                                                   i]);
+                        }
+                    }
+                }
+                else
+                {
+                    chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                        double_precision_matrix_->l_data(), this->l_data(),
+                        this->l_cols() * this->l_rows(), stream_);
+                }
+            }
+            else
+            {
+                throw std::runtime_error("Double precision is not enabled.");
+            }
+        }
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            std::ostringstream oss;
+            oss << "Double precision matrix disabled in AbstractDistMatrix in "
+                << elapsed.count() << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss.str(), this->grank());
+        }
+        double_precision_matrix_.reset(); // Free the double precision memory
+        is_double_precision_enabled_ = false;
+    }
+#endif
 
     // Check if single precision is enabled
     /**
@@ -914,6 +1061,50 @@ public:
         }
 #endif
     }
+#ifdef HAS_CUDA
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, double>::value ||
+                      std::is_same<U, std::complex<double>>::value,
+                  int>::type = 0>
+    void copyToSubBlockAsync(std::size_t offset, std::size_t count,
+                             cudaStream_t* stream_ = nullptr)
+    {
+        if (!single_precision_matrix_)
+        {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if (offset + count > this->l_rows() * this->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > single_precision_matrix_->l_rows() *
+                                 single_precision_matrix_->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed single precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                single_precision_matrix_->l_data()[offset + i] =
+                    static_cast<SinglePrecisionType>(
+                        this->l_data()[offset + i]);
+            }
+        }
+        else
+        {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                this->l_data() + offset,
+                single_precision_matrix_->l_data() + offset, count, stream_);
+        }
+    }
+#endif
 
     // Copy from single to double precision (if T is double)
     template <typename U = T,
@@ -959,6 +1150,49 @@ public:
         }
 #endif
     }
+#ifdef HAS_CUDA
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, double>::value ||
+                      std::is_same<U, std::complex<double>>::value,
+                  int>::type = 0>
+    void copyBackSubBlockAsync(std::size_t offset, std::size_t count,
+                               cudaStream_t* stream_ = nullptr)
+    {
+        if (!single_precision_matrix_)
+        {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if (offset + count > this->l_rows() * this->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > single_precision_matrix_->l_rows() *
+                                 single_precision_matrix_->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed single precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                this->l_data()[offset + i] = static_cast<T>(
+                    single_precision_matrix_->l_data()[offset + i]);
+            }
+        }
+        else
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                single_precision_matrix_->l_data() + offset,
+                this->l_data() + offset, count, stream_);
+        }
+    }
+#endif
 
     // Copy from single to double precision (if T is float)
     template <
@@ -1005,6 +1239,50 @@ public:
         }
 #endif
     }
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyToSubBlockAsync(std::size_t offset, std::size_t count,
+                             cudaStream_t* stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if (offset + count > this->l_rows() * this->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > double_precision_matrix_->l_rows() *
+                                 double_precision_matrix_->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed double precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                double_precision_matrix_->l_data()[offset + i] =
+                    static_cast<DoublePrecisionType>(
+                        this->l_data()[offset + i]);
+            }
+        }
+        else
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data() + offset,
+                double_precision_matrix_->l_data() + offset, count, stream_);
+        }
+    }
+#endif
 
     // Copy from double to single precision (if T is float)
     template <
@@ -1050,6 +1328,49 @@ public:
         }
 #endif
     }
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyBackSubBlockAsync(std::size_t offset, std::size_t count,
+                               cudaStream_t* stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if (offset + count > this->l_rows() * this->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > double_precision_matrix_->l_rows() *
+                                 double_precision_matrix_->l_cols())
+        {
+            throw std::runtime_error(
+                "Subblock dimensions exceed double precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                this->l_data()[offset + i] = static_cast<T>(
+                    double_precision_matrix_->l_data()[offset + i]);
+            }
+        }
+        else
+        {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                double_precision_matrix_->l_data() + offset,
+                this->l_data() + offset, count, stream_);
+        }
+    }
+#endif
 };
 
 /**
@@ -1941,8 +2262,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -1970,6 +2296,113 @@ public:
                            chase::mpi::getMPI_Type<T>(), &status);
 
         MPI_Type_free(&subarray);
+
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+    }
+
+    /**
+     * @brief Save the first diagonal block (top-left N/2 x N/2) to a binary file.
+     *
+     * Writes only the leading principal submatrix of size (M_/2) x (N_/2) to file.
+     * Same conventions as saveToBinaryFile (CPU buffer only on GPU, collective MPI I/O).
+     * Used mostly for saving resonant states.
+     *
+     * @param filename Name of the file where the block is saved.
+     * @throws std::runtime_error If the matrix data is not initialized.
+     */
+    void saveFirstDiagonalBlockToBinaryFile(const std::string& filename)
+    {
+        MPI_File fileHandle;
+        MPI_Status status;
+        T* buff;
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if (local_matrix_.cpu_data() == nullptr)
+            {
+                throw std::runtime_error(
+                    "[BlockBlockMatrix]: only can save data from CPU buffer");
+            }
+            buff = local_matrix_.cpu_data();
+        }
+        else
+        {
+            buff = local_matrix_.data();
+        }
+
+        if (MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(),
+                          MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                          MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            if (this->grank() == 0)
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+        if (this->l_data() == nullptr)
+        {
+            throw std::runtime_error(
+                "[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        const std::size_t block_M = M_ / 2;
+        const std::size_t block_N = N_ / 2;
+
+        const std::size_t row_start = g_offs_[0];
+        const std::size_t col_start = g_offs_[1];
+        std::size_t local_block_m = 0;
+        std::size_t local_block_n = 0;
+        if (row_start < block_M && col_start < block_N)
+        {
+            local_block_m = std::min(m_, block_M - row_start);
+            local_block_n = std::min(n_, block_N - col_start);
+        }
+
+        MPI_Datatype file_subarray;
+        if (local_block_m > 0 && local_block_n > 0)
+        {
+            int global_block_size[] = {static_cast<int>(block_M), static_cast<int>(block_N)};
+            int local_block_size[] = {static_cast<int>(local_block_m), static_cast<int>(local_block_n)};
+            int offsets[] = {static_cast<int>(row_start), static_cast<int>(col_start)};
+            MPI_Type_create_subarray(2, global_block_size, local_block_size,
+                                     offsets, MPI_ORDER_FORTRAN,
+                                     chase::mpi::getMPI_Type<T>(), &file_subarray);
+            MPI_Type_commit(&file_subarray);
+            MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), file_subarray,
+                              "native", MPI_INFO_NULL);
+
+            int local_full_size[] = {static_cast<int>(m_), static_cast<int>(n_)};
+            int local_sub_size[] = {static_cast<int>(local_block_m), static_cast<int>(local_block_n)};
+            int local_starts[] = {0, 0};
+            MPI_Datatype mem_subarray;
+            MPI_Type_create_subarray(2, local_full_size, local_sub_size,
+                                     local_starts, MPI_ORDER_FORTRAN,
+                                     chase::mpi::getMPI_Type<T>(), &mem_subarray);
+            MPI_Type_commit(&mem_subarray);
+            MPI_File_write_all(fileHandle, buff, 1, mem_subarray, &status);
+            MPI_Type_free(&mem_subarray);
+            MPI_Type_free(&file_subarray);
+        }
+        else
+        {
+            int blocklength = 0;
+            MPI_Aint displacement = 0;
+            MPI_Datatype oldtype = chase::mpi::getMPI_Type<T>();
+            MPI_Type_create_struct(1, &blocklength, &displacement, &oldtype, &file_subarray);
+            MPI_Type_commit(&file_subarray);
+            MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), file_subarray,
+                              "native", MPI_INFO_NULL);
+            MPI_File_write_all(fileHandle, buff, 0, chase::mpi::getMPI_Type<T>(), &status);
+            MPI_Type_free(&file_subarray);
+        }
 
         if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
         {
@@ -2015,8 +2448,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -2704,8 +3142,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -2806,8 +3249,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 

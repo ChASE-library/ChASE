@@ -12,6 +12,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cuda/cuda_kernels.hpp"
+#include "linalg/internal/cuda/lanczos_kernels.hpp"
 #include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
@@ -25,11 +26,17 @@
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #include "algorithm/types.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/mpi/cholqr.hpp"
 
 #include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"
+#include "Impl/pchase_cpu/pchase_cpu.hpp"
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 using namespace chase::linalg;
 
@@ -155,6 +162,21 @@ public:
                                      "eigenvectors mapped to same MPI grid");
         }
 
+        // Pseudo-Hermitian support currently assumes block-block data layout.
+        // Block-cyclic 1D multivectors are not supported for pseudo-Hermitian.
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              InputMultiVectorType>::value)
+            {
+                throw std::runtime_error(
+                    "Pseudo-Hermitian pChASEGPU currently supports only "
+                    "block-block distributed multivectors (block-cyclic 1D not "
+                    "supported).");
+            }
+        }
+
         N_ = H->g_rows();
         Hmat_ = H;
         V1_ = V;
@@ -162,12 +184,26 @@ public:
         W1_ = V1_->template clone2<ResultMultiVectorType>();
         W2_ = V1_->template clone2<ResultMultiVectorType>();
 
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            is_sym_ = false;
+            is_pseudoHerm_ = true;
+        }
+        else
+        {
+            is_sym_ = true;
+            is_pseudoHerm_ = false;
+        }
+
+        const std::size_t block_size =
+            is_pseudoHerm_ ? 2 * nevex_ : nevex_;
         ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<
             chase::Base<T>, chase::platform::GPU>>(
-            nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
+            block_size, 1, block_size, ritzv, Hmat_->getMpiGrid_shared_ptr());
         resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<
             chase::Base<T>, chase::platform::GPU>>(
-            nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
+            block_size, 1, Hmat_->getMpiGrid_shared_ptr());
 
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
@@ -182,29 +218,28 @@ public:
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
         {
-            std::cout << "XGEEV ACTIVATED !" << std::endl;
+            std::ostringstream oss;
+            oss << "XGEEV ACTIVATED !\n";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif
-        // CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
-        // CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
-        // CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
 #endif
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * nevex_));
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * block_size));
 
         int lwork_geqrf = 0;
         int lwork_orgqr = 0;
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgeqrf_bufferSize(
-                cusolverH_, N_, nevex_, V1_->l_data(), V1_->l_ld(),
+                cusolverH_, N_, block_size, V1_->l_data(), V1_->l_ld(),
                 &lwork_geqrf));
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgqr_bufferSize(
-                cusolverH_, N_, nevex_, nevex_, V1_->l_data(), V1_->l_ld(),
-                d_return_, &lwork_orgqr));
+                cusolverH_, N_, block_size, block_size, V1_->l_data(),
+                V1_->l_ld(), d_return_, &lwork_orgqr));
 
         lwork_ = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
 
@@ -213,13 +248,10 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
-            is_sym_ = false;
-            is_pseudoHerm_ = true;
-
 #ifdef XGEEV_EXISTS
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
-                3 * nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+                3 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
 
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -229,10 +261,9 @@ public:
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                     cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
-                    CUSOLVER_EIG_MODE_VECTOR, nevex_, A_->l_data(), A_->l_ld(),
-                    V2_->l_data(), NULL, 1, V1_->l_data(),
-                    nevex_, // V1_->l_ld(),
-                    &temp_ldwork, &temp_lhwork));
+                    CUSOLVER_EIG_MODE_VECTOR, block_size, A_->l_data(),
+                    A_->l_ld(), V2_->l_data(), NULL, 1, V1_->l_data(),
+                    V1_->l_ld(), &temp_ldwork, &temp_lhwork));
 
             lwork_heevd = (int)temp_ldwork;
             lhwork_ = (int)temp_lhwork;
@@ -240,38 +271,35 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd
-                          << std::endl;
-                std::cout << "GEEV CPU WORKSPACE SIZE = " << temp_lhwork
-                          << std::endl;
+                std::ostringstream oss;
+                oss << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd
+                    << ", GEEV CPU WORKSPACE SIZE = " << temp_lhwork << "\n";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #else
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
-                2 * nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+                2 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
 
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                     cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
-                    CUBLAS_FILL_MODE_LOWER, nevex_, A_->l_data(), A_->l_ld(),
+                    CUBLAS_FILL_MODE_LOWER, block_size, A_->l_data(), A_->l_ld(),
                     ritzv_->l_data(), &lwork_heevd));
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd
-                          << std::endl;
-                std::cout << "HEEVD CPU WORKSPACE SIZE = " << 0 << std::endl;
+                std::ostringstream oss;
+                oss << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd << "\n";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
 #endif
         }
         else
         {
-            is_sym_ = true;
-            is_pseudoHerm_ = false;
-
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
                 nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
@@ -292,16 +320,16 @@ public:
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
-                cusolverH_, CUBLAS_FILL_MODE_UPPER, nevex_, A_->l_data(),
+                cusolverH_, CUBLAS_FILL_MODE_UPPER, block_size, A_->l_data(),
                 A_->l_ld(), &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
             lwork_ = lwork_potrf;
         }
 
-        if (nevex_ * (nevex_ + 1) / 2 > lwork_)
+        if (block_size * (block_size + 1) / 2 > lwork_)
         {
-            lwork_ = nevex_ * (nevex_ + 1) / 2;
+            lwork_ = block_size * (block_size + 1) / 2;
         }
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
@@ -388,6 +416,7 @@ public:
             {
                 V1_->enableDoublePrecision();
             }
+
             CHECK_CUDA_ERROR(cudaMalloc(
                 (void**)&d_work_d,
                 sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) *
@@ -412,10 +441,22 @@ public:
         }
 #endif
 
-#ifdef HAS_NCCL
-        // NCCL warm-up: 1x1 matrix to warm up entire path
+#if defined(HAS_NCCL) && defined(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
+        // NCCL benchmark warm-up (optional; CMake: CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=ON,
+        // not combined with Release/RelWithDebInfo). Adds measurable startup cost.
         if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
         {
+            if (my_rank_ == 0)
+            {
+                std::cerr
+                    << "[ChASE][WARN] pChASEGPU constructor NCCL benchmark warm-up is enabled "
+                       "(extra cholQR/Lanczos work at startup). To disable: configure with "
+                       "-DCHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=OFF, or build with "
+                       "CMAKE_BUILD_TYPE=Release or RelWithDebInfo (warm-up is never enabled "
+                       "for those build types).\n";
+                std::cerr.flush();
+            }
+
             cudaEvent_t start, stop;
             cudaEventCreate(&start);
             cudaEventCreate(&stop);
@@ -429,11 +470,11 @@ public:
                 cudaEventRecord(start);
                 
                 int info = kernelNamespace::cholQR1(
-                    cublasH_, cusolverH_, warmup_rows, warmup_cols,
+                    cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
                     V1_->l_data(), V1_->l_ld(),
                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                         V1_->getMpiGrid()),
-                    d_work_, lwork_, A_->l_data());
+                    d_work_, lwork_, A_->l_data(), devInfo_);
                 
                 cudaEventRecord(stop);
                 cudaEventSynchronize(stop);
@@ -441,11 +482,10 @@ public:
                 float ms = 0.0f;
                 cudaEventElapsedTime(&ms, start, stop);
                 
-                if (my_rank_ == 0)
-                {
-                    std::cout << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
-                              << ms << " ms (info=" << info << ")\n";
-                }
+                std::ostringstream oss;
+                oss << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
+                    << ms << " ms (info=" << info << ")\n";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
             
             // Warm up Lanczos (MatMul + redistribute P2P/AlltoAll patterns)
@@ -453,15 +493,16 @@ public:
             for (int i = 0; i < 3; i++)
             {
                 cudaEventRecord(start);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
                 cudaStream_t saved_stream = nullptr;
                 CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
                 // Minimal Lanczos: 1 iteration to warm up redistribute patterns
-                kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+                //kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+                std::vector<Base<T>> Theta(40 * 20);
+                std::vector<Base<T>> Tau(40 * 20);
+                std::vector<Base<T>> ritzV(40 * 40);
+                kernelNamespace::lanczos_dispatch(cublasH_, 40, 20, *Hmat_, *V1_, &dummy_upperb, Theta.data(), Tau.data(), ritzV.data());
+                
                 CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
                 cudaEventRecord(stop);
                 cudaEventSynchronize(stop);
                 
@@ -470,8 +511,10 @@ public:
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
-                              << ms << " ms\n";
+                    std::ostringstream oss;
+                    oss << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
+                        << ms << " ms\n";
+                    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
                 }
 #endif
             }
@@ -479,7 +522,7 @@ public:
             cudaEventDestroy(start);
             cudaEventDestroy(stop);
         }
-#endif
+#endif // HAS_NCCL && CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
 
     }
 
@@ -507,16 +550,17 @@ public:
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!V1_->isDoublePrecisionEnabled())
+            if (V1_->isDoublePrecisionEnabled())
             {
                 V1_->disableDoublePrecision();
             }
+
             CHECK_CUDA_ERROR(cudaFree(d_work_d));
         }
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!A_->isDoublePrecisionEnabled())
+            if (A_->isDoublePrecisionEnabled())
             {
                 A_->disableDoublePrecision();
             }
@@ -525,7 +569,7 @@ public:
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!A_->isDoublePrecisionEnabled())
+            if (A_->isDoublePrecisionEnabled())
             {
                 A_->disableDoublePrecision();
             }
@@ -538,6 +582,11 @@ public:
     std::size_t GetNev() override { return nev_; }
 
     std::size_t GetNex() override { return nex_; }
+
+    std::size_t GetRitzvBlockSize() const override
+    {
+        return is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+    }
 
     std::size_t GetLanczosIter() override { return lanczosIter_; }
 
@@ -566,12 +615,10 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
     {
-        if (my_rank_ == 0)
-        {
-            std::cout << str;
-        }
+        chase::GetLogger().Log(level, category, str, get_rank());
     }
 #endif
     bool checkSymmetryEasy() override
@@ -615,7 +662,22 @@ public:
             chase::linalg::internal::cuda::chase_rand_normal(
                 seed, states_, V1_->l_data(), V1_->l_ld() * V1_->l_cols(),
                 (cudaStream_t)0);
+
+            // Pseudo-Hermitian: dampen components in the global lower half of rows
+            // (same split as l_half()); standard Hermitian init leaves vectors unchanged.
+            if (is_pseudoHerm_)
+            {
+                const std::size_t m_lower = V1_->l_rows() - V1_->l_half();
+                if (m_lower > 0)
+                {
+                    const T scale = T(0.001);
+                    chase::linalg::internal::cuda::scaleLowerBlockRows(
+                        V1_->l_data(), V1_->l_ld(), V1_->l_half(), m_lower,
+                        V1_->l_cols(), scale, nullptr);
+                }
+            }
         }
+        
 
         chase::linalg::internal::cuda::t_lacpy(
             'A', V1_->l_rows(), V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
@@ -625,6 +687,32 @@ public:
         next_ = NextOp::bAc;
     }
 
+    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+                      std::size_t n_indices) override
+    {
+        SCOPED_NVTX_RANGE();
+        if (n_indices == 0)
+            return;
+        int mpi_col_rank;
+        MPI_Comm_rank(Hmat_->getMpiGrid()->get_col_comm(), &mpi_col_rank);
+        unsigned long long base_seed = 1337 + static_cast<unsigned long long>(mpi_col_rank);
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            unsigned long long seed = base_seed + static_cast<unsigned long long>(j) * 1000uLL;
+            chase::linalg::internal::cuda::chase_rand_normal(
+                seed, states_, V1_->l_data() + j * V1_->l_ld(), V1_->l_rows(),
+                (cudaStream_t)0);
+        }
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V1_->l_rows(), 1, V1_->l_data() + j * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + j * V2_->l_ld(), V2_->l_ld());
+        }
+    }
+
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override
     {
         SCOPED_NVTX_RANGE();
@@ -632,14 +720,10 @@ public:
         lanczosIter_ = m;
         numLanczos_ = 1;
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         cudaStream_t saved_stream = nullptr;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
         kernelNamespace::lanczos_dispatch(cublasH_, m, *Hmat_, *V1_, upperb);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -652,15 +736,11 @@ public:
         lanczosIter_ = M;
         numLanczos_ = numvec;
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         cudaStream_t saved_stream = nullptr;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
         kernelNamespace::lanczos_dispatch(cublasH_, M, numvec, *Hmat_, *V1_,
                                           upperb, ritzv, Tau, ritzV);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -729,14 +809,23 @@ public:
             // Message on enabling single precision
             if (shouldEnableSP && my_rank_ == 0 && !isunshift)
             {
-                std::cout << "Enable Single Precision in Filter" << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    "Enable Single Precision in Filter", my_rank_);
             }
         }
 #endif
     }
 
-    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
+    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0) override
     {
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value ||
                       std::is_same<T, std::complex<double>>::value)
@@ -759,16 +848,16 @@ public:
                 {
                     kernelNamespace::template MatrixMultiplyMultiVectors<
                         singlePrecisionT>(cublasH_, &alpha_sp, *Hmat_sp, *V1_sp,
-                                          &beta_sp, *W1_sp, offset + locked_,
-                                          block);
+                                          &beta_sp, *W1_sp,
+                                          offset_left + locked_, ncols);
                     next_ = NextOp::cAb;
                 }
                 else
                 {
                     kernelNamespace::template MatrixMultiplyMultiVectors<
                         singlePrecisionT>(cublasH_, &alpha_sp, *Hmat_sp, *W1_sp,
-                                          &beta_sp, *V1_sp, offset + locked_,
-                                          block);
+                                          &beta_sp, *V1_sp,
+                                          offset_left + locked_, ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -778,14 +867,14 @@ public:
                 {
                     kernelNamespace::MatrixMultiplyMultiVectors(
                         cublasH_, &alpha, *Hmat_, *V1_, &beta, *W1_,
-                        offset + locked_, block);
+                        offset_left + locked_, ncols);
                     next_ = NextOp::cAb;
                 }
                 else
                 {
                     kernelNamespace::MatrixMultiplyMultiVectors(
                         cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_,
-                        offset + locked_, block);
+                        offset_left + locked_, ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -798,23 +887,80 @@ public:
             {
                 kernelNamespace::MatrixMultiplyMultiVectors(
                     cublasH_, &alpha, *Hmat_, *V1_, &beta, *W1_,
-                    offset + locked_, block);
+                    offset_left + locked_, ncols);
                 next_ = NextOp::cAb;
             }
             else
             {
                 kernelNamespace::MatrixMultiplyMultiVectors(
                     cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_,
-                    offset + locked_, block);
+                    offset_left + locked_, ncols);
                 next_ = NextOp::bAc;
             }
+        }
+    }
+
+    void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
+                 std::size_t offset_left,
+                 std::size_t offset_right = 0) override
+    {
+        SCOPED_NVTX_RANGE();
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
+        const std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        if (next_ == NextOp::bAc)
+        {
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &one, *Hmat_, *V1_, &zero, *W1_, col0, ncols);
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V2_, col0, ncols);
+            chase::linalg::internal::cuda::batchedAxpyScalar(
+                gamma, V1_->l_data() + col0 * V1_->l_ld(),
+                V2_->l_data() + col0 * V2_->l_ld(),
+                static_cast<int>(V2_->l_rows()), static_cast<int>(ncols),
+                static_cast<int>(V1_->l_ld()), static_cast<int>(V2_->l_ld()));
+            next_ = NextOp::cAb;
+        }
+        else
+        {
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);               
+            chase::linalg::internal::cuda::batchedAxpyScalar(
+                gamma, V2_->l_data() + col0 * V2_->l_ld(),
+                V1_->l_data() + col0 * V1_->l_ld(),
+                static_cast<int>(V1_->l_rows()), static_cast<int>(ncols),
+                static_cast<int>(V2_->l_ld()), static_cast<int>(V1_->l_ld()));
+            next_ = NextOp::bAc;
+        }
+    }
+
+    void ApplyKconjugate(std::size_t block) override {
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            V1_->Kconjugate(block, locked_);
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            //First, we need to know to whom each rank has to send and receive data.
         }
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         SCOPED_NVTX_RANGE();
-
         // Create CUDA events for detailed timing
         cudaEvent_t qr_start, qr_flip_sign, qr_cholqr_start, qr_cholqr_end, qr_lacpy_start, qr_end;
         cudaEventCreate(&qr_start);
@@ -824,6 +970,31 @@ public:
         cudaEventCreate(&qr_lacpy_start);
         cudaEventCreate(&qr_end);
         cudaEventRecord(qr_start);
+        cudaEventRecord(qr_cholqr_start);
+        cudaEventRecord(qr_cholqr_end);
+
+        float time_hh_core_ms = 0.0f;
+        float time_hh_fallback_core_ms = 0.0f;
+        float time_chol_shifted_ms = 0.0f;
+        float time_chol1_ms = 0.0f;
+        float time_chol2_ms = 0.0f;
+        float time_copy_to_ms = 0.0f;
+        float time_copy_back_ms = 0.0f;
+
+        auto measure_cuda = [&](float& acc_ms, auto&& fn) {
+            cudaEvent_t ev_a, ev_b;
+            cudaEventCreate(&ev_a);
+            cudaEventCreate(&ev_b);
+            cudaEventRecord(ev_a);
+            fn();
+            cudaEventRecord(ev_b);
+            cudaEventSynchronize(ev_b);
+            float ms = 0.0f;
+            cudaEventElapsedTime(&ms, ev_a, ev_b);
+            acc_ms += ms;
+            cudaEventDestroy(ev_a);
+            cudaEventDestroy(ev_b);
+        };
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -837,7 +1008,24 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
-            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(),
+            V1_->l_ld());
+
+            /* The right eigenvectors are not orthonormal in the QH case, but
+             * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
+             * against the current subspace By flipping the sign of the lower
+             * part of the locked vectors. First, we need to copy the unconverged 
+               vectors to the end of the vector space*/
+
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap_l_data_ptr(*V2_);
+
+            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, 2*locked_);
+
             cudaEventRecord(qr_flip_sign);
         }
         else
@@ -873,84 +1061,150 @@ public:
             }
         }
 #endif
-        if (disable == 1)
+        unsigned int householder_nb = 32u;
+        if (const char* hh_nb_env = std::getenv("CHASE_HOUSEHOLDER_NB"))
         {
-#ifdef HAS_SCALAPACK
-            kernelNamespace::houseHoulderQR(*V1_);
-#else
-            throw std::runtime_error(
-                "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                "which is not detected\n");
+            const long parsed = std::strtol(hh_nb_env, nullptr, 10);
+            if (parsed > 0)
+                householder_nb = static_cast<unsigned int>(parsed);
+        }
+
+#if defined(HAS_NCCL)
+        chase::linalg::internal::cuda_nccl::HouseQRTuning hh_qr_tuning{};
+        hh_qr_tuning.outer_block_nb = static_cast<int>(householder_nb);
 #endif
-        } /*else if(nevex_ >=
- MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
-         {
-             info = kernelNamespace::modifiedGramSchmidtCholQR(cublasH_,
-                                                             cusolverH_,
-                                                             V1_->l_rows(),
-                                                             V1_->l_cols(),
-                                                             locked_,
-                                                             V1_->l_data(),
-                                                             V1_->l_ld(),
-                                                             MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                             //V1_->getMpiGrid()->get_nccl_col_comm(),
-                                                             d_work_,
-                                                             lwork_,
-                                                             A_->l_data());
+        auto call_houseqr_formq = [&](auto& vec, auto* work_ptr) {
+#if defined(HAS_NCCL)
+            if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+            {
+                kernelNamespace::houseQR1_formQ(cublasH_, vec, work_ptr, lwork_,
+                                                &hh_qr_tuning);
+            }
+            else
+#endif
+            {
+                kernelNamespace::houseQR1_formQ(cublasH_, vec, work_ptr, lwork_,
+                                                householder_nb);
+            }
+        };
 
- #ifdef CHASE_OUTPUT
-             if(my_rank_ == 0){
-                 std::cout << "NEV+NEX is larger than: " <<
- MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL << ", use
- modifiedGramSchmidtCholQR" << std::endl;
-             }
- #endif
-             if(info != 0)
-             {
-                 chase::linalg::internal::cuda::t_lacpy('A',
-                                                 V2_->l_rows(),
-                                                 V2_->l_cols(),
-                                                 V2_->l_data(),
-                                                 V2_->l_ld(),
-                                                 V1_->l_data(),
-                                                 V1_->l_ld());
+        // CholQR when disable==0 (always), or disable==1 with cond==1.0 (CholQR1 path).
+        if (disable == 1 && cond != static_cast<Base<T>>(1.0))
+        {
+#ifdef QR_DOUBLE_PRECISION  
+            if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+            {
+                measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
+                auto V1_d = V1_->getDoublePrecisionMatrix();
 
-                 if(my_rank_ == 0){
-                     std::cout << "modifiedGramSchmidtCholQR doesn't work, try
- with shiftedcholQR2." << std::endl;
-                 }
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                {
+#if defined(HAS_NCCL)
+                    if constexpr (std::is_same<backend,
+                                  chase::grid::backend::NCCL>::value)
+                    {
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Debug, "linalg",
+                                "Householder QR: NCCL GPU (block-cyclic 1D).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            call_houseqr_formq(
+                                *V1_d,
+                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
+                        });
+                    }
+                    else
+#endif
+                    {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseHoulderQR(*V1_d);
+                        });
+#else
+                        throw std::runtime_error(
+                            "Block-cyclic 1D distributed Householder QR requires "
+                            "NCCL (backend::NCCL) or ScaLAPACK.\n");
+#endif
+                    }
+                }
+                else
+                {
+                    call_houseqr_formq(
+                        *V1_d,
+                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                            d_work_d));
+                }
+                measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
+            }
+            else
+#endif
+            {
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                {
+#if defined(HAS_NCCL)
+                    if constexpr (std::is_same<backend,
+                                  chase::grid::backend::NCCL>::value)
+                    {
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Debug, "linalg",
+                                "Householder QR: NCCL GPU (block-cyclic 1D).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            call_houseqr_formq(*V1_, d_work_);
+                        });
+                    }
+                    else
+#endif
+                    {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseHoulderQR(*V1_);
+                        });
+#else
+                        throw std::runtime_error(
+                            "Block-cyclic 1D distributed Householder QR requires "
+                            "NCCL (backend::NCCL) or ScaLAPACK.\n");
+#endif
+                    }
+                }
+                else
+                {
+                    measure_cuda(time_hh_core_ms, [&]() {
+                        call_houseqr_formq(*V1_, d_work_);
+                    });
+                }
 
-
-                 info = kernelNamespace::shiftedcholQR2(cublasH_,
-                                                                 cusolverH_,
-                                                                 V1_->g_rows(),
-                                                                 V1_->l_rows(),
-                                                                 V1_->l_cols(),
-                                                                 V1_->l_data(),
-                                                                 V1_->l_ld(),
-                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
-                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                 d_work_,
-                                                                 lwork_,
-                                                                 A_->l_data());
-
-                 if(info != 0)
-                 {
- #ifdef HAS_SCALAPACK
- #ifdef CHASE_OUTPUT
-                     if(my_rank_ == 0){
-                         std::cout << "CholeskyQR doesn't work, Househoulder QR
- will be used." << std::endl;
-                     }
- #endif
-                     kernelNamespace::houseHoulderQR(*V1_);
- #else
-                     throw std::runtime_error("For ChASE-MPI, distributed
- Householder QR requires ScaLAPACK, which is not detected\n"); #endif
-                 }
-
-             }
-         }*/
+            }
+        }   
         else
         {
             Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
@@ -965,8 +1219,10 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << std::endl;
+                std::ostringstream oss;
+                oss << std::setprecision(2) << "cond(V): " << cond;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    oss.str(), my_rank_);
             }
 #endif
 
@@ -986,32 +1242,52 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::shiftedcholQR2(
-                        cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                        V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data());
-                    V1_->copyback();
+                    measure_cuda(time_chol_shifted_ms, [&]() {
+                        info = kernelNamespace::shiftedcholQR2(
+                            cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                            V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::shiftedcholQR2(
-                        cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                        V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                    if constexpr (std::is_same<T, std::complex<float>>::value ||
+                                std::is_same<T, float>::value)
+                    {
+                        measure_cuda(time_chol_shifted_ms, [&]() {
+                            info = kernelNamespace::shiftedcholQR2(
+                                cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                                V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
+                                // V1_->getMpiGrid()->get_nccl_col_comm(),
+                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                    V1_->getMpiGrid()),
+                                d_work_, lwork_, A_->l_data());
+                        });
+                    }else
+                    {
+                        measure_cuda(time_chol_shifted_ms, [&]() {
+                            info = kernelNamespace::shiftedcholQR2(
+                                cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                                V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
+                                // V1_->getMpiGrid()->get_nccl_col_comm(),
+                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                    V1_->getMpiGrid()),
+                                d_work_, lwork_, A_->l_data());
+        
+                        });
+                    }
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1047,32 +1323,36 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::cholQR1(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data());
-                    V1_->copyback();
+                    measure_cuda(time_chol1_ms, [&]() {
+                        info = kernelNamespace::cholQR1(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::cholQR1(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                    measure_cuda(time_chol1_ms, [&]() {
+                        info = kernelNamespace::cholQR1(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            d_work_, lwork_, A_->l_data(), devInfo_);
+                    });
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1102,32 +1382,36 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::cholQR2(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data());
-                    V1_->copyback();
+                    measure_cuda(time_chol2_ms, [&]() {
+                        info = kernelNamespace::cholQR2(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::cholQR2(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                    measure_cuda(time_chol2_ms, [&]() {
+                        info = kernelNamespace::cholQR2(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            d_work_, lwork_, A_->l_data(), devInfo_);
+                    });
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1137,36 +1421,173 @@ public:
 
             if (info != 0)
             {
-#ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "CholeskyQR doesn't work, Househoulder QR "
-                                 "will be used."
-                              << std::endl;
+                    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                        "CholeskyQR doesn't work, Householder QR will be used.\n",
+                        my_rank_);
                 }
 #endif
-                kernelNamespace::houseHoulderQR(*V1_);
-#else
-                throw std::runtime_error(
-                    "For ChASE-MPI, distributed Householder QR requires "
-                    "ScaLAPACK, which is not detected\n");
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    {
+                        if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                        {
+#if defined(HAS_NCCL)
+                            if constexpr (std::is_same<backend,
+                                          chase::grid::backend::NCCL>::value)
+                            {
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Debug, "linalg",
+                                        "Householder QR (CholQR fallback): NCCL GPU (block-cyclic 1D).\n",
+                                        0);
+                                }
 #endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    call_houseqr_formq(
+                                        *V1_d,
+                                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
+                                });
+                            }
+                            else
+#endif
+                            {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Warn, "linalg",
+                                        "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                        0);
+                                }
+#endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseHoulderQR(*V1_d);
+                                });
+#else
+                                throw std::runtime_error(
+                                    "Block-cyclic 1D distributed Householder QR requires "
+                                    "NCCL (backend::NCCL) or ScaLAPACK.\n");
+#endif
+                            }
+                        }
+                        else
+                        {
+                            measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                call_houseqr_formq(
+                                    *V1_d,
+                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
+                            });
+                        }
+                    }
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
+                }
+                else
+#endif
+                {
+                    {
+                        if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                        {
+#if defined(HAS_NCCL)
+                            if constexpr (std::is_same<backend,
+                                          chase::grid::backend::NCCL>::value)
+                            {
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Debug, "linalg",
+                                        "Householder QR (CholQR fallback): NCCL GPU (block-cyclic 1D).\n",
+                                        0);
+                                }
+#endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    call_houseqr_formq(*V1_, d_work_);
+                                });
+                            }
+                            else
+#endif
+                            {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Warn, "linalg",
+                                        "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                        0);
+                                }
+#endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseHoulderQR(*V1_);
+                                });
+#else
+                                throw std::runtime_error(
+                                    "Block-cyclic 1D distributed Householder QR requires "
+                                    "NCCL (backend::NCCL) or ScaLAPACK.\n");
+#endif
+                            }
+                        }
+                        else
+                        {
+                            measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                call_houseqr_formq(*V1_, d_work_);
+                            });
+                        }
+                    }
+                }
             }
         }
 
         cudaEventRecord(qr_lacpy_start);
-        chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
-                                               V2_->l_data(), V2_->l_ld(),
-                                               V1_->l_data(), V1_->l_ld());
 
+        std::size_t unconverged_cols = GetRitzvBlockSize() - locked_;
+
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            unconverged_cols = GetRitzvBlockSize() - 2*locked_;
+
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
+            V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap_l_data_ptr(*V2_);
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data(), V1_->l_ld(),
+            V2_->l_data(), V2_->l_ld());
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + (V2_->l_cols() - locked_ ) * V2_->l_ld(), V2_->l_ld());
+
+        }else{
+            unconverged_cols = GetRitzvBlockSize() - locked_;
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V2_->l_data(), V2_->l_ld(),
+            V1_->l_data(), V1_->l_ld());
+        }
+        
         chase::linalg::internal::cuda::t_lacpy(
-            'A', V2_->l_rows(), nevex_ - locked_,
+            'A', V2_->l_rows(), unconverged_cols,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
 
         cudaEventRecord(qr_end);
         cudaEventSynchronize(qr_end);
+
+        cudaDeviceSynchronize();
 
         // Calculate and print detailed timings
         float time_flip_sign = 0.0f, time_cholqr = 0.0f, time_lacpy = 0.0f, time_total = 0.0f;
@@ -1177,11 +1598,20 @@ public:
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
         {
-            std::cout << std::setprecision(6) << std::fixed;
-            std::cout << "[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
-                      << "FlipSign: " << time_flip_sign/1000.0 << " s, "
-                      << "CholQR: " << time_cholqr/1000.0 << " s, "
-                      << "Lacpy: " << time_lacpy/1000.0 << " s" << std::endl;
+            std::ostringstream oss;
+            oss << std::setprecision(6) << std::fixed;
+            oss << "\n[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
+                << "FlipSign: " << time_flip_sign/1000.0 << " s, "
+                << "CholQR: " << time_cholqr/1000.0 << " s, "
+                << "Lacpy: " << time_lacpy/1000.0 << " s\n";
+            oss << "  Breakdown: copyTo=" << time_copy_to_ms/1000.0 << " s, "
+                << "copyBack=" << time_copy_back_ms/1000.0 << " s, "
+                << "HH(core)=" << time_hh_core_ms/1000.0 << " s, "
+                << "HH(fallback)=" << time_hh_fallback_core_ms/1000.0 << " s, "
+                << "ShiftedCholQR2=" << time_chol_shifted_ms/1000.0 << " s, "
+                << "CholQR1=" << time_chol1_ms/1000.0 << " s, "
+                << "CholQR2=" << time_chol2_ms/1000.0 << " s\n";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif
         // Cleanup events
@@ -1197,19 +1627,31 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
+        cudaDeviceSynchronize();
+        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper<T>(
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld() * (V1_->l_cols() - locked_), 0,
+            V1_->getMpiGrid()->get_nccl_row_comm()));
+        chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), 
+        V2_->l_cols() - locked_, V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(), 
+        V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
 #ifdef XGEEV_EXISTS
             kernelNamespace::pseudo_hermitian_rayleighRitz(
                 cublasH_, cusolverH_, params_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
-                *ritzv_, locked_, block, devInfo_, d_work_, lwork_,
+                *ritzv_, locked_, 2*block, devInfo_, d_work_, lwork_,
                 h_work_.get(), lhwork_, A_.get());
 #else
             kernelNamespace::pseudo_hermitian_rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
-                *ritzv_, locked_, block, devInfo_, d_work_, lwork_, A_.get());
+                *ritzv_, locked_, 2*block, devInfo_, d_work_, lwork_, A_.get());
 #endif
+
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V2_->l_rows(), 2*block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
         else
         {
@@ -1217,26 +1659,32 @@ public:
             kernelNamespace::rayleighRitz(
                 cublasH_, cusolverH_, *Hmat_, *V1_, *V2_, *W1_, *W2_, *ritzv_,
                 locked_, block, devInfo_, d_work_, lwork_, A_.get());
+
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
 
-        chase::linalg::internal::cuda::t_lacpy(
-            'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
-            V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+        cudaDeviceSynchronize();
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
               chase::Base<T>* resid) override
     {
     }
-
+    //TODO / TO DO : Remove fixednev. 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
         SCOPED_NVTX_RANGE();
 
+        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
+        /*std::size_t subSize =
+            (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;*/
+        std::size_t subSize = nevex_ - locked_;
         kernelNamespace::residuals(cublasH_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
                                    ritzv_->loc_matrix(), resid_->loc_matrix(),
-                                   locked_, nevex_ - locked_);
+                                   locked_, subSize);
     }
 
     void Swap(std::size_t i, std::size_t j) override

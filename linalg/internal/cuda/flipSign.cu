@@ -187,6 +187,129 @@ void chase_flipMatrixSign(std::complex<double>* A, std::size_t m, std::size_t n,
     zflipMatrixSign<<<num_blocks, blockSize, 0, stream_>>>(
         reinterpret_cast<cuDoubleComplex*>(A), m, n, lda);
 }
+
+__global__ void sscaleLowerBlockRows(float* A, std::size_t lda,
+                                     std::size_t row_start,
+                                     std::size_t nrows_lower, std::size_t ncols,
+                                     float scale)
+{
+    const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const std::size_t col = idx / nrows_lower;
+    const std::size_t row_offset = idx % nrows_lower;
+
+    if (col < ncols)
+    {
+        const std::size_t row = row_start + row_offset;
+        A[row + lda * col] *= scale;
+    }
+}
+
+__global__ void dscaleLowerBlockRows(double* A, std::size_t lda,
+                                     std::size_t row_start,
+                                     std::size_t nrows_lower, std::size_t ncols,
+                                     double scale)
+{
+    const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const std::size_t col = idx / nrows_lower;
+    const std::size_t row_offset = idx % nrows_lower;
+
+    if (col < ncols)
+    {
+        const std::size_t row = row_start + row_offset;
+        A[row + lda * col] *= scale;
+    }
+}
+
+__global__ void cscaleLowerBlockRows(cuComplex* A, std::size_t lda,
+                                     std::size_t row_start,
+                                     std::size_t nrows_lower, std::size_t ncols,
+                                     cuComplex scale)
+{
+    const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const std::size_t col = idx / nrows_lower;
+    const std::size_t row_offset = idx % nrows_lower;
+
+    if (col < ncols)
+    {
+        const std::size_t row = row_start + row_offset;
+        cuComplex& z = A[row + lda * col];
+        z = cuCmulf(z, scale);
+    }
+}
+
+__global__ void zscaleLowerBlockRows(cuDoubleComplex* A, std::size_t lda,
+                                     std::size_t row_start,
+                                     std::size_t nrows_lower, std::size_t ncols,
+                                     cuDoubleComplex scale)
+{
+    const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const std::size_t col = idx / nrows_lower;
+    const std::size_t row_offset = idx % nrows_lower;
+
+    if (col < ncols)
+    {
+        const std::size_t row = row_start + row_offset;
+        cuDoubleComplex& z = A[row + lda * col];
+        const double re = z.x * scale.x - z.y * scale.y;
+        const double im = z.x * scale.y + z.y * scale.x;
+        z.x = re;
+        z.y = im;
+    }
+}
+
+void chase_scaleLowerBlockRows(float* A, std::size_t lda, std::size_t row_start,
+                               std::size_t nrows_lower, std::size_t ncols,
+                               float scale, cudaStream_t stream_)
+{
+    if (nrows_lower == 0 || ncols == 0)
+        return;
+    const std::size_t num_blocks =
+        (nrows_lower * ncols + (blockSize - 1)) / blockSize;
+    sscaleLowerBlockRows<<<num_blocks, blockSize, 0, stream_>>>(
+        A, lda, row_start, nrows_lower, ncols, scale);
+}
+
+void chase_scaleLowerBlockRows(double* A, std::size_t lda, std::size_t row_start,
+                               std::size_t nrows_lower, std::size_t ncols,
+                               double scale, cudaStream_t stream_)
+{
+    if (nrows_lower == 0 || ncols == 0)
+        return;
+    const std::size_t num_blocks =
+        (nrows_lower * ncols + (blockSize - 1)) / blockSize;
+    dscaleLowerBlockRows<<<num_blocks, blockSize, 0, stream_>>>(
+        A, lda, row_start, nrows_lower, ncols, scale);
+}
+
+void chase_scaleLowerBlockRows(std::complex<float>* A, std::size_t lda,
+                               std::size_t row_start, std::size_t nrows_lower,
+                               std::size_t ncols, std::complex<float> scale,
+                               cudaStream_t stream_)
+{
+    if (nrows_lower == 0 || ncols == 0)
+        return;
+    const std::size_t num_blocks =
+        (nrows_lower * ncols + (blockSize - 1)) / blockSize;
+    const cuComplex cs = {scale.real(), scale.imag()};
+    cscaleLowerBlockRows<<<num_blocks, blockSize, 0, stream_>>>(
+        reinterpret_cast<cuComplex*>(A), lda, row_start, nrows_lower, ncols,
+        cs);
+}
+
+void chase_scaleLowerBlockRows(std::complex<double>* A, std::size_t lda,
+                               std::size_t row_start, std::size_t nrows_lower,
+                               std::size_t ncols, std::complex<double> scale,
+                               cudaStream_t stream_)
+{
+    if (nrows_lower == 0 || ncols == 0)
+        return;
+    const std::size_t num_blocks =
+        (nrows_lower * ncols + (blockSize - 1)) / blockSize;
+    const cuDoubleComplex zs = {scale.real(), scale.imag()};
+    zscaleLowerBlockRows<<<num_blocks, blockSize, 0, stream_>>>(
+        reinterpret_cast<cuDoubleComplex*>(A), lda, row_start, nrows_lower,
+        ncols, zs);
+}
 } // namespace cuda
 } // namespace internal
 } // namespace linalg

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <complex>
 #include <mpi.h>
 
 /**
@@ -83,7 +84,11 @@ MPI_Datatype getMPI_Type<double>()
 template <>
 MPI_Datatype getMPI_Type<std::complex<float>>()
 {
+#ifdef MPI_C_FLOAT_COMPLEX
+    return MPI_C_FLOAT_COMPLEX;
+#else
     return MPI_COMPLEX;
+#endif
 }
 /**
  * @ingroup mpi_type_mappings
@@ -96,7 +101,11 @@ MPI_Datatype getMPI_Type<std::complex<float>>()
 template <>
 MPI_Datatype getMPI_Type<std::complex<double>>()
 {
+#ifdef MPI_C_DOUBLE_COMPLEX
+    return MPI_C_DOUBLE_COMPLEX;
+#else
     return MPI_DOUBLE_COMPLEX;
+#endif
 }
 
 } // namespace mpi

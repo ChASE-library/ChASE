@@ -155,7 +155,7 @@ void cuda_mpi::symOrHermMatrix(
         }
     }
 #else
-    std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
+    throw std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
                        "which is not detected\n");
 #endif
 }
@@ -257,7 +257,7 @@ void cuda_mpi::symOrHermMatrix(
     }
 
 #else
-    std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
+    throw std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
                        "which is not detected\n");
 #endif
 }

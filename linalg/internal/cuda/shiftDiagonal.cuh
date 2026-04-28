@@ -50,6 +50,30 @@ void chase_shift_matrix(std::complex<float>* A, std::size_t n, std::size_t lda,
 void chase_shift_matrix(std::complex<double>* A, std::size_t n, std::size_t lda,
                         double shift, cudaStream_t stream_);
 
+// Shift diagonal: A(ii) += (*d_shift) * (sqrt(shift_scale_num_rows) * epsilon).
+// Epsilon and sqrt are evaluated on device so the multiplier is not a lone host
+// value at launch (non-blocking stream safety).
+void chase_shift_matrix_from_device_shift(float* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(double* A, std::size_t n,
+                                          std::size_t lda,
+                                          const double* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(std::complex<float>* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(std::complex<double>* A,
+                                          std::size_t n, std::size_t lda,
+                                          const double* d_shift,
+                                          std::size_t shift_scale_num_rows,
+                                          cudaStream_t stream_);
+
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);

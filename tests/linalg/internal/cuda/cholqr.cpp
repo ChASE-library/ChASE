@@ -22,6 +22,7 @@ protected:
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
         CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
     }
 
     void TearDown() override
@@ -30,6 +31,8 @@ protected:
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
             CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH_));
+        if (devInfo_)
+            CHECK_CUDA_ERROR(cudaFree(devInfo_));
     }
 
     std::size_t m = 100;
@@ -39,6 +42,7 @@ protected:
     cublasHandle_t cublasH_;
     cusolverDnHandle_t cusolverH_;
     cudaStream_t stream_;
+    int* devInfo_ = nullptr;
 };
 
 using TestTypes =
@@ -54,8 +58,9 @@ TYPED_TEST(CholQRGPUTest, cholQR1)
                  this->m, this->n, 0);
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
-    int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_,
-                                                         this->cusolverH_, Vec);
+    int info = chase::linalg::internal::cuda::cholQR1<T>(
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     ASSERT_EQ(info, 0);
     Vec.D2H();
     auto orth = orthogonality<T>(this->m, this->n, this->V.data(), this->m);
@@ -71,8 +76,9 @@ TYPED_TEST(CholQRGPUTest, cholQR1BadlyCond)
                  this->m, this->m, this->n, 0);
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
-    int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_,
-                                                         this->cusolverH_, Vec);
+    int info = chase::linalg::internal::cuda::cholQR1<T>(
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     ASSERT_EQ(info, 0);
     Vec.D2H();
     auto orth = orthogonality<T>(this->m, this->n, this->V.data(), this->m);
@@ -89,8 +95,9 @@ TYPED_TEST(CholQRGPUTest, cholQR1IllCond)
                  this->m, this->m, this->n, 0);
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
-    int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_,
-                                                         this->cusolverH_, Vec);
+    int info = chase::linalg::internal::cuda::cholQR1<T>(
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -104,8 +111,9 @@ TYPED_TEST(CholQRGPUTest, cholQR2)
                  this->m, this->m, this->n, 0);
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
-    int info = chase::linalg::internal::cuda::cholQR2<T>(this->cublasH_,
-                                                         this->cusolverH_, Vec);
+    int info = chase::linalg::internal::cuda::cholQR2<T>(
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     ASSERT_EQ(info, 0);
     Vec.D2H();
     auto orth = orthogonality<T>(this->m, this->n, this->V.data(), this->m);
@@ -121,8 +129,9 @@ TYPED_TEST(CholQRGPUTest, cholQR2IllCond)
                  this->m, this->m, this->n, 0);
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
-    int info = chase::linalg::internal::cuda::cholQR2<T>(this->cublasH_,
-                                                         this->cusolverH_, Vec);
+    int info = chase::linalg::internal::cuda::cholQR2<T>(
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -137,7 +146,8 @@ TYPED_TEST(CholQRGPUTest, scholQR)
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n,
                                                        this->m, this->V.data());
     int info = chase::linalg::internal::cuda::shiftedcholQR2<T>(
-        this->cublasH_, this->cusolverH_, Vec);
+        this->cublasH_, this->cusolverH_, Vec, nullptr, 0, nullptr,
+        this->devInfo_);
     ASSERT_EQ(info, 0);
     Vec.D2H();
     auto orth = orthogonality<T>(this->m, this->n, this->V.data(), this->m);
