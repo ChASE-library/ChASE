@@ -12,6 +12,8 @@
 #include "algorithm/types.hpp"
 
 #ifdef HAS_SCALAPACK
+#include <mpi.h>
+
 /**
  * @page scalapackpp_namespace chase::linalg::scalapackpp Namespace
  * @brief A templated C++ interface to the ScaLAPACK library.
