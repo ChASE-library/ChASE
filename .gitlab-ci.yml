@@ -32,7 +32,7 @@ build_cpu:
     - cmake --version
     - mkdir -p build_cpu
     - cd build_cpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_ENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
+    - cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries"
     - make VERBOSE=1 -j4
   artifacts:
     paths:
@@ -53,10 +53,6 @@ test_cpu:
     - cd build_cpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
     - rm -rf _deps
-  artifacts:
-    paths:
-      - build_cpu/*
-    expire_in: 1 week
 
 build_gpu:
   stage: build
@@ -71,11 +67,11 @@ build_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2025 GCC/13.3.0 OpenMPI imkl CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_ENABLE_TESTS=ON -DMPI_RUN="srun" -DCMAKE_BUILD_TYPE=Release .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:
@@ -99,7 +95,7 @@ test_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2025 GCC/13.3.0 OpenMPI imkl CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
     - export CUDA_VISIBLE_DEVICES=0,1,2,3
     - cd build_gpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
@@ -111,29 +107,60 @@ test_gpu:
 
 coverage_generate:
   stage: coverage
-  coverage: '/lines......: (\d+[.]\d+)/'
+  coverage: '/functions......: (\d+[.]\d+)/'
   dependencies:
     - test_gpu
-  tags: [ public-docker ]
-  image:
-    name: xinzhewu/lcov-gcc13.3.0
+  tags:
+    - juwels_booster
+    - jacamar
+    - login
+    - shell
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de
   <<: *only_source_changes
   script:
-    # Ignore gcov errors (e.g. stamp mismatch when artifacts from different runner)
-    - lcov --capture --directory ./build_gpu --output-file coverage.info --ignore-errors gcov
-
-    # Extract coverage number
+    - echo $SYSTEMNAME
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    
+    # Install gcovr and update PATH
     - |
-      COV=$(lcov --summary coverage.info | grep -oP 'lines.*: \K\d+\.\d+')
-      echo "Total coverage = ${COV}%"
-
-    # Choose badge color
+      echo "Installing gcovr..."
+      pip install --user gcovr
+      export PATH=${HOME}/.local/bin:$PATH
+      echo "gcovr version: $(gcovr --version)"
+    
+    # Generate coverage reports
+    - |
+      echo "Generating coverage reports..."
+      cd build_gpu
+      gcovr --root .. \
+        --json-summary coverage.json \
+        --xml coverage.xml \
+        --html coverage.html \
+        --html-details \
+        --html-title "ChASE Coverage Report" \
+        --exclude-unreachable-branches \
+        --exclude "tests/" \
+        --exclude "external/" \
+        --exclude "_deps/" \
+        --gcov-ignore-errors=all \
+        --print-summary
+      cd ..
+    
+    # Extract function coverage percentage
+    - |
+      COV=$(jq -r '.function_percent' build_gpu/coverage.json)
+      echo "Function coverage = ${COV}%"
+    
+    # Choose badge color based on function coverage
     - |
       if (( $(echo "$COV < 70" | bc -l) )); then COLOR=red
       elif (( $(echo "$COV < 85" | bc -l) )); then COLOR=yellow
       else COLOR=brightgreen
       fi
-
+      echo "Badge color: ${COLOR}"
+    
     # Create Shields-compatible JSON
     - |
       mkdir -p coverage
@@ -145,8 +172,14 @@ coverage_generate:
         "color": "${COLOR}"
       }
       EOF
+    
+    # Display badge JSON
+    - cat coverage/coverage.json
   artifacts:
     paths:
+      - build_gpu/coverage.json
+      - build_gpu/coverage.xml
+      - build_gpu/coverage.html
       - coverage/coverage.json
     expire_in: 1 week
 
