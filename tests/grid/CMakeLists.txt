@@ -1,5 +1,10 @@
-if(TARGET pchase_gpu)
+if(TARGET pchase_gpu AND TARGET linalg_internal_cuda_mpi)
     setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES pchase_gpu)
+elseif(TARGET mpi_grid_rccl)
+    setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES pchase_gpu mpi_grid_rccl
+               chase_algorithm)
+elseif(TARGET pchase_gpu)
+    setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES pchase_gpu pchase_cpu)
 else()
     setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES pchase_cpu)
 endif()

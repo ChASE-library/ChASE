@@ -15,21 +15,32 @@
 #include "algorithm/algorithm.hpp"
 #include "algorithm/performance.hpp"
 
-#if defined(USE_MPI) && !defined(HAS_NCCL)
+#if defined(USE_MPI) && !defined(HAS_NCCL) && !defined(HAS_HIP)
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
 #include "linalg/internal/mpi/flipSign.hpp"
 #elif defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
-#include "linalg/internal/cuda/shiftDiagonal.hpp"
-#include "linalg/internal/cuda/flipSign.hpp"
-#elif !defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/gpu/backend/types.hpp"
+#include "linalg/internal/gpu/kernels/shared/device_kernels.hpp"
+#elif defined(HAS_HIP) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/gpu/kernels/hip/launchers/shift_diagonal.hpp"
+#include "linalg/internal/gpu/kernels/hip/launchers/flip_sign.hpp"
+#elif !defined(HAS_CUDA) && !defined(HAS_HIP) && !defined(USE_MPI) && \
+    !defined(HAS_NCCL)
 #include "linalg/internal/cpu/utils.hpp"
 #elif defined(HAS_NCCL)
-#include "linalg/internal/nccl/flipSign.hpp"
+#include "linalg/internal/gpu/dist_xccl/nccl/flipSign.hpp"
 #endif
 
 #ifdef HAS_NCCL
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
+#include "grid/default_distributed_backend.hpp"
+#elif defined(HAS_HIP) && defined(USE_MPI)
+#include "Impl/pchase_gpu/pchase_gpu.hpp"
+#include "grid/default_distributed_backend.hpp"
+#include "linalg/internal/gpu/dist_mpi/hip/flipSign.hpp"
 #elif defined(HAS_CUDA)
+#include "Impl/chase_gpu/chase_gpu.hpp"
+#elif defined(HAS_HIP)
 #include "Impl/chase_gpu/chase_gpu.hpp"
 #elif defined(USE_MPI)
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
@@ -39,14 +50,19 @@
 
 using namespace chase;
 
-#if defined(HAS_CUDA) || defined(HAS_NCCL)
+#if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
 using ARCH = chase::platform::GPU;
 #else
 using ARCH = chase::platform::CPU;
 #endif
 
-#ifdef HAS_NCCL
-using BackendType = chase::grid::backend::NCCL;
+#if (defined(HAS_NCCL) || defined(HAS_RCCL)) && \
+    (defined(HAS_CUDA) || defined(HAS_HIP))
+#include "grid/default_distributed_backend.hpp"
+// NVIDIA defaults to NCCL, AMD/HIP defaults to RCCL when linked. GPU-aware MPI is
+// opt-out via CHASE_DISTRIBUTED_GPU_BACKEND_MPI. See
+// grid/default_distributed_backend.hpp.
+using CommBackend = chase::grid::backend::DefaultDistributedGpu;
 #endif
 
 using namespace popl;
@@ -149,7 +165,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
         std::cout << "Matrix ";
 
-#ifdef HAS_CUDA // B
+#if defined(HAS_CUDA) || defined(HAS_HIP) // B
         std::cout << "on GPU ========================" << std::endl;
 #else
         std::cout << "on CPU ========================" << std::endl;
@@ -206,7 +222,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     // ARCH>(m,n,ldh,LH,mpi_grid);
 #endif
 #endif
-#ifdef HAS_NCCL
+#if defined(HAS_NCCL) || (defined(USE_MPI) && (defined(HAS_CUDA) || defined(HAS_HIP)))
     Hmat.allocate_cpu_data();
 #endif
     start = std::chrono::high_resolution_clock::now();
@@ -233,9 +249,15 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     }
 #endif
 
-#ifdef HAS_NCCL
+#if (defined(HAS_NCCL) || defined(HAS_RCCL)) && \
+    (defined(HAS_CUDA) || defined(HAS_HIP))
     auto single =
-        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), CommBackend>(
+            nev, nex, &Hmat, &Vec, Lambda.data());
+#elif defined(HAS_HIP) && defined(USE_MPI)
+    auto single =
+        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec),
+                               chase::grid::backend::MPI>(
             nev, nex, &Hmat, &Vec, Lambda.data());
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
@@ -266,6 +288,36 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         if (world_rank == world_size - 1)
         {
             std::cout << "AFTER SHIFT : Value of the last diagonal element: " << Hmat.cpu_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+    }
+#elif defined(HAS_HIP) && defined(USE_MPI)
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        if (world_rank == 0)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the first diagonal element: " << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the last diagonal element: "
+                      << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1]
+                      << std::endl;
+        }
+        chase::linalg::internal::hip_mpi::flipLowerHalfMatrixSign(Hmat);
+        single.Shift(shiftDiag);
+        chase::linalg::internal::hip_mpi::flipLowerHalfMatrixSign(Hmat);
+        if (world_rank == 0)
+        {
+            std::cout << "AFTER SHIFT : Value of the first diagonal element: "
+                      << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "AFTER SHIFT : Value of the last diagonal element: "
+                      << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1]
+                      << std::endl;
         }
     }
 #else
@@ -309,7 +361,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
     auto Hmat = new MatrixType(N, N);
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     Hmat->allocate_cpu_data();
 #endif
     start = std::chrono::high_resolution_clock::now();
@@ -322,7 +374,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
                   << " seconds" << std::endl;
     }
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     auto single = chase::Impl::ChASEGPU<T, MatrixType>(
         N, nev, nex, Hmat, V.data(), N, Lambda.data());
 #else
@@ -330,12 +382,28 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         N, nev, nex, Hmat, V.data(), N, Lambda.data());
 #endif
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
     if (shiftDiag != chase::Base<T>(0))
     {
-        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
-        chase::linalg::internal::cuda::shiftDiagonal(Hmat, chase::Base<T>(std::real(shiftDiag)), nullptr);
-        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
+        using kernels = chase::linalg::internal::gpu_device::kernels<
+            chase::linalg::internal::gpu_backend::cuda_backend>;
+        kernels::flip_lower_half_matrix_sign(N, N, Hmat->data(), Hmat->ld(),
+                                             kernels::runtime_type::default_stream());
+        kernels::shift_diagonal(Hmat->data(), N, Hmat->ld(),
+                                chase::Base<T>(std::real(shiftDiag)));
+        kernels::flip_lower_half_matrix_sign(N, N, Hmat->data(), Hmat->ld(),
+                                             kernels::runtime_type::default_stream());
+    }
+#elif defined(HAS_HIP)
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        chase::linalg::internal::hip::flipLowerHalfMatrixSign(
+            Hmat->data(), N, N, Hmat->ld(), nullptr);
+        chase::linalg::internal::hip::shiftDiagonal(
+            Hmat->data(), N, Hmat->ld(),
+            chase::Base<T>(std::real(shiftDiag)), nullptr);
+        chase::linalg::internal::hip::flipLowerHalfMatrixSign(
+            Hmat->data(), N, N, Hmat->ld(), nullptr);
     }
 #else
     if (shiftDiag != chase::Base<T>(0))

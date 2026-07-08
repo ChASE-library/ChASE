@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>

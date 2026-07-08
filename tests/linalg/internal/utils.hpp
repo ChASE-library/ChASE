@@ -7,10 +7,36 @@
 #pragma once
 
 #include <complex>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "algorithm/types.hpp"
+
+inline std::string GetLinalgInternalTestDataPath(const std::string& subdir)
+{
+#if defined(CHASE_LINALG_INTERNAL_TEST_DATA_DIR)
+    return std::string(CHASE_LINALG_INTERNAL_TEST_DATA_DIR) + "/" + subdir;
+#endif
+    if (const char* root = std::getenv("CHASE_LINALG_INTERNAL_TEST_DATA_ROOT"))
+    {
+        return std::string(root) + "/" + subdir;
+    }
+    // Legacy relative fallbacks: one level (cpu/mpi/cuda/hip) then nested dirs.
+    for (const char* prefix : {"../", "../../"})
+    {
+        const std::string candidate = std::string(prefix) + subdir;
+        std::ifstream qr_matrix(candidate + "/matrix_cfloat_cond_10.bin",
+                              std::ios::binary);
+        if (qr_matrix.good())
+        {
+            return candidate;
+        }
+    }
+    return "../" + subdir;
+}
 
 template <typename T>
 struct TypeName;
@@ -52,13 +78,14 @@ chase::Base<T> GetErrorTolerance()
 template <typename T>
 std::string GetQRFileName()
 {
-    return "../QR_matrices/matrix_" + TypeName<T>::Get();
+    return GetLinalgInternalTestDataPath("QR_matrices") + "/matrix_" +
+           TypeName<T>::Get();
 }
 
 template <typename T>
 std::string GetBSE_Path()
 {
-    return "../BSE_matrices";
+    return GetLinalgInternalTestDataPath("BSE_matrices");
 }
 
 template <typename T>

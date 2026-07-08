@@ -1429,7 +1429,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     single->initVecs(random);
     if (random)
     {
-        single->QR(0, 1.0);
+        single->QR(1.0);
     }
     // --------------------------------- LANCZOS
     // ---------------------------------
@@ -1564,7 +1564,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                      (*std::max_element(degrees, degrees + nev + nex - locked) -
                       degrees[0]));
 
-        single->QR(locked, cond);
+        single->QR(cond);
 
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
@@ -1572,7 +1572,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------
-        single->Resd(ritzv, resid, locked);
+        single->Resd(ritzv, resid);
 
         if (!single->isSym())
         {
@@ -1880,7 +1880,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     bool random = !config.UseApprox();
     single->initVecs(random);
     if (random)
-        single->QR(0, 1.0);
+        single->QR(1.0);
 
     // Lanczos for H²: even iteration count for symmetric spectrum
     Base<T> upperb = Base<T>(0);
@@ -2058,7 +2058,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             single->Output(LogLevel::Debug, oss.str(), "algorithm");
         }
 #endif
-        single->QR(locked, cond);
+        single->QR(cond);
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
@@ -2074,7 +2074,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         single->RR(ritzv, unconverged);
 
         // ------------------------- RESIDUALS ---------------------------------
-        single->Resd(ritzv, resid, locked);
+        single->Resd(ritzv, resid);
                 
         std::iota(index.begin(), index.begin() + 2*unconverged, 0);
 

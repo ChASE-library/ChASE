@@ -253,7 +253,7 @@ Parallel Implementations
 chase::Impl::pChASECPU
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The class ``chase::Impl::pChASECPU<MatrixType, InputMultiVectorType, BackendType>`` 
+The class ``chase::Impl::pChASECPU<MatrixType, InputMultiVectorType, CommBackend>`` 
 provides a parallel CPU implementation of ChASE using MPI. It supports:
 
   * **Matrix Types**: Distributed matrix classes
@@ -280,7 +280,7 @@ memory computation across multiple nodes.
 chase::Impl::pChASEGPU
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The class ``chase::Impl::pChASEGPU<MatrixType, InputMultiVectorType, BackendType>`` 
+The class ``chase::Impl::pChASEGPU<MatrixType, InputMultiVectorType, CommBackend>`` 
 provides a parallel GPU implementation of ChASE. It supports:
 
   * **Matrix Types**: Distributed GPU matrix classes
@@ -553,7 +553,7 @@ The kernels are organized into several sub-namespaces:
     (:ref:`API Reference <api_kernels>`)
   * **``chase::linalg::internal::nccl``**: Distributed GPU kernels using NCCL
     (:ref:`API Reference <api_kernels>`)
-  * **``chase::linalg::internal::cuda_aware_mpi``**: GPU kernels with CUDA-aware MPI
+  * **``chase::linalg::internal::cuda_mpi``**: GPU kernels with CUDA-aware MPI
     (:ref:`API Reference <api_kernels>`)
 
 Core Kernel Functions

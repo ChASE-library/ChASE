@@ -5,13 +5,33 @@
 // https://github.com/ChASE-library/ChASE
 
 #include "grid/mpiGrid2D.hpp"
+#include "grid/gpu_collective_config.hpp"
 #include <cmath>
 #include <cstring>
 #include <gtest/gtest.h>
 #include <mpi.h>
-#ifdef HAS_NCCL
+#if defined(HAS_NCCL)
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "grid/nccl_utils.hpp"
+#define CHASE_GRID_TEST_GPU_MALLOC(ptr, bytes) \
+    CHECK_CUDA_ERROR(cudaMalloc(&(ptr), (bytes)))
+#define CHASE_GRID_TEST_GPU_FREE(ptr) CHECK_CUDA_ERROR(cudaFree(ptr))
+#define CHASE_GRID_TEST_GPU_H2D(dst, src, bytes)                              \
+    CHECK_CUDA_ERROR(                                                          \
+        cudaMemcpy((dst), (src), (bytes), cudaMemcpyHostToDevice))
+#define CHASE_GRID_TEST_GPU_D2H(dst, src, bytes)                              \
+    CHECK_CUDA_ERROR(                                                          \
+        cudaMemcpy((dst), (src), (bytes), cudaMemcpyDeviceToHost))
+#elif defined(HAS_RCCL)
+#include "linalg/internal/gpu/backend/error.hpp"
+#include "grid/nccl_utils.hpp"
+#define CHASE_GRID_TEST_GPU_MALLOC(ptr, bytes) \
+    CHECK_HIP_ERROR(hipMalloc(&(ptr), (bytes)))
+#define CHASE_GRID_TEST_GPU_FREE(ptr) CHECK_HIP_ERROR(hipFree(ptr))
+#define CHASE_GRID_TEST_GPU_H2D(dst, src, bytes)                              \
+    CHECK_HIP_ERROR(hipMemcpy((dst), (src), (bytes), hipMemcpyHostToDevice))
+#define CHASE_GRID_TEST_GPU_D2H(dst, src, bytes)                              \
+    CHECK_HIP_ERROR(hipMemcpy((dst), (src), (bytes), hipMemcpyDeviceToHost))
 #endif
 
 class MpiGrid2DTest : public ::testing::Test
@@ -170,7 +190,7 @@ TEST_F(MpiGrid2DTest, AutoGridDimensionCreation)
     ASSERT_NE(col_comm, MPI_COMM_NULL);
 }
 
-#ifdef HAS_NCCL
+#ifdef CHASE_HAS_GPU_COLLECTIVE
 // Test for RowMajor Grid Creation
 TEST_F(MpiGrid2DTest, RowMajorGridCreationNCCLSquaredGrid)
 {
@@ -344,22 +364,20 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     }
 
     float* data_sp_device;
-    CHECK_CUDA_ERROR(cudaMalloc(&data_sp_device, data_count * sizeof(float)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_sp_device, data_sp.data(),
-                                data_count * sizeof(float),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_sp_device, data_count * sizeof(float));
+    CHASE_GRID_TEST_GPU_H2D(data_sp_device, data_sp.data(),
+                            data_count * sizeof(float));
     MPI_Allreduce(MPI_IN_PLACE, data_sp.data(), data_count, MPI_FLOAT, MPI_SUM,
                   comm);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         data_sp_device, data_sp_device, data_count, ncclSum, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_sp_2.data(), data_sp_device,
-                                data_count * sizeof(float),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_sp_2.data(), data_sp_device,
+                            data_count * sizeof(float));
     for (auto i = 0; i < data_count; i++)
     {
         EXPECT_EQ(data_sp[i], data_sp_2[i]);
     }
-    CHECK_CUDA_ERROR(cudaFree(data_sp_device));
+    CHASE_GRID_TEST_GPU_FREE(data_sp_device);
 
     std::vector<double> data_dp(data_count);
     std::vector<double> data_dp_2(data_count);
@@ -369,22 +387,20 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     }
 
     double* data_dp_device;
-    CHECK_CUDA_ERROR(cudaMalloc(&data_dp_device, data_count * sizeof(double)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_dp_device, data_dp.data(),
-                                data_count * sizeof(double),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_dp_device, data_count * sizeof(double));
+    CHASE_GRID_TEST_GPU_H2D(data_dp_device, data_dp.data(),
+                            data_count * sizeof(double));
     MPI_Allreduce(MPI_IN_PLACE, data_dp.data(), data_count, MPI_DOUBLE, MPI_SUM,
                   comm);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         data_dp_device, data_dp_device, data_count, ncclSum, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_dp_2.data(), data_dp_device,
-                                data_count * sizeof(double),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_dp_2.data(), data_dp_device,
+                            data_count * sizeof(double));
     for (auto i = 0; i < data_count; i++)
     {
         EXPECT_EQ(data_dp[i], data_dp_2[i]);
     }
-    CHECK_CUDA_ERROR(cudaFree(data_dp_device));
+    CHASE_GRID_TEST_GPU_FREE(data_dp_device);
     // complex float
     std::vector<std::complex<float>> data_cp(data_count);
     std::vector<std::complex<float>> data_cp_2(data_count);
@@ -394,23 +410,21 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     }
 
     std::complex<float>* data_cp_device;
-    CHECK_CUDA_ERROR(
-        cudaMalloc(&data_cp_device, data_count * sizeof(std::complex<float>)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_cp_device, data_cp.data(),
-                                data_count * sizeof(std::complex<float>),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_cp_device,
+                               data_count * sizeof(std::complex<float>));
+    CHASE_GRID_TEST_GPU_H2D(data_cp_device, data_cp.data(),
+                            data_count * sizeof(std::complex<float>));
     MPI_Allreduce(MPI_IN_PLACE, data_cp.data(), data_count, MPI_COMPLEX,
                   MPI_SUM, comm);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         data_cp_device, data_cp_device, data_count, ncclSum, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_cp_2.data(), data_cp_device,
-                                data_count * sizeof(std::complex<float>),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_cp_2.data(), data_cp_device,
+                            data_count * sizeof(std::complex<float>));
     for (auto i = 0; i < data_count; i++)
     {
         EXPECT_EQ(data_cp[i], data_cp_2[i]);
     }
-    CHECK_CUDA_ERROR(cudaFree(data_cp_device));
+    CHASE_GRID_TEST_GPU_FREE(data_cp_device);
 
     // complex double
     std::vector<std::complex<double>> data_zp(data_count);
@@ -421,23 +435,21 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     }
 
     std::complex<double>* data_zp_device;
-    CHECK_CUDA_ERROR(
-        cudaMalloc(&data_zp_device, data_count * sizeof(std::complex<double>)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_zp_device, data_zp.data(),
-                                data_count * sizeof(std::complex<double>),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_zp_device,
+                               data_count * sizeof(std::complex<double>));
+    CHASE_GRID_TEST_GPU_H2D(data_zp_device, data_zp.data(),
+                            data_count * sizeof(std::complex<double>));
     MPI_Allreduce(MPI_IN_PLACE, data_zp.data(), data_count, MPI_DOUBLE_COMPLEX,
                   MPI_SUM, comm);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         data_zp_device, data_zp_device, data_count, ncclSum, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_zp_2.data(), data_zp_device,
-                                data_count * sizeof(std::complex<double>),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_zp_2.data(), data_zp_device,
+                            data_count * sizeof(std::complex<double>));
     for (auto i = 0; i < data_count; i++)
     {
         EXPECT_EQ(data_zp[i], data_zp_2[i]);
     }
-    CHECK_CUDA_ERROR(cudaFree(data_zp_device));
+    CHASE_GRID_TEST_GPU_FREE(data_zp_device);
 }
 
 TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
@@ -468,16 +480,14 @@ TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
     }
 
     float* data_sp_device;
-    CHECK_CUDA_ERROR(cudaMalloc(&data_sp_device, data_count * sizeof(float)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_sp_device, data_sp.data(),
-                                data_count * sizeof(float),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_sp_device, data_count * sizeof(float));
+    CHASE_GRID_TEST_GPU_H2D(data_sp_device, data_sp.data(),
+                            data_count * sizeof(float));
 
     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(data_sp_device, data_count,
                                                    0, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_sp.data(), data_sp_device,
-                                data_count * sizeof(float),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_sp.data(), data_sp_device,
+                            data_count * sizeof(float));
 
     for (auto i = 0; i < data_count; i++)
     {
@@ -495,17 +505,15 @@ TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
     }
 
     std::complex<double>* data_zp_device;
-    CHECK_CUDA_ERROR(
-        cudaMalloc(&data_zp_device, data_count * sizeof(std::complex<double>)));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_zp_device, data_zp.data(),
-                                data_count * sizeof(std::complex<double>),
-                                cudaMemcpyHostToDevice));
+    CHASE_GRID_TEST_GPU_MALLOC(data_zp_device,
+                               data_count * sizeof(std::complex<double>));
+    CHASE_GRID_TEST_GPU_H2D(data_zp_device, data_zp.data(),
+                            data_count * sizeof(std::complex<double>));
 
     CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(data_zp_device, data_count,
                                                    0, nccl_comm));
-    CHECK_CUDA_ERROR(cudaMemcpy(data_zp.data(), data_zp_device,
-                                data_count * sizeof(std::complex<double>),
-                                cudaMemcpyDeviceToHost));
+    CHASE_GRID_TEST_GPU_D2H(data_zp.data(), data_zp_device,
+                            data_count * sizeof(std::complex<double>));
 
     for (auto i = 0; i < data_count; i++)
     {

@@ -15,22 +15,25 @@
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
 #endif
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
+#include "tests/distributed_gpu_backend.hpp"
 
 using namespace chase;
 
-#ifdef HAS_CUDA
-using BackendType = chase::grid::backend::NCCL;
-#endif
+using CommBackend = chase::test::DistributedGpuBackend;
 
 template <typename T>
 static chase::Base<T> getResidualToleranceDist()
 {
     if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::complex<float>>)
+#if defined(HAS_HIP) && !defined(HAS_CUDA)
+        return 5e-3f;
+#else
         return 1e-3f;
+#endif
     else
         return 1e-8;
 }
@@ -365,7 +368,7 @@ TYPED_TEST(ChaseDistributedSolveCPUBlockBlockTest, pChaseCPU_Solve_Clement_Block
     delete single;
 }
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 // Fixture for pChASEGPU: GPU matrix/vector types only. Parameterized over scalar type.
 template <typename T>
 class ChaseDistributedSolveGPUTest : public ::testing::Test
@@ -424,7 +427,7 @@ TYPED_TEST(ChaseDistributedSolveGPUTest, pChaseGPU_Solve_Clement_Converges)
     ChaseBase<T>* single =
         new chase::Impl::pChASEGPU<typename TestFixture::BlockCyclicMatrixGPU,
                                     typename TestFixture::DistMultiVectorGPU,
-                                    BackendType>(
+                                    CommBackend>(
             this->nev_, this->nex_, this->Hmat_.get(), this->Vec_.get(),
             this->Lambda_.data());
 
@@ -511,7 +514,7 @@ TYPED_TEST(ChaseDistributedSolveGPUBlockBlockTest, pChaseGPU_Solve_Clement_Block
     ChaseBase<T>* single =
         new chase::Impl::pChASEGPU<typename TestFixture::BlockBlockMatrixGPU,
                                     typename TestFixture::DistMultiVector1DGPU,
-                                    BackendType>(
+                                    CommBackend>(
             this->nev_, this->nex_, this->Hmat_.get(), this->Vec_.get(),
             this->Lambda_.data());
 

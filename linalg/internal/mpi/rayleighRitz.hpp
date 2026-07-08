@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
-#include "external/scalapackpp/scalapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
+#include "external/scalapack/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiTypes.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"

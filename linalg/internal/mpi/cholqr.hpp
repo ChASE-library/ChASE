@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "grid/mpiTypes.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
@@ -543,19 +543,24 @@ cpu_mpi::computeConditionNumber(InputMultiVectorType& V)
     // Debug: Print singular values to understand what's happening
     if (min_mn > 0)
     {
-        std::ostringstream oss;
-        oss << "SVD Debug: Matrix size " << m << "x" << n
-            << ", min_mn=" << min_mn << "\nFirst 5 singular values: ";
-        for (int i = 0; i < std::min(5, (int)min_mn); i++)
-            oss << s[i] << " ";
-        if (min_mn > 5)
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        if (grank == 0)
         {
-            oss << "\nLast 5 singular values: ";
-            for (int i = std::max(0, (int)min_mn - 5); i < (int)min_mn; i++)
+            std::ostringstream oss;
+            oss << "SVD Debug: Matrix size " << m << "x" << n
+                << ", min_mn=" << min_mn << "\nFirst 5 singular values: ";
+            for (int i = 0; i < std::min(5, (int)min_mn); i++)
                 oss << s[i] << " ";
+            if (min_mn > 5)
+            {
+                oss << "\nLast 5 singular values: ";
+                for (int i = std::max(0, (int)min_mn - 5); i < (int)min_mn; i++)
+                    oss << s[i] << " ";
+            }
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                0);
         }
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
-            grank);
     }
 #endif
     // Compute condition number as ratio of largest to smallest singular value
@@ -571,12 +576,17 @@ cpu_mpi::computeConditionNumber(InputMultiVectorType& V)
         const BaseT eps = std::numeric_limits<BaseT>::epsilon();
         const BaseT tolerance = std::max(m, n) * sigma_max * eps;
 #ifdef CHASE_OUTPUT
-        std::ostringstream oss_cond;
-        oss_cond << "Condition number debug: sigma_max=" << sigma_max
-                 << ", sigma_min=" << sigma_min << ", tolerance=" << tolerance
-                 << ", eps=" << eps;
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
-            oss_cond.str(), grank);
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        if (grank == 0)
+        {
+            std::ostringstream oss_cond;
+            oss_cond << "Condition number debug: sigma_max=" << sigma_max
+                     << ", sigma_min=" << sigma_min << ", tolerance=" << tolerance
+                     << ", eps=" << eps;
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss_cond.str(), 0);
+        }
 #endif
         if (sigma_min > tolerance && sigma_min > 0)
         {

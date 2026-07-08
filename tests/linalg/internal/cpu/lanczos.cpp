@@ -5,10 +5,11 @@
 // https://github.com/ChASE-library/ChASE
 
 #include "linalg/internal/cpu/lanczos.hpp"
-#include "external/blaspp/blaspp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "tests/linalg/internal/cpu/TestConditions.hpp"
+#include "tests/linalg/internal/lanczos_reference.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include <complex>
 #include <gtest/gtest.h>
@@ -35,16 +36,9 @@ protected:
             V[i] = getRandomT<T>([&]() { return d(gen); });
         }
 
-        // set H to be Clement matrix
-        // Clement matrix has eigenvalues -(N-1),-(N-2)...(N-2), (N-1)
-        for (auto i = 0; i < N; ++i)
-        {
-            H.data()[i + N * i] = 0;
-            if (i != N - 1)
-                H.data()[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
-            if (i != N - 1)
-                H.data()[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
-        }
+        chase::tests::lanczos::initializeReferenceHermitianMatrix(H.data(), N);
+        chase::tests::lanczos::computeReferenceEigenBounds(
+            H.data(), N, &lambda_min, &lambda_max);
     }
 
     void TearDown() override {}
@@ -58,6 +52,8 @@ protected:
     std::vector<chase::Base<T>> ritzv;
     std::vector<chase::Base<T>> ritzV;
     std::vector<chase::Base<T>> Tau;
+    chase::Base<T> lambda_min;
+    chase::Base<T> lambda_max;
 };
 
 using TestTypes =
@@ -72,16 +68,11 @@ TYPED_TEST(LaczosCPUTest, mlanczos)
         this->M, this->numvec, &(this->H), this->V.data(), this->N, &upperb,
         this->ritzv.data(), this->Tau.data(), this->ritzV.data());
 
-    for (auto i = 0; i < this->numvec; i++)
-    {
-        EXPECT_GT(this->ritzv[i * this->M], 1.0 - chase::Base<T>(this->N));
-        EXPECT_LT(this->ritzv[(i + 1) * this->M - 1],
-                  chase::Base<T>(this->N - 1));
-    }
-    EXPECT_GT(upperb,
-              chase::Base<T>(this->N - 1)); // the computed upper bound should
-                                            // larger than the max eigenvalues
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1)));
+    chase::tests::lanczos::expectRitzValuesInsideReferenceSpectrum(
+        this->ritzv, this->M, this->numvec, this->lambda_min,
+        this->lambda_max);
+    chase::tests::lanczos::expectLanczosUpperBoundNearReference(
+        upperb, this->lambda_min, this->lambda_max);
 }
 
 TYPED_TEST(LaczosCPUTest, lanczos)
@@ -91,8 +82,6 @@ TYPED_TEST(LaczosCPUTest, lanczos)
     chase::linalg::internal::cpu::lanczos(this->M, &(this->H), this->V.data(),
                                           this->N, &upperb);
 
-    EXPECT_GT(upperb,
-              chase::Base<T>(this->N - 1)); // the computed upper bound should
-                                            // larger than the max eigenvalues
-    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1)));
+    chase::tests::lanczos::expectLanczosUpperBoundNearReference(
+        upperb, this->lambda_min, this->lambda_max);
 }

@@ -23,15 +23,14 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
 #endif
+#include "tests/distributed_gpu_backend.hpp"
 
 using namespace chase;
 
-#ifdef HAS_CUDA
-using PseudoBSEBackendType = chase::grid::backend::NCCL;
-#endif
+using PseudoBSECommBackend = chase::test::DistributedGpuBackend;
 
 // Scalar type for BSE (same as serial test).
 using T_PseudoBSE = std::complex<double>;
@@ -90,22 +89,20 @@ static void nev_smallest_positive_eigs(const T_PseudoBSE* eigs_H, std::size_t n,
         out.push_back(pos[i]);
 }
 
-// Backend for parameterized test: CPU or GPU (pChASEGPU with NCCL).
+// Backend for parameterized test: CPU or GPU (NCCL on CUDA, MPI on HIP).
 enum class PseudoBSEBackend { CPU, GPU };
 
 // pChASE Solve_pseudo with BSE matrix (cdouble_random_BSE.bin).
-// This file uses block-cyclic matrix + DistMultiVectorBlockCyclic1D. Both pChASECPU and
-// pChASEGPU currently throw for pseudo-Hermitian + block-cyclic 1D MV; the test catches
-// that std::runtime_error and GTEST_SKIP() until block-cyclic pseudo-Hermitian is supported.
+// CPU keeps the historical block-cyclic layout. GPU uses block-block layout so
+// the pseudo-Hermitian pChASEGPU path is actually exercised instead of skipped.
 // Note: First-iteration Ritz values and residuals can differ between CPU and GPU
-// because (1) initial vectors use different RNGs (CPU: std::mt19937, GPU: curand)
-// and different seed mapping (CPU: 1337+coords_[0], GPU: 1337+mpi_col_rank); (2) QR
-// and Rayleigh-Ritz use different code paths (MPI+LAPACK vs NCCL+cusolver). For
+// because (1) initial vectors use different RNGs and seed mapping; (2) QR and
+// Rayleigh-Ritz use different code paths (MPI+LAPACK vs GPU backend). For
 // bitwise-identical iteration history, one would need the same initial V (e.g. CPU
-// fill then copy to GPU) and/or CPU fallback when cusolver HEEVD fails.
+// fill then copy to GPU) and/or a common Rayleigh-Ritz fallback.
 // Eigenvalues (Lambda/ritzv) and residuals are in RedundantMatrix → valid on all ranks.
-// Eigenvectors are in DistMultiVectorBlockCyclic1D → distributed by rows; only rank 0
-// does printing and reference comparison.
+// Eigenvectors are distributed by rows; only rank 0 does printing and reference
+// comparison.
 class ChaseDistributedSolvePseudoBSETest : public ::testing::TestWithParam<PseudoBSEBackend>
 {
 public:
@@ -116,12 +113,12 @@ public:
         chase::distMultiVector::DistMultiVectorBlockCyclic1D<
             T_PseudoBSE, chase::distMultiVector::CommunicatorType::column,
             chase::platform::CPU>;
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     using PseudoHMatrixGPU =
-        chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T_PseudoBSE,
-                                                            chase::platform::GPU>;
+        chase::distMatrix::PseudoHermitianBlockBlockMatrix<T_PseudoBSE,
+                                                           chase::platform::GPU>;
     using DistMultiVectorGPU =
-        chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        chase::distMultiVector::DistMultiVector1D<
             T_PseudoBSE, chase::distMultiVector::CommunicatorType::column,
             chase::platform::GPU>;
 #endif
@@ -172,7 +169,7 @@ protected:
     // Keep matrix/vector alive for the lifetime of single (backend-specific).
     std::shared_ptr<PseudoHMatrixCPU> Hmat_cpu_;
     std::shared_ptr<DistMultiVectorCPU> Vec_cpu_;
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     std::shared_ptr<PseudoHMatrixGPU> Hmat_gpu_;
     std::shared_ptr<DistMultiVectorGPU> Vec_gpu_;
 #endif
@@ -181,13 +178,24 @@ protected:
 TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
 {
     const PseudoBSEBackend backend = GetParam();
-#ifndef HAS_CUDA
+#if !defined(HAS_CUDA) && !defined(HAS_HIP)
     if (backend == PseudoBSEBackend::GPU)
-        GTEST_SKIP() << "GPU backend not built (no HAS_CUDA)";
+        GTEST_SKIP() << "GPU backend not built (no HAS_CUDA/HAS_HIP)";
 #endif
 
     const bool use_gpu = (backend == PseudoBSEBackend::GPU);
-    const char* mode_str = use_gpu ? "GPU/NCCL" : "CPU";
+    const char* mode_str =
+#if defined(HAS_HIP) && !defined(HAS_CUDA)
+        use_gpu ? (
+#ifdef CHASE_DISTRIBUTED_GPU_BACKEND_NCCL
+            "GPU/RCCL"
+#else
+            "GPU/HIP-MPI"
+#endif
+            ) : "CPU";
+#else
+        use_gpu ? "GPU/NCCL" : "CPU";
+#endif
 
     ChaseBase<T_PseudoBSE>* single = nullptr;
     if (backend == PseudoBSEBackend::CPU)
@@ -210,12 +218,11 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
             throw;
         }
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     else
     {
-        Hmat_gpu_ = std::make_shared<PseudoHMatrixGPU>(N_, N_, blocksize_, blocksize_,
-                                                       mpi_grid_);
-        Vec_gpu_ = std::make_shared<DistMultiVectorGPU>(N_, 2 * nevex_, blocksize_,
+        Hmat_gpu_ = std::make_shared<PseudoHMatrixGPU>(N_, N_, mpi_grid_);
+        Vec_gpu_ = std::make_shared<DistMultiVectorGPU>(N_, 2 * nevex_,
                                                         mpi_grid_);
         // GPU matrices need CPU buffer for readFromBinaryFile (cpu_data() throws
         // if not allocated). Allocate, load, then copy to device.
@@ -225,7 +232,7 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
         try
         {
             single = new chase::Impl::pChASEGPU<PseudoHMatrixGPU, DistMultiVectorGPU,
-                                                PseudoBSEBackendType>(
+                                                PseudoBSECommBackend>(
                 nev_, nex_, Hmat_gpu_.get(), Vec_gpu_.get(), Lambda_.data());
         }
         catch (const std::runtime_error& e)
@@ -375,18 +382,27 @@ TEST_P(ChaseDistributedSolvePseudoBSETest, SolvePseudo_BSE_Converges)
     if (backend == PseudoBSEBackend::CPU)
         delete static_cast<chase::Impl::pChASECPU<PseudoHMatrixCPU, DistMultiVectorCPU>*>(
             single);
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     else
         delete static_cast<chase::Impl::pChASEGPU<PseudoHMatrixGPU, DistMultiVectorGPU,
-                                                 PseudoBSEBackendType>*>(single);
+                                                 PseudoBSECommBackend>*>(single);
 #endif
 }
 
-// Instantiate: CPU; and GPU when HAS_CUDA. With block-cyclic MV both may GTEST_SKIP until supported.
-#ifdef HAS_CUDA
-INSTANTIATE_TEST_SUITE_P(CPU_and_GPU, ChaseDistributedSolvePseudoBSETest,
-                         ::testing::Values(PseudoBSEBackend::CPU, PseudoBSEBackend::GPU));
+static std::string pseudoBSEBackendName(
+    const ::testing::TestParamInfo<PseudoBSEBackend>& info)
+{
+    return info.param == PseudoBSEBackend::GPU ? "GPU" : "CPU";
+}
+
+// Instantiate CPU and GPU when a distributed GPU backend is built.
+#if defined(HAS_CUDA) || defined(HAS_HIP)
+INSTANTIATE_TEST_SUITE_P(Backends, ChaseDistributedSolvePseudoBSETest,
+                         ::testing::Values(PseudoBSEBackend::CPU,
+                                           PseudoBSEBackend::GPU),
+                         pseudoBSEBackendName);
 #else
-INSTANTIATE_TEST_SUITE_P(CPU_only, ChaseDistributedSolvePseudoBSETest,
-                         ::testing::Values(PseudoBSEBackend::CPU));
+INSTANTIATE_TEST_SUITE_P(Backends, ChaseDistributedSolvePseudoBSETest,
+                         ::testing::Values(PseudoBSEBackend::CPU),
+                         pseudoBSEBackendName);
 #endif

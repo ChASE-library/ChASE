@@ -4,10 +4,9 @@
 ! License is 3-clause BSD:
 ! https://github.com/ChASE-library/ChASE
 !
-! Fortran interface test analogous to chase_distributed_solve.cpp
-! ChaseDistributedSolveGPUBlockBlockTest / CPU block-block:
-!   N=1001, nev=100, nex=60; strict upper-triangle perturbation (deterministic hash
-!   replacing C++ mt19937+normal); solver tol matches getResidualToleranceDist<T>().
+! Fortran interface test aligned with the C++ block-block distributed smoke tests:
+! distributed block-block pure Clement matrix, s/d/c/z p*chase init/solve/finalize.
+! After solve: require the first Ritz values to be finite (CPU/GPU agnostic).
 
 program main
   use mpi
@@ -18,21 +17,21 @@ program main
   integer :: ierr, rank, size, comm
   integer :: nn, nev, nex
   integer :: dims(2), m, n, xoff, yoff, xlen, ylen
-  integer :: init, deg
-  real(real64) :: tmp
+  integer :: init
   character :: mode, opt, major, qr
-  ! Match tests/chase_distributed_solve.cpp getResidualToleranceDist<T>()
-  real(real32), parameter :: chase_tol_s = 1.0e-3_real32
+  integer, parameter :: deg_s = 16
+  integer, parameter :: deg_d = 20
+  integer, parameter :: max_iter = 20
+  integer, parameter :: lanczos_iter = 20
+  integer, parameter :: num_lanczos = 2
+  real(real32), parameter :: chase_tol_s = 1.0e-4_real32
   real(real64), parameter :: chase_tol_d = 1.0e-8_real64
-  ! Match GPU (and same-size) block-block Clement perturb scale
-  real(real32), parameter :: perturb_s = 1.0e-3_real32
-  real(real64), parameter :: perturb_d = 1.0e-6_real64
 
-  ! ChaseDistributedSolveGPUBlockBlockTest sizes (see chase_distributed_solve.cpp)
-  nn = 1001
-  nev = 100
-  nex = 60
-  deg = 16
+  ! Keep this as an interface smoke test.  The examples and C++ integration
+  ! tests cover the heavier distributed Clement cases.
+  nn = 256
+  nev = 24
+  nex = 16
   mode = 'R'
   opt = 'S'
   major = 'C'
@@ -79,9 +78,9 @@ contains
     v = 0.0_real32
     ritzv = 0.0_real32
     call fill_clement_local_real_s(h, m, n, xoff, yoff, xlen, ylen, nn)
-    call perturb_symm_offdiag_real_s(h, m, n, xoff, yoff, xlen, ylen, perturb_s)
     call pschase_init(nn, nev, nex, m, n, h, m, v, ritzv, dims(1), dims(2), major, comm, init)
-    call pschase(deg, chase_tol_s, mode, opt, qr)
+    call configure_active_chase()
+    call pschase(deg_s, chase_tol_s, mode, opt, qr)
     if (rank == 0) call check_ritz_finite_s(ritzv, nev)
     call pschase_finalize(init)
     deallocate(h, v, ritzv)
@@ -95,9 +94,9 @@ contains
     v = 0.0_real64
     ritzv = 0.0_real64
     call fill_clement_local_real_d(h, m, n, xoff, yoff, xlen, ylen, nn)
-    call perturb_symm_offdiag_real_d(h, m, n, xoff, yoff, xlen, ylen, perturb_d)
     call pdchase_init(nn, nev, nex, m, n, h, m, v, ritzv, dims(1), dims(2), major, comm, init)
-    call pdchase(deg, chase_tol_d, mode, opt, qr)
+    call configure_active_chase()
+    call pdchase(deg_d, chase_tol_d, mode, opt, qr)
     if (rank == 0) call check_ritz_finite_d(ritzv, nev)
     call pdchase_finalize(init)
     deallocate(h, v, ritzv)
@@ -111,9 +110,9 @@ contains
     v = (0.0_real32, 0.0_real32)
     ritzv = 0.0_real32
     call fill_clement_local_cmplx_s(h, m, n, xoff, yoff, xlen, ylen, nn)
-    call perturb_symm_offdiag_cmplx_s(h, m, n, xoff, yoff, xlen, ylen, perturb_s)
     call pcchase_init(nn, nev, nex, m, n, h, m, v, ritzv, dims(1), dims(2), major, comm, init)
-    call pcchase(deg, chase_tol_s, mode, opt, qr)
+    call configure_active_chase()
+    call pcchase(deg_s, chase_tol_s, mode, opt, qr)
     if (rank == 0) call check_ritz_finite_s(ritzv, nev)
     call pcchase_finalize(init)
     deallocate(h, v, ritzv)
@@ -127,121 +126,19 @@ contains
     v = (0.0_real64, 0.0_real64)
     ritzv = 0.0_real64
     call fill_clement_local_cmplx_d(h, m, n, xoff, yoff, xlen, ylen, nn)
-    call perturb_symm_offdiag_cmplx_d(h, m, n, xoff, yoff, xlen, ylen, perturb_d)
     call pzchase_init(nn, nev, nex, m, n, h, m, v, ritzv, dims(1), dims(2), major, comm, init)
-    call pzchase(deg, chase_tol_d, mode, opt, qr)
+    call configure_active_chase()
+    call pzchase(deg_d, chase_tol_d, mode, opt, qr)
     if (rank == 0) call check_ritz_finite_d(ritzv, nev)
     call pzchase_finalize(init)
     deallocate(h, v, ritzv)
   end subroutine test_pzchase
 
-  ! Deterministic U(0,1) from global indices (reproducible across ranks; not C++-identical).
-  pure function det_uniform_01(ir, ic, k) result(u)
-    integer, intent(in) :: ir, ic, k
-    real(real64) :: u
-    integer :: s
-    s = mod(ir * 10009 + ic * 160081 + k * 104729, 2147483646) + 1
-    u = real(s, real64) / 2147483647.0_real64
-  end function det_uniform_01
-
-  pure function normal01_det(ir, ic) result(z)
-    integer, intent(in) :: ir, ic
-    real(real64) :: z, u1, u2, twopi
-    twopi = 8.0_real64 * atan(1.0_real64)
-    u1 = max(det_uniform_01(ir, ic, 1), 1.0d-12)
-    u2 = det_uniform_01(ir, ic, 2)
-    z = sqrt(-2.0_real64 * log(u1)) * cos(twopi * u2)
-  end function normal01_det
-
-  subroutine perturb_symm_offdiag_real_s(h, m, n, xoff, yoff, xlen, ylen, perturb)
-    integer, intent(in) :: m, n, xoff, yoff, xlen, ylen
-    real(real32), intent(in) :: perturb
-    real(real32), intent(inout) :: h(m, n)
-    integer :: x, y, x_g, y_g, ir, ic
-    real(real64) :: ep
-    do x = 1, xlen
-      do y = 1, ylen
-        x_g = xoff + x
-        y_g = yoff + y
-        if (x_g == y_g) cycle
-        ir = min(x_g, y_g)
-        ic = max(x_g, y_g)
-        ep = normal01_det(ir, ic)
-        h(x, y) = h(x, y) + perturb * real(ep, real32)
-      end do
-    end do
-  end subroutine perturb_symm_offdiag_real_s
-
-  subroutine perturb_symm_offdiag_real_d(h, m, n, xoff, yoff, xlen, ylen, perturb)
-    integer, intent(in) :: m, n, xoff, yoff, xlen, ylen
-    real(real64), intent(in) :: perturb
-    real(real64), intent(inout) :: h(m, n)
-    integer :: x, y, x_g, y_g, ir, ic
-    real(real64) :: ep
-    do x = 1, xlen
-      do y = 1, ylen
-        x_g = xoff + x
-        y_g = yoff + y
-        if (x_g == y_g) cycle
-        ir = min(x_g, y_g)
-        ic = max(x_g, y_g)
-        ep = normal01_det(ir, ic)
-        h(x, y) = h(x, y) + perturb * ep
-      end do
-    end do
-  end subroutine perturb_symm_offdiag_real_d
-
-  subroutine perturb_symm_offdiag_cmplx_s(h, m, n, xoff, yoff, xlen, ylen, perturb)
-    integer, intent(in) :: m, n, xoff, yoff, xlen, ylen
-    real(real32), intent(in) :: perturb
-    complex(real32), intent(inout) :: h(m, n)
-    integer :: x, y, x_g, y_g, ir, ic
-    complex(real32) :: ep
-    real(real64) :: nr, ni
-    do x = 1, xlen
-      do y = 1, ylen
-        x_g = xoff + x
-        y_g = yoff + y
-        if (x_g == y_g) cycle
-        ir = min(x_g, y_g)
-        ic = max(x_g, y_g)
-        nr = normal01_det(ir, ic)
-        ni = normal01_det(ic, ir)
-        ep = cmplx(perturb * real(nr, real32), perturb * real(ni, real32), real32)
-        if (x_g < y_g) then
-          h(x, y) = h(x, y) + ep
-        else
-          h(x, y) = h(x, y) + conjg(ep)
-        end if
-      end do
-    end do
-  end subroutine perturb_symm_offdiag_cmplx_s
-
-  subroutine perturb_symm_offdiag_cmplx_d(h, m, n, xoff, yoff, xlen, ylen, perturb)
-    integer, intent(in) :: m, n, xoff, yoff, xlen, ylen
-    real(real64), intent(in) :: perturb
-    complex(real64), intent(inout) :: h(m, n)
-    integer :: x, y, x_g, y_g, ir, ic
-    complex(real64) :: ep
-    real(real64) :: nr, ni
-    do x = 1, xlen
-      do y = 1, ylen
-        x_g = xoff + x
-        y_g = yoff + y
-        if (x_g == y_g) cycle
-        ir = min(x_g, y_g)
-        ic = max(x_g, y_g)
-        nr = normal01_det(ir, ic)
-        ni = normal01_det(ic, ir)
-        ep = cmplx(perturb * nr, perturb * ni, real64)
-        if (x_g < y_g) then
-          h(x, y) = h(x, y) + ep
-        else
-          h(x, y) = h(x, y) + conjg(ep)
-        end if
-      end do
-    end do
-  end subroutine perturb_symm_offdiag_cmplx_d
+  subroutine configure_active_chase()
+    call chase_set_max_iter(max_iter)
+    call chase_set_lanczos_iter(lanczos_iter)
+    call chase_set_num_lanczos(num_lanczos)
+  end subroutine configure_active_chase
 
   subroutine fill_clement_local_real_s(h, m, n, xoff, yoff, xlen, ylen, nn)
     integer, intent(in) :: m, n, xoff, yoff, xlen, ylen, nn

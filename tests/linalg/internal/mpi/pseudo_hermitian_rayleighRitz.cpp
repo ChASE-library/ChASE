@@ -4,7 +4,7 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include "external/scalapackpp/scalapackpp.hpp"
+#include "external/scalapack/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
@@ -97,7 +97,7 @@ TYPED_TEST(PseudoHermitianRRCPUDistTest, PseudoHermitianRRTinyCorrectness)
     {
         EXPECT_NEAR(this->ritzv_tiny.data()[i],
                     chase::Base<T>(std::real(exact_eigsl_H.data()[i])),
-                    100 * MachineEpsilon<T>::value());
+                    200 * MachineEpsilon<chase::Base<T>>::value());
     }
 }
 

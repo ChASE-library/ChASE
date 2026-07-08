@@ -97,7 +97,9 @@ CHASE_LIBS := $(shell pkg-config --libs chase)
 
 # Query ChASE features (much cleaner than using nm!)
 CHASE_HAS_MPI := $(shell pkg-config --variable=chase_has_mpi chase)
+CHASE_HAS_HIP := $(shell pkg-config --variable=chase_has_hip chase)
 CHASE_HAS_NCCL := $(shell pkg-config --variable=chase_has_nccl chase)
+CHASE_HAS_RCCL := $(shell pkg-config --variable=chase_has_rccl chase)
 CHASE_HAS_SCALAPACK := $(shell pkg-config --variable=chase_has_scalapack chase)
 
 # Get ChASE installation prefix if needed for libraries
@@ -151,7 +153,7 @@ all: ${exe} ${exe_c} ${exe_f}
 $(exe): $(src)
 	@echo "Building C++ example with ChASE..."
 	@echo "  ChASE flags: $(CHASE_CFLAGS)"
-	@echo "  Features: MPI=$(CHASE_HAS_MPI) NCCL=$(CHASE_HAS_NCCL) ScaLAPACK=$(CHASE_HAS_SCALAPACK)"
+	@echo "  Features: MPI=$(CHASE_HAS_MPI) HIP=$(CHASE_HAS_HIP) NCCL=$(CHASE_HAS_NCCL) RCCL=$(CHASE_HAS_RCCL) ScaLAPACK=$(CHASE_HAS_SCALAPACK)"
 	$(CXX) $(CXXFLAGS) $(CHASE_CFLAGS) -o $@ $< $(LIBS)
 
 $(exe_c): $(src_c)
@@ -186,7 +188,9 @@ info:
 	@echo ""
 	@echo "Feature Detection:"
 	@echo "  MPI support:       $(CHASE_HAS_MPI)"
+	@echo "  HIP support:       $(CHASE_HAS_HIP)"
 	@echo "  NCCL support:      $(CHASE_HAS_NCCL)"
+	@echo "  RCCL support:      $(CHASE_HAS_RCCL)"
 	@echo "  ScaLAPACK support: $(CHASE_HAS_SCALAPACK)"
 
 check-pkg-config:

@@ -20,8 +20,8 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "mpi.h"
 
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 
 namespace chase
 {

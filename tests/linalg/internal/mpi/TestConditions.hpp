@@ -7,7 +7,7 @@
 #pragma once
 
 #include "algorithm/types.hpp"
-#include "external/blaspp/blaspp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
 #include "grid/mpiTypes.hpp"
 #include "mpi.h"
 

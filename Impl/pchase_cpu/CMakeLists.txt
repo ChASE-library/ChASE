@@ -2,8 +2,7 @@ add_library(pchase_cpu INTERFACE)
 target_link_libraries(pchase_cpu 
                       INTERFACE 
                               chase_algorithm 
-                              blaspp 
-                              lapackpp 
+                              chase_cpu_linalg
                               linalg_internal_cpu 
                               linalg_internal_mpi 
                               mpi_grid 
@@ -22,10 +21,14 @@ if(CHASE_ENABLE_MPI_IO)
 	)
 endif()
 
-if(TARGET scalapackpp)
+if(TARGET chase_scalapack_linalg)
   message("ScaLAPACK is enabled in ChASE-MPI")
-  target_link_libraries(pchase_cpu INTERFACE scalapackpp)
+  target_link_libraries(pchase_cpu INTERFACE chase_scalapack_linalg)
   target_compile_definitions(pchase_cpu INTERFACE HAS_SCALAPACK=1 )
+endif()
+
+if(TARGET mpi_grid_rccl)
+  target_link_libraries(pchase_cpu INTERFACE mpi_grid_rccl)
 endif()
 
 if(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ)

@@ -117,11 +117,9 @@ public:
      * This method performs a QR factorization on the matrix, optionally using
      * Householder transformations for the computation.
      *
-     * @param fixednev Total number of converged eigenpairs before the QR
-     * factorization.
      * @param cond Condition number for controlling the factorization process.
      */
-    virtual void QR(std::size_t fixednev, Base<T> cond) = 0;
+    virtual void QR(Base<T> cond) = 0;
     /**
      * @brief Performs Rayleigh-Ritz projection for eigenproblem reduction.
      *
@@ -153,10 +151,8 @@ public:
      *
      * @param ritzv Array containing the eigenvalues.
      * @param resd Array to store the computed residuals for each eigenpair.
-     * @param fixednev Number of converged eigenpairs, which helps determine the
-     * number of non-converged eigenpairs.
      */
-    virtual void Resd(Base<T>* ritzv, Base<T>* resd, std::size_t fixednev) = 0;
+    virtual void Resd(Base<T>* ritzv, Base<T>* resd) = 0;
     /**
      * @brief Estimates the upper bound of the user-interested spectrum using
      * Lanczos eigensolver.
@@ -281,18 +277,18 @@ public:
     /**
      * @brief Reinitialize selected columns of the subspace with random vectors.
      *
-     * Used by outlier purge (pseudo-Hermitian): columns at fixednev+col_indices[i]
+     * Used by outlier purge (pseudo-Hermitian): columns at base_col+col_indices[i]
      * are filled with random normal values. Default no-op for backends that do
      * not use it.
      *
-     * @param fixednev Number of locked columns (base offset).
+     * @param base_col Base column offset, usually the number of locked columns.
      * @param col_indices Indices of columns to reinit (0-based in unconverged block).
      * @param n_indices Number of indices.
      */
-    virtual void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+    virtual void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
                                std::size_t n_indices)
     {
-        (void)fixednev;
+        (void)base_col;
         (void)col_indices;
         (void)n_indices;
     }

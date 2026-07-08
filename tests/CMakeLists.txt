@@ -59,6 +59,8 @@ endfunction()
 # -----------------------------------------------------------------------------
 if(TARGET chase_gpu)
   setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_gpu chase_cpu)
+elseif(TARGET chase_hip)
+  setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_hip chase_cpu)
 else()
   setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_cpu)
 endif()
@@ -66,6 +68,8 @@ endif()
 # Pseudo-Hermitian (BSE) solve: Solve_pseudo with BSE matrix from build dir
 if(TARGET chase_gpu)
   setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_gpu chase_cpu)
+elseif(TARGET chase_hip)
+  setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_hip chase_cpu)
 else()
   setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_cpu)
 endif()
@@ -74,15 +78,59 @@ target_compile_definitions(ChaseSerialSolvePseudoBSETest PRIVATE
 
 if(TARGET pchase_gpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_gpu pchase_cpu)
+  if(TARGET mpi_grid_nccl)
+    setup_test(ChaseDistributedSolveGPUNCCLTest chase_distributed_solve.cpp
+      LIBRARIES pchase_gpu pchase_cpu)
+    target_compile_definitions(ChaseDistributedSolveGPUNCCLTest PRIVATE
+      CHASE_DISTRIBUTED_GPU_BACKEND_NCCL=1)
+  endif()
+  if(TARGET linalg_internal_hip_mpi)
+    if(CHASE_HIP_DISTRIBUTED_COLLECTIVES STREQUAL "MPI")
+      target_compile_definitions(ChaseDistributedSolveTest PRIVATE
+        CHASE_DISTRIBUTED_GPU_BACKEND_MPI=1)
+    elseif(NOT TARGET mpi_grid_rccl)
+      message(WARNING
+        "CHASE_HIP_DISTRIBUTED_COLLECTIVES=NCCL but mpi_grid_rccl not found; "
+        "ChaseDistributedSolveTest will fall back to GPU-aware MPI.")
+    endif()
+    if(TARGET mpi_grid_rccl AND CHASE_HIP_DISTRIBUTED_COLLECTIVES STREQUAL "MPI"
+       AND NOT TARGET ChaseDistributedSolveGPUNCCLTest)
+      setup_test(ChaseDistributedSolveGPUNCCLTest chase_distributed_solve.cpp
+        LIBRARIES pchase_gpu pchase_cpu)
+      target_compile_definitions(ChaseDistributedSolveGPUNCCLTest PRIVATE
+        CHASE_DISTRIBUTED_GPU_BACKEND_NCCL=1)
+    endif()
+  endif()
 elseif(TARGET pchase_cpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_cpu)
 endif()
 
-# Distributed Solve_pseudo with BSE matrix (same as serial BSE test); pchase_gpu uses NCCL
+# Distributed Solve_pseudo with BSE matrix (same as serial BSE test).
 if(TARGET pchase_gpu)
   setup_test(ChaseDistributedSolvePseudoBSETest chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_gpu pchase_cpu)
   target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
     CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
+  if(TARGET mpi_grid_nccl)
+    setup_test(ChaseDistributedSolvePseudoBSEGPUNCCLTest
+      chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_gpu pchase_cpu)
+    target_compile_definitions(ChaseDistributedSolvePseudoBSEGPUNCCLTest PRIVATE
+      CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices"
+      CHASE_DISTRIBUTED_GPU_BACKEND_NCCL=1)
+  endif()
+  if(TARGET linalg_internal_hip_mpi)
+    if(CHASE_HIP_DISTRIBUTED_COLLECTIVES STREQUAL "MPI")
+      target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
+        CHASE_DISTRIBUTED_GPU_BACKEND_MPI=1)
+    endif()
+    if(TARGET mpi_grid_rccl AND CHASE_HIP_DISTRIBUTED_COLLECTIVES STREQUAL "MPI"
+       AND NOT TARGET ChaseDistributedSolvePseudoBSEGPUNCCLTest)
+      setup_test(ChaseDistributedSolvePseudoBSEGPUNCCLTest
+        chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_gpu pchase_cpu)
+      target_compile_definitions(ChaseDistributedSolvePseudoBSEGPUNCCLTest PRIVATE
+        CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices"
+        CHASE_DISTRIBUTED_GPU_BACKEND_NCCL=1)
+    endif()
+  endif()
 elseif(TARGET pchase_cpu)
   setup_test(ChaseDistributedSolvePseudoBSETest chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_cpu)
   target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
@@ -102,6 +150,7 @@ if(TARGET chase_f)
   )
   add_test(NAME ChaseFortranSerialSolveTest
     COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:ChaseFortranSerialSolveTest>)
+  set_tests_properties(ChaseFortranSerialSolveTest PROPERTIES TIMEOUT 120)
 
   # Distributed: MPI block-block p*chase with Clement (like ChaseDistributedSolveTest)
   add_executable(ChaseFortranDistributedSolveTest chase_fortran_distributed_solve.f90)
@@ -112,6 +161,7 @@ if(TARGET chase_f)
   )
   add_test(NAME ChaseFortranDistributedSolveTest
     COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 4 $<TARGET_FILE:ChaseFortranDistributedSolveTest>)
+  set_tests_properties(ChaseFortranDistributedSolveTest PROPERTIES TIMEOUT 180)
 endif()
 
 # -----------------------------------------------------------------------------

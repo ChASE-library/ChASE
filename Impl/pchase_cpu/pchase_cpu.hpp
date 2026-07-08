@@ -7,7 +7,7 @@
 #pragma once
 
 #include "algorithm/chaseBase.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
@@ -65,14 +65,14 @@ namespace Impl
  * eigenvectors.
  */
 template <typename MatrixType, typename InputMultiVectorType,
-          typename BackendType = chase::grid::backend::MPI>
+          typename CommBackend = chase::grid::backend::MPI>
 class pChASECPU : public ChaseBase<typename MatrixType::value_type>
 {
     using T = typename MatrixType::value_type;
     using ResultMultiVectorType =
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
-    static_assert(std::is_same_v<BackendType, chase::grid::backend::MPI>,
-                  "BackendType must be chase::grid::backend::MPI");
+    static_assert(std::is_same_v<CommBackend, chase::grid::backend::MPI>,
+                  "CommBackend must be chase::grid::backend::MPI");
 
 public:
     /**
@@ -231,7 +231,7 @@ public:
     chase::Base<T>* GetResid() override { return resid_->l_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
-    int get_rank() { return my_rank_; }
+    int get_rank() override { return my_rank_; }
 
     void loadProblemFromFile(std::string filename)
     {
@@ -308,7 +308,7 @@ public:
         next_ = NextOp::bAc;
     }
 
-    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+    void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
                       std::size_t n_indices) override
     {
         if (n_indices == 0)
@@ -317,14 +317,14 @@ public:
         std::normal_distribution<> d;
         for (std::size_t c = 0; c < n_indices; ++c)
         {
-            std::size_t j = fixednev + col_indices[c];
+            std::size_t j = base_col + col_indices[c];
             for (std::size_t i = 0; i < V1_->l_rows(); ++i)
                 V1_->l_data()[i + j * V1_->l_ld()] =
                     getRandomT<T>([&]() { return d(gen); });
         }
         for (std::size_t c = 0; c < n_indices; ++c)
         {
-            std::size_t j = fixednev + col_indices[c];
+            std::size_t j = base_col + col_indices[c];
             for (std::size_t i = 0; i < V2_->l_rows(); ++i)
                 V2_->l_data()[i + j * V2_->l_ld()] = V1_->l_data()[i + j * V1_->l_ld()];
         }
@@ -569,7 +569,7 @@ public:
         }
     }
 
-    void QR(std::size_t fixednev, chase::Base<T> cond) override
+    void QR(chase::Base<T> cond) override
     {
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -900,12 +900,8 @@ public:
     {
     }
 
-    void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
-              std::size_t fixednev) override
+    void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd) override
     {
-        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        /*std::size_t subSize =
-        (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;*/
         std::size_t subSize = nevex_ - locked_;
 
         chase::linalg::internal::cpu_mpi::residuals(

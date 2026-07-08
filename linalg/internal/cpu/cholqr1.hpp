@@ -9,8 +9,8 @@
 #include <sstream>
 
 #include "algorithm/logger.hpp"
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 
 using namespace chase::linalg;

@@ -16,8 +16,10 @@
 #include <iostream>
 #include <vector>
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
 #include <cuda_runtime.h>
+#elif defined(HAS_HIP)
+#include <hip/hip_runtime.h>
 #endif
 
 #include "interface.hpp"
@@ -43,8 +45,10 @@ namespace chase
 template <class T>
 class ChasePerfData
 {
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
     using TimePointType = cudaEvent_t;
+#elif defined(HAS_HIP)
+    using TimePointType = hipEvent_t;
 #else
     using TimePointType =
         std::chrono::time_point<std::chrono::high_resolution_clock>;
@@ -320,10 +324,15 @@ public:
 
     inline auto getTimePoint() -> TimePointType
     {
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
         cudaEvent_t event;
         cudaEventCreate(&event);
         cudaEventRecord(event);
+        return event;
+#elif defined(HAS_HIP)
+        hipEvent_t event;
+        hipEventCreate(&event);
+        hipEventRecord(event);
         return event;
 #else
         return std::chrono::high_resolution_clock::now();
@@ -454,9 +463,13 @@ private:
     inline std::chrono::duration<double>
     calculatePointTiming(TimePointType& start, TimePointType& stop)
     {
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
         float tmp_milisec = 0;
         cudaEventElapsedTime(&tmp_milisec, start, stop);
+        return std::chrono::duration<double>(tmp_milisec) / 1000.0;
+#elif defined(HAS_HIP)
+        float tmp_milisec = 0;
+        hipEventElapsedTime(&tmp_milisec, start, stop);
         return std::chrono::duration<double>(tmp_milisec) / 1000.0;
 #else
         return stop - start;
@@ -465,8 +478,10 @@ private:
 
     void calculateTimings()
     {
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
         cudaDeviceSynchronize();
+#elif defined(HAS_HIP)
+        hipDeviceSynchronize();
 #endif
         for (size_t it = 0; it < start_points.size(); ++it)
         {
@@ -543,27 +558,27 @@ public:
     {
     }
 
-    void initVecs(bool random)
+    void initVecs(bool random) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::InitVecs);
         chase_->initVecs(random);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::InitVecs);
     }
 
-    void Shift(T c, bool isunshift = false)
+    void Shift(T c, bool isunshift = false) override
     {
         // Filter timing is unified via FilterPhaseStart/FilterPhaseEnd for both
         // Hermitian and pseudo-Hermitian paths; Shift only updates the matrix.
         chase_->Shift(c, isunshift);
     }
     void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset_left,
-              std::size_t offset_right = 0)
+              std::size_t offset_right = 0) override
     {
         chase_->HEMM(nev, alpha, beta, offset_left, offset_right);
         perf_.add_filtered_vecs(nev - offset_right);
     }
     void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
-                 std::size_t offset_left, std::size_t offset_right = 0)
+                 std::size_t offset_left, std::size_t offset_right = 0) override
     {
         chase_->HEMM_H2(nev, alpha, beta, gamma, offset_left, offset_right);
         perf_.add_filtered_vecs(2 * (nev - offset_right));
@@ -581,18 +596,18 @@ public:
     }
     void FilterPhaseEnd() override
     {
-        perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
         chase_->FilterPhaseEnd();
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
     }
 
-    void QR(std::size_t fixednev, Base<T> cond)
+    void QR(Base<T> cond) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Qr);
-        chase_->QR(fixednev, cond);
+        chase_->QR(cond);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Qr);
     }
 
-    void RR(Base<T>* ritzv, std::size_t block)
+    void RR(Base<T>* ritzv, std::size_t block) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Rr);
         chase_->RR(ritzv, block);
@@ -600,59 +615,59 @@ public:
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Rr);
     }
 
-    void Sort(Base<T>* ritzv, Base<T>* residLast, Base<T>* resid)
+    void Sort(Base<T>* ritzv, Base<T>* residLast, Base<T>* resid) override
     {
         // perf_.start_clock(ChasePerfData<T>::TimePtrs::Sort);
         chase_->Sort(ritzv, residLast, resid);
         // perf_.end_clock(ChasePerfData<T>::TimePtrs::Sort);
     }
-    void Resd(Base<T>* ritzv, Base<T>* resd, std::size_t fixednev)
+    void Resd(Base<T>* ritzv, Base<T>* resd) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
-        chase_->Resd(ritzv, resd, fixednev);
+        chase_->Resd(ritzv, resd);
         // We end with ->chase_->Lock()
     }
-    void Lanczos(std::size_t m, Base<T>* upperb)
+    void Lanczos(std::size_t m, Base<T>* upperb) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(m, upperb);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
     void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
-                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
+                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(M, idx, upperb, ritzv, Tau, ritzV);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
-    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc)
+    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->LanczosDos(idx, m, ritzVc);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
 
-    void Swap(std::size_t i, std::size_t j) { chase_->Swap(i, j); }
-    void Lock(std::size_t new_converged)
+    void Swap(std::size_t i, std::size_t j) override { chase_->Swap(i, j); }
+    void Lock(std::size_t new_converged) override
     {
         chase_->Lock(new_converged);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
         perf_.add_iter_count(1);
     }
 
-    bool checkSymmetryEasy() { return chase_->checkSymmetryEasy(); }
+    bool checkSymmetryEasy() override { return chase_->checkSymmetryEasy(); }
 
-    bool isSym() { return chase_->isSym(); }
+    bool isSym() override { return chase_->isSym(); }
 
-    bool checkPseudoHermicityEasy()
+    bool checkPseudoHermicityEasy() override
     {
         return chase_->checkPseudoHermicityEasy();
     }
-    bool isPseudoHerm() { return chase_->isPseudoHerm(); }
+    bool isPseudoHerm() override { return chase_->isPseudoHerm(); }
 
-    void symOrHermMatrix(char uplo) { chase_->symOrHermMatrix(uplo); }
+    void symOrHermMatrix(char uplo) override { chase_->symOrHermMatrix(uplo); }
 
-    void Start()
+    void Start() override
     {
         chase_->Start();
         perf_.Reset();
@@ -660,38 +675,39 @@ public:
         perf_.set_nprocs(chase_->get_nprocs());
     }
 
-    int get_nprocs() { return chase_->get_nprocs(); }
+    int get_nprocs() override { return chase_->get_nprocs(); }
 
-    int get_rank() { return chase_->get_rank(); }
+    int get_rank() override { return chase_->get_rank(); }
 
-    void set_early_locked_residuals(std::vector<Base<T>> early_locked_residuals)
+    void set_early_locked_residuals(
+        std::vector<Base<T>> early_locked_residuals) override
     {
         perf_.set_early_locked_residuals(early_locked_residuals);
     }
 
-    void End()
+    void End() override
     {
         chase_->End();
         perf_.end_clock(ChasePerfData<T>::TimePtrs::All);
     }
 
-    std::size_t GetN() const { return chase_->GetN(); }
-    std::size_t GetNev() { return chase_->GetNev(); }
-    std::size_t GetNex() { return chase_->GetNex(); }
-    std::size_t GetRitzvBlockSize() const
+    std::size_t GetN() const override { return chase_->GetN(); }
+    std::size_t GetNev() override { return chase_->GetNev(); }
+    std::size_t GetNex() override { return chase_->GetNex(); }
+    std::size_t GetRitzvBlockSize() const override
     {
         return chase_->GetRitzvBlockSize();
     }
-    Base<T>* GetRitzv() { return chase_->GetRitzv(); }
-    Base<T>* GetResid() { return chase_->GetResid(); }
-    std::size_t GetLanczosIter() { return chase_->GetLanczosIter(); }
-    std::size_t GetNumLanczos() { return chase_->GetNumLanczos(); }
-    ChaseConfig<T>& GetConfig() { return chase_->GetConfig(); }
+    Base<T>* GetRitzv() override { return chase_->GetRitzv(); }
+    Base<T>* GetResid() override { return chase_->GetResid(); }
+    std::size_t GetLanczosIter() override { return chase_->GetLanczosIter(); }
+    std::size_t GetNumLanczos() override { return chase_->GetNumLanczos(); }
+    ChaseConfig<T>& GetConfig() override { return chase_->GetConfig(); }
     ChasePerfData<T>& GetPerfData() { return perf_; }
 
 #ifdef CHASE_OUTPUT
     void Output(LogLevel level, std::string str,
-                const char* category = "performance") { chase_->Output(level, str, category); }
+                const char* category = "performance") override { chase_->Output(level, str, category); }
 #endif
 
 private:

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "algorithm/types.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include <chrono>      // For std::chrono
 #include <complex>    // std::complex (if you're using complex types)
 #include <cstddef>    // std::size_t
@@ -16,12 +16,6 @@
 #include <omp.h>
 #include <stdexcept>   // std::runtime_error
 #include <type_traits> // std::enable_if, std::is_same
-#ifdef HAS_CUDA
-#include "Impl/chase_gpu/cuda_utils.hpp"
-#include "external/cublaspp/cublaspp.hpp"
-#include "linalg/internal/cuda/precision_conversion.cuh"
-#include <cuda_runtime.h>
-#endif
 
 /**
  * @page chase_namespace chase Namespace
@@ -94,6 +88,10 @@ struct GPU
 } // namespace platform
 } // namespace chase
 
+#if defined(HAS_CUDA) || defined(HAS_HIP)
+#include "matrix_gpu_runtime.hpp"
+#endif
+
 namespace chase
 {
 namespace matrix
@@ -136,56 +134,6 @@ enum class BufferType
     GPU  ///< Indicates that the external buffer is in GPU memory
 };
 
-#ifdef HAS_CUDA
-using chase_cuda_stream_ptr_t = cudaStream_t*;
-#endif
-
-#ifdef HAS_CUDA
-/**
- * @ingroup Allocators
- * @brief Allocator for GPU memory allocation using CUDA.
- * @tparam T Data type of matrix elements.
- */
-template <typename T>
-class GpuAllocator
-{
-public:
-    using value_type = T;
-
-    /// Default constructor.
-    GpuAllocator() = default;
-
-    /// Constructor for allocator type conversions.
-    template <class U>
-    constexpr GpuAllocator(const GpuAllocator<U>&) noexcept
-    {
-    }
-
-    /**
-     * Allocates memory on the GPU.
-     * @param n Number of elements to allocate.
-     * @return Pointer to the allocated memory.
-     * @throws std::bad_alloc if allocation fails.
-     */
-    T* allocate(std::size_t n)
-    {
-        T* ptr = nullptr;
-        if (cudaMalloc(&ptr, n * sizeof(T)) != cudaSuccess)
-        {
-            throw std::bad_alloc();
-        }
-        return ptr;
-    }
-
-    /**
-     * Deallocates GPU memory.
-     * @param ptr Pointer to memory to deallocate.
-     * @param n Size of the allocation (unused).
-     */
-    void deallocate(T* ptr, std::size_t) noexcept { cudaFree(ptr); }
-};
-#endif
-
 /**
  * @ingroup Allocators
  * @brief Default allocator type trait for CPU platform.
@@ -201,13 +149,12 @@ struct DefaultAllocator
     using type = std::allocator<T>;
 };
 
-#ifdef HAS_CUDA
-/// Specialization of DefaultAllocator for GPU platform.
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 template <>
 struct DefaultAllocator<chase::platform::GPU>
 {
     template <typename T>
-    using type = GpuAllocator<T>; ///< Uses GpuAllocator for GPU platform.
+    using type = gpu_runtime::GpuAllocator<T>;
 };
 #endif
 
@@ -384,10 +331,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::matrix::gpu_runtime::convert_dp_to_sp(
                 this->data(), single_precision_matrix_->data(),
                 this->rows() * this->cols());
         }
@@ -436,10 +383,10 @@ public:
                     }
                 }
             }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
             else
             {
-                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                chase::matrix::gpu_runtime::convert_sp_to_dp(
                     single_precision_matrix_->data(), this->data(),
                     this->rows() * this->cols());
             }
@@ -531,10 +478,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::matrix::gpu_runtime::convert_sp_to_dp(
                 this->data(), double_precision_matrix_->data(),
                 this->rows() * this->cols());
         }
@@ -579,10 +526,10 @@ public:
                     }
                 }
             }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
             else
             {
-                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                chase::matrix::gpu_runtime::convert_dp_to_sp(
                     double_precision_matrix_->data(), this->data(),
                     this->rows() * this->cols());
             }
@@ -632,13 +579,14 @@ public:
         return matrix_dp();
     }
 
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
     template <
         typename U = T,
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
-    void enableDoublePrecisionAsync(chase_cuda_stream_ptr_t stream_ = nullptr)
+    void enableDoublePrecisionAsync(
+        gpu_runtime::chase_gpu_stream_ptr_t stream_ = nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -649,15 +597,14 @@ public:
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::matrix::gpu_runtime::convert_sp_to_dp(
                 this->data(), double_precision_matrix_->data(),
                 this->rows() * this->cols(), stream_);
         }
         else
         {
-
             throw std::runtime_error(
-                "GPU async double-precision conversion requires CUDA support.");
+                "GPU async double-precision conversion requires GPU support.");
         }
         is_double_precision_enabled_ = true;
         end = std::chrono::high_resolution_clock::now();
@@ -670,8 +617,9 @@ public:
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
-    void disableDoublePrecisionAsync(bool copyback = false,
-                                     chase_cuda_stream_ptr_t stream_ = nullptr)
+    void disableDoublePrecisionAsync(
+        bool copyback = false,
+        gpu_runtime::chase_gpu_stream_ptr_t stream_ = nullptr)
     {
         if (!is_double_precision_enabled_)
         {
@@ -687,15 +635,14 @@ public:
         {
             if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
             {
-                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                chase::matrix::gpu_runtime::convert_dp_to_sp(
                     double_precision_matrix_->data(), this->data(),
                     this->rows() * this->cols(), stream_);
             }
             else
             {
-
                 throw std::runtime_error(
-                    "GPU async double-precision conversion requires CUDA support.");
+                    "GPU async double-precision conversion requires GPU support.");
             }
         }
 
@@ -709,7 +656,8 @@ public:
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
     void copyToSubBlockAsync(std::size_t offset, std::size_t size,
-                             chase_cuda_stream_ptr_t stream_ = nullptr)
+                             gpu_runtime::chase_gpu_stream_ptr_t stream_ =
+                                 nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -725,14 +673,14 @@ public:
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::matrix::gpu_runtime::convert_sp_to_dp(
                 this->data() + offset, double_precision_matrix_->data() + offset,
                 size, stream_);
         }
         else
         {
             throw std::runtime_error(
-                "GPU async sub-block copy requires CUDA support.");
+                "GPU async sub-block copy requires GPU support.");
         }
     }
 
@@ -752,7 +700,8 @@ public:
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
     void copyBackSubBlockAsync(std::size_t offset, std::size_t size,
-                               chase_cuda_stream_ptr_t stream_ = nullptr)
+                               gpu_runtime::chase_gpu_stream_ptr_t stream_ =
+                                   nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -768,14 +717,14 @@ public:
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::matrix::gpu_runtime::convert_dp_to_sp(
                 double_precision_matrix_->data() + offset, this->data() + offset,
                 size, stream_);
         }
         else
         {
             throw std::runtime_error(
-                "GPU async sub-block copy requires CUDA support.");
+                "GPU async sub-block copy requires GPU support.");
         }
     }
 
@@ -839,10 +788,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::matrix::gpu_runtime::convert_dp_to_sp(
                 this->data(), single_precision_matrix_->data(),
                 this->rows() * this->cols());
         }
@@ -875,10 +824,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::matrix::gpu_runtime::convert_sp_to_dp(
                 single_precision_matrix_->data(), this->data(),
                 this->rows() * this->cols());
         }
@@ -912,10 +861,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::matrix::gpu_runtime::convert_sp_to_dp(
                 this->data(), double_precision_matrix_->data(),
                 this->rows() * this->cols());
         }
@@ -948,10 +897,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::matrix::gpu_runtime::convert_dp_to_sp(
                 double_precision_matrix_->data(), this->data(),
                 this->rows() * this->cols());
         }
@@ -1186,382 +1135,6 @@ public:
     std::size_t cpu_ld() const override { return ld_; }
 };
 
-#ifdef HAS_CUDA
-/**
- * @ingroup MatrixClasses
- * @brief A matrix class for handling matrix data on both CPU and GPU.
- *
- * This class manages a matrix that can reside both on the GPU and CPU. It uses
- * CUDA to allocate and copy data between the CPU and GPU. It handles memory
- * management, including external memory and internal allocation.
- *
- * @tparam T Type of elements in the matrix.
- * @tparam Allocator Type of the allocator for managing memory.
- */
-template <typename T, template <typename> class Allocator>
-class Matrix<T, chase::platform::GPU, Allocator>
-    : public AbstractMatrix<T, Matrix, chase::platform::GPU, Allocator>
-{
-private:
-    std::unique_ptr<T[], std::function<void(T*)>>
-        gpu_data_; ///< Pointer to the GPU data.
-    std::unique_ptr<T[], std::function<void(T*)>>
-        cpu_data_; ///< Pointer to the CPU data.
-    T* external_gpu_data_ =
-        nullptr; ///< Pointer to external GPU data, if provided.
-    T* external_cpu_data_ =
-        nullptr;         ///< Pointer to external CPU data, if provided.
-    std::size_t rows_;   ///< Number of rows in the matrix.
-    std::size_t cols_;   ///< Number of columns in the matrix.
-    std::size_t gpu_ld_; ///< Leading dimension for the GPU data.
-    std::size_t cpu_ld_; ///< Leading dimension for the CPU data.
-    bool owns_cpu_mem_;  ///< Flag to indicate if the CPU memory is owned by the
-                         ///< object.
-    bool owns_gpu_mem_;  ///< Flag to indicate if the GPU memory is owned by the
-                         ///< object.
-    Allocator<T> allocator_; ///< Allocator used to manage memory.
-
-public:
-    using hermitian_type =
-        chase::matrix::Hermitian; ///< Alias for the Hermitian matrix type.
-
-    /**
-     * @brief Default constructor for a Matrix.
-     * Initializes a matrix with no data and sets default values for dimensions
-     * and memory ownership flags.
-     */
-    Matrix()
-        : gpu_data_(nullptr, [](T*) {}), cpu_data_(nullptr, [](T*) {}),
-          rows_(0), cols_(0), gpu_ld_(0), cpu_ld_(0), owns_cpu_mem_(false),
-          owns_gpu_mem_(false)
-    {
-    }
-
-    /**
-     * @brief Constructor for a Matrix with specified dimensions.
-     * Allocates memory on the GPU for the matrix data.
-     *
-     * @param rows The number of rows in the matrix.
-     * @param cols The number of columns in the matrix.
-     */
-    Matrix(std::size_t rows, std::size_t cols)
-        : gpu_data_(nullptr, [](T*) {}), cpu_data_(nullptr, [](T*) {}),
-          rows_(rows), cols_(cols), gpu_ld_(rows), cpu_ld_(0),
-          owns_cpu_mem_(false), owns_gpu_mem_(true)
-    {
-        T* raw_data = allocator_.allocate(rows_ * cols_);
-        CHECK_CUDA_ERROR(cudaMemset(raw_data, 0, rows * cols * sizeof(T)));
-
-        gpu_data_ = std::unique_ptr<T[], std::function<void(T*)>>(
-            raw_data,
-            [this](T* ptr) { allocator_.deallocate(ptr, rows_ * cols_); });
-    }
-
-    /**
-     * @brief Constructor that initializes the matrix with external data.
-     * This constructor supports both CPU and GPU buffers and handles memory
-     * allocation accordingly.
-     *
-     * @param rows The number of rows in the matrix.
-     * @param cols The number of columns in the matrix.
-     * @param ld The leading dimension of the matrix.
-     * @param external_data Pointer to external data (CPU or GPU).
-     * @param buffer_type The type of external buffer (CPU or GPU).
-     */
-    Matrix(std::size_t rows, std::size_t cols, std::size_t ld, T* external_data,
-           BufferType buffer_type = BufferType::CPU)
-        : gpu_data_(nullptr, [](T*) {}), cpu_data_(nullptr, [](T*) {}),
-          external_gpu_data_(buffer_type == BufferType::GPU ? external_data
-                                                            : nullptr),
-          external_cpu_data_(buffer_type == BufferType::CPU ? external_data
-                                                            : nullptr),
-          rows_(rows), cols_(cols),
-          gpu_ld_(buffer_type == BufferType::GPU ? ld : rows),
-          cpu_ld_(buffer_type == BufferType::CPU ? ld : 0),
-          owns_cpu_mem_(false),
-          owns_gpu_mem_(buffer_type == BufferType::GPU ? false : true)
-    {
-        if (buffer_type == BufferType::CPU)
-        {
-            // if provided external cpu, allocaate gpu internally
-            T* raw_data = allocator_.allocate(rows_ * cols_);
-
-            gpu_data_ = std::unique_ptr<T[], std::function<void(T*)>>(
-                raw_data,
-                [this](T* ptr) { allocator_.deallocate(ptr, rows_ * cols_); });
-
-            CHECK_CUBLAS_ERROR(cublasSetMatrix(rows_, cols_, sizeof(T),
-                                               external_cpu_data_, cpu_ld_,
-                                               gpu_data_.get(), gpu_ld_));
-        }
-        // if provided external gpu, cpu is not allocated, until necessary
-    }
-
-    /**
-     * @brief Move constructor to transfer ownership of resources.
-     *
-     * This constructor moves the resources (GPU and CPU data) from another
-     * Matrix object.
-     *
-     * @param other The Matrix object from which resources are moved.
-     */
-    Matrix(Matrix&& other) noexcept
-        : gpu_data_(std::move(other.gpu_data_)),
-          cpu_data_(std::move(other.cpu_data_)),
-          external_gpu_data_(other.external_gpu_data_),
-          external_cpu_data_(other.external_cpu_data_), rows_(other.rows_),
-          cols_(other.cols_), gpu_ld_(other.gpu_ld_), cpu_ld_(other.cpu_ld_),
-          owns_cpu_mem_(other.owns_cpu_mem_), owns_gpu_mem_(other.owns_gpu_mem_)
-    {
-        this->single_precision_matrix_ =
-            std::move(other.single_precision_matrix_);
-        this->is_single_precision_enabled_ = other.is_single_precision_enabled_;
-        this->double_precision_matrix_ =
-            std::move(other.double_precision_matrix_);
-        this->is_double_precision_enabled_ = other.is_double_precision_enabled_;
-        other.gpu_data_ =
-            nullptr; // The moved-from object no longer owns the GPU data
-        other.cpu_data_ =
-            nullptr; // The moved-from object no longer owns the CPU data
-        other.owns_cpu_mem_ = false; // No longer owns the memory
-        other.owns_gpu_mem_ = false; // No longer owns the memory
-        other.external_cpu_data_ = nullptr;
-        other.external_gpu_data_ = nullptr;
-    }
-
-    /**
-     * @brief Move assignment operator to transfer ownership of resources.
-     *
-     * This operator moves the resources (GPU and CPU data) from another Matrix
-     * object to the current one.
-     *
-     * @param other The Matrix object from which resources are moved.
-     * @return Reference to the current object.
-     */
-    Matrix& operator=(Matrix&& other) noexcept
-    {
-        if (this != &other)
-        {
-            // Transfer ownership
-            gpu_data_ = std::move(other.gpu_data_);
-            cpu_data_ = std::move(other.cpu_data_);
-            external_gpu_data_ = other.external_gpu_data_;
-            external_cpu_data_ = other.external_cpu_data_;
-            rows_ = other.rows_;
-            cols_ = other.cols_;
-            gpu_ld_ = other.gpu_ld_;
-            cpu_ld_ = other.cpu_ld_;
-            owns_cpu_mem_ = other.owns_cpu_mem_;
-            owns_gpu_mem_ = other.owns_gpu_mem_;
-            this->single_precision_matrix_ =
-                std::move(other.single_precision_matrix_);
-            this->is_single_precision_enabled_ =
-                other.is_single_precision_enabled_;
-            this->double_precision_matrix_ =
-                std::move(other.double_precision_matrix_);
-            this->is_double_precision_enabled_ =
-                other.is_double_precision_enabled_;
-            other.single_precision_matrix_ =
-                nullptr; // Transfer ownership of low precision data
-            other.double_precision_matrix_ =
-                nullptr; // Transfer ownership of high precision data
-            other.owns_cpu_mem_ = false; // No longer owns the memory
-            other.owns_gpu_mem_ = false; // No longer owns the memory
-            other.external_cpu_data_ = nullptr;
-            other.external_gpu_data_ = nullptr;
-        }
-        return *this;
-    }
-
-    /**
-     * @brief Swap function to exchange data between two matrices.
-     *
-     * This function swaps the GPU, CPU, and other matrix data between two
-     * Matrix objects.
-     *
-     * @param other The other Matrix object to swap data with.
-     */
-    void swap(Matrix& other) noexcept
-    {
-        std::swap(gpu_data_, other.gpu_data_);
-        std::swap(cpu_data_, other.cpu_data_);
-        std::swap(external_gpu_data_, other.external_gpu_data_);
-        std::swap(external_cpu_data_, other.external_cpu_data_);
-        std::swap(rows_, other.rows_);
-        std::swap(cols_, other.cols_);
-        std::swap(gpu_ld_, other.gpu_ld_);
-        std::swap(cpu_ld_, other.cpu_ld_);
-        std::swap(owns_cpu_mem_, other.owns_cpu_mem_);
-        std::swap(owns_gpu_mem_, other.owns_gpu_mem_);
-        std::swap(this->is_single_precision_enabled_,
-                  other.is_single_precision_enabled_);
-        std::swap(this->single_precision_matrix_,
-                  other.single_precision_matrix_);
-        std::swap(this->is_double_precision_enabled_,
-                  other.is_double_precision_enabled_);
-        std::swap(this->double_precision_matrix_,
-                  other.double_precision_matrix_);
-    }
-
-    // Swap only the underlying GPU data pointers/ownership for data().
-    void swapDataPointer(Matrix& other) noexcept
-    {
-        std::swap(gpu_data_, other.gpu_data_);
-        std::swap(external_gpu_data_, other.external_gpu_data_);
-        std::swap(owns_gpu_mem_, other.owns_gpu_mem_);
-    }
-
-    /**
-     * @brief Destructor for the Matrix class.
-     * Releases any resources held by the Matrix object.
-     */
-    ~Matrix() {}
-
-    /**
-     * @brief Allocates memory for CPU data.
-     *
-     * This function allocates pinned memory for the CPU data if the matrix owns
-     * the CPU memory.
-     */
-    void allocate_cpu_data()
-    {
-        if (!owns_cpu_mem_ || cpu_data_ == nullptr)
-        {
-            T* raw_data;
-            CHECK_CUDA_ERROR(cudaMallocHost(
-                &raw_data,
-                rows_ * cols_ * sizeof(T))); // Allocate pinned CPU buffer
-            // raw_data = (T *)malloc(rows_ * cols_ * sizeof(T));
-            memset(raw_data, 0, rows_ * cols_ * sizeof(T));
-            // cudaHostUnregister(raw_data);
-
-            cpu_data_ = std::unique_ptr<T[], std::function<void(T*)>>(
-                raw_data,
-                [this](T* ptr)
-                {
-                    cudaFreeHost(ptr);
-                    // free(ptr);
-                });
-
-            owns_cpu_mem_ = true;
-            cpu_ld_ = rows_;
-        }
-    }
-    /**
-     * @brief Returns a pointer to the CPU data buffer.
-     *
-     * This function returns the CPU data pointer. If the matrix does not own
-     * the CPU memory but has external CPU data, it returns the external CPU
-     * data. If the matrix owns the CPU memory, it returns the internal
-     * allocated CPU data. If neither condition is met, it throws a runtime
-     * error.
-     *
-     * @return Pointer to the CPU data.
-     * @throws std::runtime_error If the CPU buffer is not allocated or
-     * provided.
-     */
-    T* cpu_data() override
-    {
-        if (!owns_cpu_mem_ && external_cpu_data_ != nullptr)
-        {
-            return external_cpu_data_;
-        }
-        else if (owns_cpu_mem_ && cpu_data_ != nullptr)
-        {
-            return cpu_data_.get();
-        }
-        else
-        {
-            throw std::runtime_error("CPU buffer is not allocated or provided");
-        }
-    }
-
-    /**
-     * @brief Returns a pointer to the matrix data (either GPU or external GPU
-     * data).
-     *
-     * This function returns the matrix data pointer. If the matrix owns the GPU
-     * memory, it returns the internal GPU data pointer. If not, it returns the
-     * external GPU data pointer.
-     *
-     * @return Pointer to the matrix data (either GPU or external).
-     */
-    T* data() override
-    {
-        return owns_gpu_mem_ ? gpu_data_.get() : external_gpu_data_;
-    }
-
-    /**
-     * @brief Copies the matrix data from CPU to GPU.
-     *
-     * This function copies the data from the CPU buffer (if allocated or
-     * external) to the GPU buffer. It uses cuBLAS functions to perform the
-     * matrix transfer.
-     */
-    void H2D()
-    {
-        T* src_data = this->cpu_data();
-        T* target_data = this->data();
-        CHECK_CUBLAS_ERROR(cublasSetMatrix(rows_, cols_, sizeof(T), src_data,
-                                           cpu_ld_, target_data, gpu_ld_));
-    }
-
-    /**
-     * @brief Copies the matrix data from GPU to CPU.
-     *
-     * This function copies the data from the GPU buffer to the CPU buffer. It
-     * uses cuBLAS functions to perform the matrix transfer. If the CPU buffer
-     * is not already allocated, it is allocated before copying the data.
-     */
-    void D2H()
-    {
-        if (cpu_data_ == nullptr && external_cpu_data_ == nullptr)
-        {
-            this->allocate_cpu_data();
-        }
-        T* dest_data = this->cpu_data();
-        CHECK_CUBLAS_ERROR(cublasGetMatrix(rows_, cols_, sizeof(T),
-                                           this->data(), gpu_ld_, dest_data,
-                                           this->cpu_ld()));
-    }
-    /**
-     * @brief Returns the number of rows in the matrix.
-     *
-     * This function returns the number of rows in the matrix.
-     *
-     * @return The number of rows in the matrix.
-     */
-    std::size_t rows() const { return rows_; }
-    /**
-     * @brief Returns the number of columns in the matrix.
-     *
-     * This function returns the number of columns in the matrix.
-     *
-     * @return The number of columns in the matrix.
-     */
-    std::size_t cols() const override { return cols_; }
-    /**
-     * @brief Returns the leading dimension of the matrix (GPU).
-     *
-     * This function returns the leading dimension (stride) of the matrix as it
-     * is stored in GPU memory. The leading dimension is used to calculate the
-     * memory layout for matrix operations.
-     *
-     * @return The leading dimension of the matrix in GPU memory.
-     */
-    std::size_t ld() const override { return gpu_ld_; }
-    /**
-     * @brief Returns the leading dimension of the matrix (CPU).
-     *
-     * This function returns the leading dimension (stride) of the matrix as it
-     * is stored in CPU memory.
-     *
-     * @return The leading dimension of the matrix in CPU memory.
-     */
-    std::size_t cpu_ld() const override { return cpu_ld_; }
-};
-#endif
-
 template <typename T, typename Platform = chase::platform::CPU,
           template <typename> class Allocator =
               DefaultAllocator<Platform>::template type>
@@ -1572,19 +1145,15 @@ class PseudoHermitianMatrix<T, chase::platform::CPU, Allocator>
     : public Matrix<T, chase::platform::CPU, Allocator>
 {
 public:
-    using hermitian_type =
-        chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian
-                                        ///< matrix type.
-    // Default constructor
+    using hermitian_type = chase::matrix::PseudoHermitian;
+
     PseudoHermitianMatrix() : Matrix<T, chase::platform::CPU, Allocator>() {}
 
-    // Constructor with dimensions
     PseudoHermitianMatrix(std::size_t rows, std::size_t cols)
         : Matrix<T, chase::platform::CPU, Allocator>(rows, cols)
     {
     }
 
-    // Constructor with external data
     PseudoHermitianMatrix(std::size_t rows, std::size_t cols, std::size_t ld,
                           T* data)
         : Matrix<T, chase::platform::CPU, Allocator>(rows, cols, ld, data)
@@ -1592,33 +1161,8 @@ public:
     }
 };
 
-#ifdef HAS_CUDA
-template <typename T, template <typename> class Allocator>
-class PseudoHermitianMatrix<T, chase::platform::GPU, Allocator>
-    : public Matrix<T, chase::platform::GPU, Allocator>
-{
-public:
-    using hermitian_type =
-        chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian
-                                        ///< matrix type.
-    // Default constructor
-    PseudoHermitianMatrix() : Matrix<T, chase::platform::GPU, Allocator>() {}
-
-    // Constructor with dimensions
-    PseudoHermitianMatrix(std::size_t rows, std::size_t cols)
-        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols)
-    {
-    }
-
-    // Constructor with external data
-    PseudoHermitianMatrix(
-        std::size_t rows, std::size_t cols, std::size_t ld, T* data,
-        chase::matrix::BufferType buffer_type = chase::matrix::BufferType::CPU)
-        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols, ld, data,
-                                                     buffer_type)
-    {
-    }
-};
+#if defined(CHASE_GPU_MATRIX)
+#include "matrix_gpu.hpp"
 #endif
 
 } // namespace matrix

@@ -222,7 +222,39 @@ TYPED_TEST(MatrixCPUTest, SinglePrecisionMemoryDeallocation)
 }
 #endif
 
-#ifdef HAS_CUDA
+#ifdef CHASE_GPU_MATRIX
+namespace
+{
+template <typename T>
+T* allocate_device_buffer(std::size_t count)
+{
+    void* raw = nullptr;
+    chase::matrix::gpu_runtime::device_malloc(&raw, count * sizeof(T));
+    return static_cast<T*>(raw);
+}
+
+template <typename T>
+void memset_device_buffer(T* ptr, std::size_t count)
+{
+    chase::matrix::gpu_runtime::device_memset(ptr, 0, count * sizeof(T));
+}
+
+template <typename T>
+void free_device_buffer(T* ptr)
+{
+    chase::matrix::gpu_runtime::device_free(ptr);
+}
+
+template <typename T>
+void copy_matrix_from_device(chase::matrix::Matrix<T, chase::platform::GPU>& matrix,
+                             T* host_data)
+{
+    chase::matrix::gpu_runtime::copy_matrix_d2h(
+        matrix.rows(), matrix.cols(), sizeof(T), matrix.data(), matrix.ld(),
+        host_data, matrix.rows());
+}
+} // namespace
+
 template <typename T>
 class MatrixGPUTest : public ::testing::Test
 {
@@ -274,10 +306,8 @@ TYPED_TEST(MatrixGPUTest, ExternalGPUMemoryUsage)
 {
     using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
-    T* external_data;
-    CHECK_CUDA_ERROR(
-        cudaMalloc((void**)&external_data, rows * cols * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMemset(external_data, 0, rows * cols * sizeof(T)));
+    T* external_data = allocate_device_buffer<T>(rows * cols);
+    memset_device_buffer(external_data, rows * cols);
     chase::matrix::Matrix<T, chase::platform::GPU> matrix(
         rows, cols, rows, external_data, chase::matrix::BufferType::GPU);
     EXPECT_EQ(matrix.rows(), rows);
@@ -293,6 +323,7 @@ TYPED_TEST(MatrixGPUTest, ExternalGPUMemoryUsage)
     {
         EXPECT_EQ(matrix.cpu_data()[i], T(0.0));
     }
+    free_device_buffer(external_data);
 }
 
 TYPED_TEST(MatrixGPUTest, DataAccessAndCorrectness)
@@ -309,9 +340,7 @@ TYPED_TEST(MatrixGPUTest, DataAccessAndCorrectness)
                                                           cpu_data);
 
     std::vector<T> gpu_copied(matrix.rows() * matrix.cols());
-    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix.rows(), matrix.cols(), sizeof(T),
-                                       matrix.data(), matrix.ld(),
-                                       gpu_copied.data(), matrix.rows()));
+    copy_matrix_from_device(matrix, gpu_copied.data());
 
     for (auto i = 0; i < rows * cols; i++)
     {
@@ -349,13 +378,8 @@ TYPED_TEST(MatrixGPUTest, SWAP)
     std::vector<T> gpu_copied_1(matrix1.rows() * matrix1.cols());
     std::vector<T> gpu_copied_2(matrix2.rows() * matrix2.cols());
 
-    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix1.rows(), matrix1.cols(),
-                                       sizeof(T), matrix1.data(), matrix1.ld(),
-                                       gpu_copied_1.data(), matrix1.rows()));
-
-    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix2.rows(), matrix2.cols(),
-                                       sizeof(T), matrix2.data(), matrix2.ld(),
-                                       gpu_copied_2.data(), matrix2.rows()));
+    copy_matrix_from_device(matrix1, gpu_copied_1.data());
+    copy_matrix_from_device(matrix2, gpu_copied_2.data());
 
     for (auto i = 0; i < matrix1.rows() * matrix1.cols(); i++)
     {
@@ -419,7 +443,7 @@ TYPED_TEST(MatrixGPUTest, DisableSinglePrecisionWithCopyback)
 
         // Enable and then disable single precision with copyback
         matrix.enableSinglePrecision();
-        CHECK_CUDA_ERROR(cudaMemset(matrix.data(), 0, rows * cols * sizeof(T)));
+        memset_device_buffer(matrix.data(), rows * cols);
         memset(matrix.cpu_data(), 0, rows * cols * sizeof(T));
 
         matrix.disableSinglePrecision(true);

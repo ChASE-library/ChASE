@@ -17,7 +17,10 @@ include(GNUInstallDirs)
 # These will be used in chase_config.h.in
 set(HAS_MPI OFF)
 set(HAS_CUDA OFF)
+set(HAS_HIP OFF)
+set(HAS_HIP_AWARE_MPI OFF)
 set(HAS_NCCL OFF)
+set(HAS_RCCL OFF)
 set(HAS_SCALAPACK OFF)
 
 # Note: These are set later when dependencies are found
@@ -43,6 +46,37 @@ option( CHASE_OUTPUT "ChASE will provide output at each iteration")
 option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
 option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
 option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" OFF)
+set(CHASE_ENABLE_HIP "AUTO" CACHE STRING
+    "Enable experimental AMD HIP support: AUTO, ON, or OFF")
+set_property(CACHE CHASE_ENABLE_HIP PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${CHASE_ENABLE_HIP}" CHASE_ENABLE_HIP_MODE)
+if(NOT CHASE_ENABLE_HIP_MODE MATCHES "^(AUTO|ON|OFF)$")
+  message(FATAL_ERROR
+    "CHASE_ENABLE_HIP must be AUTO, ON, or OFF (got '${CHASE_ENABLE_HIP}')")
+endif()
+
+set(CHASE_ENABLE_HIP_EFFECTIVE OFF)
+if(NOT CHASE_ENABLE_HIP_MODE STREQUAL "OFF")
+  include(CheckLanguage)
+  check_language(HIP)
+  if(CMAKE_HIP_COMPILER)
+    set(CHASE_ENABLE_HIP_EFFECTIVE ON)
+  elseif(CHASE_ENABLE_HIP_MODE STREQUAL "ON")
+    message(FATAL_ERROR "CHASE_ENABLE_HIP=ON but no HIP compiler was found")
+  endif()
+endif()
+
+if(CHASE_ENABLE_HIP_EFFECTIVE)
+  set(CHASE_HIP_DISTRIBUTED_COLLECTIVES "NCCL" CACHE STRING
+      "HIP distributed pChASEGPU collective backend: NCCL (RCCL, default) or MPI (GPU-aware MPI opt-out)")
+  set_property(CACHE CHASE_HIP_DISTRIBUTED_COLLECTIVES PROPERTY STRINGS MPI NCCL)
+  message(STATUS "HIP support: ON (${CHASE_ENABLE_HIP_MODE})")
+else()
+  message(STATUS "HIP support: OFF (${CHASE_ENABLE_HIP_MODE})")
+endif()
+option(CHASE_PROBE_HIP_AWARE_MPI_RUNTIME
+       "Run HIP-aware MPI probe at CMake configure (needs GPU + MPICH_GPU_SUPPORT_ENABLED)"
+       OFF)
 option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
 option(CHASE_BUILD_WITH_EXAMPLES "Build the examples" OFF)
 option(CHASE_BUILD_WITH_DOCS "Build the docs" OFF)
@@ -237,6 +271,8 @@ set(CHASE_LINK_LIBRARIES "")
 set(IS_ENABLE_MPI OFF)
 set(IS_ENABLE_SCALAPACK OFF)
 set(IS_ENABLE_NCCL OFF)
+set(IS_ENABLE_RCCL OFF)
+set(IS_ENABLE_HIP OFF)
 
 if(TARGET pchase_cpu)
     set(IS_ENABLE_MPI ON)
@@ -253,9 +289,23 @@ if(TARGET linalg_internal_nccl)
     set(HAS_NCCL ON)  # For chase_config.h
 endif()
 
+if(TARGET mpi_grid_rccl)
+    set(IS_ENABLE_RCCL ON)
+    set(HAS_RCCL ON)  # For chase_config.h
+endif()
+
 # Check if CUDA was found
 if(CMAKE_CUDA_COMPILER OR TARGET CUDA::cudart)
     set(HAS_CUDA ON)
+endif()
+
+if(TARGET linalg_internal_hip)
+    set(IS_ENABLE_HIP ON)
+    set(HAS_HIP ON)
+endif()
+
+if(HIP_AWARE_MPI_SUPPORTED)
+    set(HAS_HIP_AWARE_MPI ON)
 endif()
 
 # Now generate configuration header with correct feature detection
@@ -269,6 +319,8 @@ configure_file(
 set(IS_ENABLE_MPI_STRING ${IS_ENABLE_MPI})
 set(IS_ENABLE_SCALAPACK_STRING ${IS_ENABLE_SCALAPACK})
 set(IS_ENABLE_NCCL_STRING ${IS_ENABLE_NCCL})
+set(IS_ENABLE_RCCL_STRING ${IS_ENABLE_RCCL})
+set(IS_ENABLE_HIP_STRING ${IS_ENABLE_HIP})
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in"

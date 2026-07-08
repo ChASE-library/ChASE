@@ -18,18 +18,13 @@
 
 #include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
-#include "external/scalapackpp/scalapackpp.hpp"
+#include "external/scalapack/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "grid/mpiTypes.hpp"
 #include "linalg/matrix/matrix.hpp"
 
-#ifdef HAS_CUDA
-#include "Impl/chase_gpu/cuda_utils.hpp"
-#include "external/cublaspp/cublaspp.hpp"
-#include "linalg/internal/cuda/lacpy.hpp"
-#include "linalg/internal/cuda/precision_conversion.cuh"
-#include <cuda_runtime.h>
-#endif
+#include "linalg/distMatrix/dist_gpu_portability.hpp"
+
 
 /**
  * @page chase_dist_matrix_namespace chase::distMatrix Namespace
@@ -84,6 +79,10 @@ std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
  */
 namespace distMatrix
 {
+#ifdef CHASE_HAS_DIST_GPU_COLLECTIVE
+using DistGpuCollectiveStream =
+    chase::distMatrix::gpu_portability::collective_stream_type;
+#endif
 
 /**
  * @brief Represents the BlockBlock Matrix.
@@ -250,7 +249,7 @@ public:
         return grank;
     }
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     /**
      * @brief Transfers data from device to host.
      *
@@ -369,10 +368,10 @@ public:
                 }
             }
             else
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
             {
 
-                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                     this->l_data(), single_precision_matrix_->l_data(),
                     this->l_cols() * this->l_rows());
             }
@@ -449,9 +448,9 @@ public:
                 }
             }
             else
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
             {
-                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                     this->l_data(), double_precision_matrix_->l_data(),
                     this->l_cols() * this->l_rows());
             }
@@ -480,13 +479,14 @@ public:
             throw std::runtime_error("Double precision already enabled.");
         }
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <
         typename U = T,
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
-    void enableDoublePrecisionAsync(cudaStream_t* stream_ = nullptr)
+    void enableDoublePrecisionAsync(
+        chase::distMatrix::gpu_portability::stream_type* stream_ = nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -525,7 +525,7 @@ public:
             }
             else
             {
-                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                     this->l_data(), double_precision_matrix_->l_data(),
                     this->l_cols() * this->l_rows(), stream_);
             }
@@ -585,9 +585,9 @@ public:
                         }
                     }
                 }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                 {
-                    chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                    chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                         single_precision_matrix_->l_data(), this->l_data(),
                         this->l_cols() * this->l_rows());
                 }
@@ -654,9 +654,9 @@ public:
                         }
                     }
                 }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                 {
-                    chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                    chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                         double_precision_matrix_->l_data(), this->l_data(),
                         this->l_cols() * this->l_rows());
                 }
@@ -687,14 +687,15 @@ public:
         double_precision_matrix_.reset(); // Free the double precision memory
         is_double_precision_enabled_ = false;
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <
         typename U = T,
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
     void disableDoublePrecisionAsync(bool copyback = false,
-                                     cudaStream_t* stream_ = nullptr)
+                                     chase::distMatrix::gpu_portability::stream_type*
+                                         stream_ = nullptr)
     {
         start = std::chrono::high_resolution_clock::now();
         if (copyback)
@@ -721,7 +722,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                    chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                         double_precision_matrix_->l_data(), this->l_data(),
                         this->l_cols() * this->l_rows(), stream_);
                 }
@@ -895,10 +896,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 this->l_data(), single_precision_matrix_->l_data(),
                 this->l_rows() * this->l_cols());
         }
@@ -932,10 +933,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 single_precision_matrix_->l_data(), this->l_data(),
                 this->l_rows() * this->l_cols());
         }
@@ -969,10 +970,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 this->l_data(), double_precision_matrix_->l_data(),
                 this->l_rows() * this->l_cols());
         }
@@ -1006,10 +1007,10 @@ public:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 double_precision_matrix_->l_data(), this->l_data(),
                 this->l_rows() * this->l_cols());
         }
@@ -1052,23 +1053,24 @@ public:
                         this->l_data()[offset + i]);
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 this->l_data() + offset,
                 single_precision_matrix_->l_data() + offset, count);
         }
 #endif
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <typename U = T,
               typename std::enable_if<
                   std::is_same<U, double>::value ||
                       std::is_same<U, std::complex<double>>::value,
                   int>::type = 0>
     void copyToSubBlockAsync(std::size_t offset, std::size_t count,
-                             cudaStream_t* stream_ = nullptr)
+                             chase::distMatrix::gpu_portability::stream_type*
+                                 stream_ = nullptr)
     {
         if (!single_precision_matrix_)
         {
@@ -1099,7 +1101,7 @@ public:
         }
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 this->l_data() + offset,
                 single_precision_matrix_->l_data() + offset, count, stream_);
         }
@@ -1141,23 +1143,24 @@ public:
                     single_precision_matrix_->l_data()[offset + i]);
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 single_precision_matrix_->l_data() + offset,
                 this->l_data() + offset, count);
         }
 #endif
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <typename U = T,
               typename std::enable_if<
                   std::is_same<U, double>::value ||
                       std::is_same<U, std::complex<double>>::value,
                   int>::type = 0>
     void copyBackSubBlockAsync(std::size_t offset, std::size_t count,
-                               cudaStream_t* stream_ = nullptr)
+                               chase::distMatrix::gpu_portability::stream_type*
+                                   stream_ = nullptr)
     {
         if (!single_precision_matrix_)
         {
@@ -1187,7 +1190,7 @@ public:
         }
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 single_precision_matrix_->l_data() + offset,
                 this->l_data() + offset, count, stream_);
         }
@@ -1230,23 +1233,24 @@ public:
                         this->l_data()[offset + i]);
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 this->l_data() + offset,
                 double_precision_matrix_->l_data() + offset, count);
         }
 #endif
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <
         typename U = T,
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
     void copyToSubBlockAsync(std::size_t offset, std::size_t count,
-                             cudaStream_t* stream_ = nullptr)
+                             chase::distMatrix::gpu_portability::stream_type*
+                                 stream_ = nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -1277,7 +1281,7 @@ public:
         }
         else
         {
-            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            chase::distMatrix::gpu_portability::convert_SP_TO_DP_GPU(
                 this->l_data() + offset,
                 double_precision_matrix_->l_data() + offset, count, stream_);
         }
@@ -1319,23 +1323,24 @@ public:
                     double_precision_matrix_->l_data()[offset + i]);
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 double_precision_matrix_->l_data() + offset,
                 this->l_data() + offset, count);
         }
 #endif
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
     template <
         typename U = T,
         typename std::enable_if<std::is_same<U, float>::value ||
                                     std::is_same<U, std::complex<float>>::value,
                                 int>::type = 0>
     void copyBackSubBlockAsync(std::size_t offset, std::size_t count,
-                               cudaStream_t* stream_ = nullptr)
+                               chase::distMatrix::gpu_portability::stream_type*
+                                   stream_ = nullptr)
     {
         if (!double_precision_matrix_)
         {
@@ -1365,7 +1370,7 @@ public:
         }
         else
         {
-            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            chase::distMatrix::gpu_portability::convert_DP_TO_SP_GPU(
                 double_precision_matrix_->l_data() + offset,
                 this->l_data() + offset, count, stream_);
         }
@@ -1731,7 +1736,7 @@ private:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             std::size_t* g_offs = targetMatrix->g_offs();
@@ -1843,7 +1848,7 @@ private:
                 }
             }
         }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
         else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             auto m_contiguous_global_offs =
@@ -2817,7 +2822,7 @@ public:
     }
 };
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 template <typename T>
 class PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>
     : public BlockBlockMatrix<T, chase::platform::GPU>
@@ -3414,15 +3419,17 @@ public:
         }
     }
 
-#ifdef HAS_NCCL
+#ifdef CHASE_HAS_DIST_GPU_COLLECTIVE
     template <template <typename, typename> class targetType>
     void redistributeImplAsync(
         targetType<T, Platform>* targetMatrix,
-        cudaStream_t* stream_ =
+        DistGpuCollectiveStream* stream_ =
             nullptr) //,
                      // std::size_t offset, std::size_t subsetSize)
     {
-        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+        auto usedStream =
+            chase::distMatrix::gpu_portability::resolve_collective_stream(
+                stream_);
 
         if (M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols())
         {
@@ -3648,21 +3655,30 @@ private:
                         'A', this->l_rows(), this->l_cols(), this->l_data(),
                         this->l_ld(), buff_data, m_locs[coords[0]]);
                 }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                 else
                 {
-                    chase::linalg::internal::cuda::t_lacpy(
+                    chase::distMatrix::gpu_portability::t_lacpy(
                         'A', this->l_rows(), this->l_cols(), this->l_data(),
                         this->l_ld(), buff_data, m_locs[coords[0]]);
                 }
 #endif
             }
-#ifdef HAS_CUDA
-            cudaDeviceSynchronize();
+            if constexpr (std::is_same<Platform,
+                                       chase::platform::CPU>::value)
+            {
+                MPI_Bcast(buff_data, n_locs[coords[1]] * m_locs[src],
+                          chase::mpi::getMPI_Type<T>(), src,
+                          mpi_grid_.get()->get_col_comm());
+            }
+#if defined(HAS_CUDA) || defined(HAS_HIP)
+            else
+            {
+                chase::distMatrix::gpu_portability::mpiBcast(
+                    buff_data, n_locs[coords[1]] * m_locs[src], src,
+                    mpi_grid_.get()->get_col_comm());
+            }
 #endif
-            MPI_Bcast(buff_data, n_locs[coords[1]] * m_locs[src],
-                      chase::mpi::getMPI_Type<T>(), src,
-                      mpi_grid_.get()->get_col_comm());
 
             for (auto p = 0;
                  p < m_contiguous_global_offs_2[src][coords[1]].size(); p++)
@@ -3686,10 +3702,10 @@ private:
                                                               [q],
                             targetMatrix->l_ld());
                     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                     else
                     {
-                        chase::linalg::internal::cuda::t_lacpy(
+                        chase::distMatrix::gpu_portability::t_lacpy(
                             'A', m_contiguous_lens_2[src][coords[1]][p],
                             n_contiguous_lens_2[src][coords[1]][q],
                             buff_data + this->mb() * p +
@@ -3724,10 +3740,10 @@ private:
                                     targetMatrix->l_ld(),
                             targetMatrix->l_ld(), buff_data, M_);
                     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                     else
                     {
-                        chase::linalg::internal::cuda::t_lacpy(
+                        chase::distMatrix::gpu_portability::t_lacpy(
                             'A', M_, n_contiguous_lens_2[coords[0]][src][q],
                             targetMatrix->l_data() +
                                 n_contiguous_global_offs_2[coords[0]][src][q] *
@@ -3736,13 +3752,23 @@ private:
                     }
 #endif
                 }
-#ifdef HAS_CUDA
-                cudaDeviceSynchronize();
+                if constexpr (std::is_same<Platform,
+                                           chase::platform::CPU>::value)
+                {
+                    MPI_Bcast(buff_data,
+                              M_ * n_contiguous_lens_2[coords[0]][src][q],
+                              chase::mpi::getMPI_Type<T>(), src,
+                              mpi_grid_.get()->get_row_comm());
+                }
+#if defined(HAS_CUDA) || defined(HAS_HIP)
+                else
+                {
+                    chase::distMatrix::gpu_portability::mpiBcast(
+                        buff_data,
+                        M_ * n_contiguous_lens_2[coords[0]][src][q], src,
+                        mpi_grid_.get()->get_row_comm());
+                }
 #endif
-                MPI_Bcast(buff_data,
-                          M_ * n_contiguous_lens_2[coords[0]][src][q],
-                          chase::mpi::getMPI_Type<T>(), src,
-                          mpi_grid_.get()->get_row_comm());
 
                 if constexpr (std::is_same<Platform,
                                            chase::platform::CPU>::value)
@@ -3755,10 +3781,10 @@ private:
                                 n_contiguous_global_offs_2[coords[0]][src][q],
                         targetMatrix->l_ld());
                 }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
                 else
                 {
-                    chase::linalg::internal::cuda::t_lacpy(
+                    chase::distMatrix::gpu_portability::t_lacpy(
                         'A', M_, n_contiguous_lens_2[coords[0]][src][q],
                         buff_data, M_,
                         targetMatrix->l_data() +
@@ -3771,10 +3797,10 @@ private:
         }
     }
 
-#ifdef HAS_NCCL
+#ifdef CHASE_HAS_DIST_GPU_COLLECTIVE
     void redistributeToRedundantAsync(
         RedundantMatrix<T, chase::platform::GPU>* targetMatrix,
-        cudaStream_t stream)
+        DistGpuCollectiveStream stream)
     {
         int* coords = mpi_grid_.get()->get_coords();
         int* dims = mpi_grid_.get()->get_dims();
@@ -3863,14 +3889,14 @@ private:
         {
             if (coords[0] == src)
             {
-                chase::linalg::internal::cuda::t_lacpy(
+                chase::distMatrix::gpu_portability::t_lacpy(
                     'A', this->l_rows(), this->l_cols(), this->l_data(),
                     this->l_ld(), buff_data, m_locs[coords[0]]);
             }
 
-            CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
+            chase::distMatrix::gpu_portability::collectiveBcast(
                 buff_data, n_locs[coords[1]] * m_locs[src], src,
-                this->mpi_grid_->get_nccl_col_comm(), &stream));
+                this->mpi_grid_->get_nccl_col_comm(), &stream);
 
             for (auto p = 0;
                  p < m_contiguous_global_offs_2[src][coords[1]].size(); p++)
@@ -3878,7 +3904,7 @@ private:
                 for (auto q = 0;
                      q < n_contiguous_global_offs_2[src][coords[1]].size(); q++)
                 {
-                    chase::linalg::internal::cuda::t_lacpy(
+                    chase::distMatrix::gpu_portability::t_lacpy(
                         'A', m_contiguous_lens_2[src][coords[1]][p],
                         n_contiguous_lens_2[src][coords[1]][q],
                         buff_data + this->mb() * p +
@@ -3900,7 +3926,7 @@ private:
             {
                 if (coords[1] == src)
                 {
-                    chase::linalg::internal::cuda::t_lacpy(
+                    chase::distMatrix::gpu_portability::t_lacpy(
                         'A', M_, n_contiguous_lens_2[coords[0]][src][q],
                         targetMatrix->l_data() +
                             n_contiguous_global_offs_2[coords[0]][src][q] *
@@ -3908,11 +3934,11 @@ private:
                         targetMatrix->l_ld(), buff_data, M_);
                 }
 
-                CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(
+                chase::distMatrix::gpu_portability::collectiveBcast(
                     buff_data, M_ * n_contiguous_lens_2[coords[0]][src][q], src,
-                    this->mpi_grid_->get_nccl_row_comm(), &stream));
+                    this->mpi_grid_->get_nccl_row_comm(), &stream);
 
-                chase::linalg::internal::cuda::t_lacpy(
+                chase::distMatrix::gpu_portability::t_lacpy(
                     'A', M_, n_contiguous_lens_2[coords[0]][src][q], buff_data,
                     M_,
                     targetMatrix->l_data() +
@@ -3965,7 +3991,7 @@ public:
     }
 };
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 template <typename T>
 class PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>
     : public BlockCyclicMatrix<T, chase::platform::GPU>
