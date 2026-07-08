@@ -37,7 +37,7 @@ chase::linalg::internal::nccl
    using NCCL. These are internal implementation details. For user-facing
    documentation, refer to the implementation classes (:ref:`api_implementations`).
 
-chase::linalg::internal::cuda_aware_mpi
+chase::linalg::internal::cuda_mpi
 ----------------------------------------
 
 .. note::

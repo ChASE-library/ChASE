@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing to ChASE &mdash; ChASE v1.3.0 documentation</title>
+  <title>Contributing to ChASE &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -177,6 +173,7 @@ function switchVersion(url) {
 <li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-housekeeping-proposal">Documentation Housekeeping Proposal</a></li>
 </ul>
 </li>
 </ul>
@@ -309,6 +306,22 @@ You’ll see output like:</p>
 </pre></div>
 </div>
 </section>
+</section>
+<section id="documentation-housekeeping-proposal">
+<h2>Documentation Housekeeping Proposal<a class="headerlink" href="#documentation-housekeeping-proposal" title="Link to this heading"></a></h2>
+<p>The following files in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> are internal planning/engineering notes and are
+not part of the Sphinx user documentation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">amd_port_convergence_plan.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">amd_gpu_port_architecture.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plan_pchase_cpu_pseudo_hermitian.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">solve_pseudo_missing_vs_julia.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontier_gpu_collective_benchmark.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontier_amd_gpu_porting_plan.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GITLAB_CI_DOCS_SNIPPET.yml</span></code></p></li>
+</ul>
+<p>Recommended follow-up: move these files into a dedicated developer-notes location
+(<code class="docutils literal notranslate"><span class="pre">docs/dev/</span></code> or top-level <code class="docutils literal notranslate"><span class="pre">notes/</span></code>) to keep the user-facing docs tree focused.</p>
 </section>
 </section>
 

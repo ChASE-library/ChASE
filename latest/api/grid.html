@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1.4.1. Grid and Communication &mdash; ChASE v1.3.0 documentation</title>
+  <title>1.4.1. Grid and Communication &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/documentation_options.js?v=f8b929d9"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -387,39 +383,6 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D13get_nccl_commEv">
-<span id="_CPPv3NK5chase4grid9MpiGrid2D13get_nccl_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D13get_nccl_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1ae48c446a0b01fab1097782f6caaa1269"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D13get_nccl_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL global communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_row_commEv">
-<span id="_CPPv3NK5chase4grid9MpiGrid2D17get_nccl_row_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D17get_nccl_row_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a90988a68aba615beedd827729df4b28b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_row_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL row communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_col_commEv">
-<span id="_CPPv3NK5chase4grid9MpiGrid2D17get_nccl_col_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D17get_nccl_col_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a00c6996b6d52fb3652d9993cd4de97b1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_col_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL column communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv">
 <span id="_CPPv3N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv"></span><span id="chase::grid::MpiGrid2D::get_blacs_colcomm_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a6edab616c0e0f9a3c9f1c00e25461897"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_colcomm_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the ScaLAPACK context of column communicator. </p>
@@ -555,39 +518,6 @@ function switchVersion(url) {
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>GridMajor The grid’s major ordering (RowMajor or ColMajor). </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase13get_nccl_commEv">
-<span id="_CPPv3NK5chase4grid13MpiGrid2DBase13get_nccl_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase13get_nccl_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1aceb0c5cda43377dfc9abc7ff42708306"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase13get_nccl_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL global communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv">
-<span id="_CPPv3NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a424d47ba58a768d5991a62de9c4f549d"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL row communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv">
-<span id="_CPPv3NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1af31be30bb5c5bf90b31303fd0010b883"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv" title="Link to this definition"></a><br /></dt>
-<dd><p>Returns the NCCL column communicator for the grid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
 </dd>
 </dl>
 </dd></dl>

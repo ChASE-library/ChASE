@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>4. Parameters and Configurations &mdash; ChASE v1.3.0 documentation</title>
+  <title>4. Parameters and Configurations &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -55,10 +55,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -178,7 +174,8 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="#chebyshev-filter">4.2. Chebyshev Filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#lanczos-dos-spectral-estimator">4.3. Lanczos DoS (Spectral Estimator)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#additional-parameters">4.4. Additional Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#configuration-object">4.5. Configuration Object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logging-parameters">4.5. Logging Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-object">4.6. Configuration Object</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
@@ -384,8 +381,40 @@ function switchVersion(url) {
 </tbody>
 </table>
 </section>
+<section id="logging-parameters">
+<h2><span class="section-number">4.5. </span>Logging Parameters<a class="headerlink" href="#logging-parameters" title="Link to this heading"></a></h2>
+<p>The configuration object also provides logging controls:</p>
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">Logging Parameters</span><a class="headerlink" href="#id6" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 24.0%" />
+<col style="width: 76.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SetVerbosity(LogLevel</span> <span class="pre">level)</span></code></p></td>
+<td><p>Set verbosity level for runtime logging.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GetLogLevel()</span></code></p></td>
+<td><p>Query currently configured log level.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SetLogRank(int</span> <span class="pre">rank)</span></code></p></td>
+<td><p>Restrict log output to a selected MPI rank.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GetLogRank()</span></code></p></td>
+<td><p>Query the currently selected log rank.</p></td>
+</tr>
+</tbody>
+</table>
+<p>By default, ChASE initializes logging behavior from environment variables
+(<code class="docutils literal notranslate"><span class="pre">LogLevelFromEnv()</span></code> and <code class="docutils literal notranslate"><span class="pre">LogRankFromEnv()</span></code> internally).</p>
+</section>
 <section id="configuration-object">
-<span id="id1"></span><h2><span class="section-number">4.5. </span>Configuration Object<a class="headerlink" href="#configuration-object" title="Link to this heading"></a></h2>
+<span id="id1"></span><h2><span class="section-number">4.6. </span>Configuration Object<a class="headerlink" href="#configuration-object" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig&lt;T&gt;</span></code> class provides the API for configuring all ChASE
 parameters programmatically. This class is accessed through the <code class="docutils literal notranslate"><span class="pre">GetConfig()</span></code>
 method of any ChASE solver instance.</p>

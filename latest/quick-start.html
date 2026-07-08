@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. Quick Start &mdash; ChASE v1.3.0 documentation</title>
+  <title>1. Quick Start &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -190,7 +186,8 @@ function switchVersion(url) {
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#quick-installation-and-execution">1.3. Quick Installation and Execution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#building-and-installing-the-chase-library">1.3.1. Building and Installing the ChASE library</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#quick-hands-on-by-examples">1.3.2. Quick Hands-on by Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-documentation">1.3.2. Building Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quick-hands-on-by-examples">1.3.3. Quick Hands-on by Examples</a></li>
 </ul>
 </li>
 </ul>
@@ -249,7 +246,7 @@ user can utilize them to directly test ChASE on a matrix of his choice.</p>
 </pre></div>
 </div>
 <p>It is also recommended that you check out the latest stable tag:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>v1.6.0
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>v1.7.0
 </pre></div>
 </div>
 </section>
@@ -266,9 +263,10 @@ user can utilize them to directly test ChASE on a matrix of his choice.</p>
 </dd>
 <dt><strong>Optional Dependencies:</strong></dt><dd><ul class="simple">
 <li><p><a class="reference external" href="http://en.wikipedia.org/wiki/Message_Passing_Interface">MPI</a> - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).</p></li>
-<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Required only for GPU implementations (ChASEGPU, pChASEGPU)</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)</p></li>
+<li><p><a class="reference external" href="https://rocm.docs.amd.com">ROCm/HIP</a> - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)</p></li>
 <li><p><a class="reference external" href="http://www.netlib.org/scalapack/">ScaLAPACK</a> - Optional, for distributed Householder QR factorization</p></li>
-<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
 </ul>
 </dd>
 </dl>
@@ -391,7 +389,7 @@ Hermitian standard eigenproblem.</p>
 <p>ChASE can be built for different configurations depending on your needs:</p>
 <dl class="simple">
 <dt><strong>Sequential Build (Single Node)</strong></dt><dd><p>For sequential execution on a single node, you only need BLAS and LAPACK.
-MPI is not required. This will build ChASECPU (and ChASEGPU if CUDA is available).</p>
+MPI is not required. This will build ChASECPU (and ChASEGPU if CUDA or HIP is available).</p>
 </dd>
 </dl>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>ChASE/
@@ -403,7 +401,7 @@ make<span class="w"> </span>install
 </div>
 <dl class="simple">
 <dt><strong>Parallel Build (Multi-Node)</strong></dt><dd><p>For parallel execution across multiple nodes, MPI is required. This will
-build pChASECPU (and pChASEGPU if CUDA is available).</p>
+build pChASECPU (and pChASEGPU if CUDA or HIP is available).</p>
 </dd>
 </dl>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>ChASE/
@@ -416,7 +414,7 @@ make<span class="w"> </span>install
 <p>In the commands above, the variable <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}</span></code> is the path to install
 ChASE on your system. CMake will auto-detect the dependencies and select the
 default installed modules. If MPI is found, parallel implementations will be
-built automatically. If CUDA is found, GPU implementations will be built
+built automatically. If CUDA or HIP is found, GPU implementations will be built
 automatically.</p>
 <p>In order to select a specific module installation, especially when multiple
 versions of libraries or several different compilers are available on the
@@ -447,8 +445,25 @@ Accelerate, one could execute the following command:</p>
 <p>If you want to try with ChASE or use ChASE as standalone eigensolver, the CMake flag <code class="docutils literal notranslate"><span class="pre">-DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span></code> is not mandatory.</p>
 </div>
 </section>
+<section id="building-documentation">
+<h3><span class="section-number">1.3.2. </span>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading"></a></h3>
+<p>To build the Sphinx and API documentation locally, configure ChASE with the
+documentation option enabled:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>ChASE/
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build/
+cmake<span class="w"> </span>..<span class="w"> </span>-DCHASE_BUILD_WITH_DOCS<span class="o">=</span>ON
+make
+</pre></div>
+</div>
+<p>Documentation is generated under <code class="docutils literal notranslate"><span class="pre">build/sphinx/html</span></code>. You can also use the
+helper script:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>./scripts/build_docs.sh
+</pre></div>
+</div>
+</section>
 <section id="quick-hands-on-by-examples">
-<h3><span class="section-number">1.3.2. </span>Quick Hands-on by Examples<a class="headerlink" href="#quick-hands-on-by-examples" title="Link to this heading"></a></h3>
+<h3><span class="section-number">1.3.3. </span>Quick Hands-on by Examples<a class="headerlink" href="#quick-hands-on-by-examples" title="Link to this heading"></a></h3>
 <p>For a quick test and usage of the library, we provide various ready-to-use
 examples which use ChASE to solve eigenproblems. Some of these examples use
 the <a class="reference external" href="https://github.com/badaix/popl">popl</a> library for command-line parsing,

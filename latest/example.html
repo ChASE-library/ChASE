@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. Examples &mdash; ChASE v1.3.0 documentation</title>
+  <title>6. Examples &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="6.2.1. ChASE Object and Configuration" href="example/io.html" />
+    <link rel="next" title="1. API Reference" href="api/index.html" />
     <link rel="prev" title="5. Modules" href="module.html" />
      
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -176,17 +172,11 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">6. Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#hello-world">6.1. Hello World</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parallel-i-o-and-configuration">6.2. Parallel I/O and Configuration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html">6.2.1. ChASE Object and Configuration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#executables">6.2.2. Executables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-single-problem">6.2.3. Solving single problem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.2.4. Solving a sequence of problems</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.2.5. Parser of command-line arguments</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-i-o-and-configuration">6.2. Parallel I/O and Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installation-and-linking">6.3. Installation and Linking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#c-fortran-interface">6.4. C/Fortran Interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#bse-benchmark">6.5. BSE Benchmark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-benchmarks">6.6. Additional Benchmarks</a></li>
 </ul>
 </li>
 </ul>
@@ -232,19 +222,17 @@ argument parsing, which is automatically downloaded by CMake via FetchContent.
 No additional dependencies are required.</p>
 </div>
 <section id="hello-world">
-<span id="hello-world-chase"></span><h2><span class="section-number">6.1. </span>Hello World<a class="headerlink" href="#hello-world" title="Link to this heading"></a></h2>
+<h2><span class="section-number">6.1. </span>Hello World<a class="headerlink" href="#hello-world" title="Link to this heading"></a></h2>
 <p>The first example is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/1_hello_world">1_hello_world</a>.
 This example demonstrates:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>Basic setup of ChASE for parallel computation (CPU or GPU)</p></li>
 <li><p>Construction of a Clement matrix</p></li>
 <li><p>Solving a sequence of eigenproblems with matrix perturbation</p></li>
 <li><p>Using the performance decorator to measure kernel performance</p></li>
 <li><p>Configuration of ChASE parameters</p></li>
 </ul>
-</div></blockquote>
 <p>The example constructs a simple Clement matrix and finds a given number of its
 eigenpairs. It then perturbs the matrix and solves the sequence of related
 eigenproblems, demonstrating how to reuse approximate solutions from previous
@@ -255,27 +243,16 @@ problems for faster convergence.</p>
 <p>The second example is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>.
 This example demonstrates:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>Command-line configuration of ChASE parameters using <code class="docutils literal notranslate"><span class="pre">popl</span></code></p></li>
 <li><p>Parallel I/O for loading distributed matrices from disk</p></li>
 <li><p>Handling sequences of eigenproblems with file-based input</p></li>
 <li><p>Support for both sequential and parallel implementations</p></li>
 <li><p>CPU and GPU implementations</p></li>
 </ul>
-</div></blockquote>
 <p>The example shows how to configure ChASE parameters from the command line and
 load matrices in parallel across multiple MPI processes. It supports both
 sequential (single-node) and parallel (multi-node) execution modes.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html">6.2.1. ChASE Object and Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#executables">6.2.2. Executables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-single-problem">6.2.3. Solving single problem</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.2.4. Solving a sequence of problems</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.2.5. Parser of command-line arguments</a></li>
-</ul>
-</div>
 </section>
 <section id="installation-and-linking">
 <h2><span class="section-number">6.3. </span>Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Link to this heading"></a></h2>
@@ -283,14 +260,12 @@ sequential (single-node) and parallel (multi-node) execution modes.</p>
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a>.
 This example demonstrates how to link ChASE to external applications through CMake.
 It includes:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>C++ application linking example (<code class="docutils literal notranslate"><span class="pre">chase-app.cpp</span></code>)</p></li>
 <li><p>C interface linking example (<code class="docutils literal notranslate"><span class="pre">chase-c.c</span></code>)</p></li>
 <li><p>Fortran interface linking example (<code class="docutils literal notranslate"><span class="pre">chase-f.f90</span></code>)</p></li>
 <li><p>CMake configuration files for linking ChASE</p></li>
 </ul>
-</div></blockquote>
 <p>This example does not build automatically with the compilation/installation of ChASE.
 It must be compiled independently by the user. For more information about linking
 ChASE to your application, please visit <a class="reference internal" href="usage.html#link-by-cmake"><span class="std std-ref">Compiling with CMake</span></a>.</p>
@@ -300,8 +275,7 @@ ChASE to your application, please visit <a class="reference internal" href="usag
 <p>The fourth example is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">4_interface</a>.
 This example demonstrates the use of ChASE’s C and Fortran interfaces:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p><strong>C Interface Examples</strong>:
 - <code class="docutils literal notranslate"><span class="pre">4_c_serial_chase.c</span></code>: Sequential ChASE using C interface
 - <code class="docutils literal notranslate"><span class="pre">4_c_dist_chase.c</span></code>: Parallel ChASE using C interface</p></li>
@@ -309,7 +283,6 @@ This example demonstrates the use of ChASE’s C and Fortran interfaces:</p>
 - <code class="docutils literal notranslate"><span class="pre">4_f_serial_chase.f90</span></code>: Sequential ChASE using Fortran interface
 - <code class="docutils literal notranslate"><span class="pre">4_f_dist_chase.f90</span></code>: Parallel ChASE using Fortran interface</p></li>
 </ul>
-</div></blockquote>
 <p>These examples show how to use ChASE from C and Fortran applications without
 directly using the C++ API. For more information about the C/Fortran interface,
 please visit <a class="reference internal" href="usage.html#c-fortran-interface"><span class="std std-ref">Interface to C/Fortran</span></a>.</p>
@@ -319,8 +292,7 @@ please visit <a class="reference internal" href="usage.html#c-fortran-interface"
 <p>The fifth example is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/5_bse_benchmark">5_bse_benchmark</a>.
 This example demonstrates:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>Solving pseudo-Hermitian eigenvalue problems (Bethe-Salpeter Equation)</p></li>
 <li><p>Using <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix</span></code> for BSE problems</p></li>
 <li><p>Command-line configuration with extensive parameter options</p></li>
@@ -328,10 +300,19 @@ This example demonstrates:</p>
 <li><p>Sequential and parallel implementations (CPU and GPU)</p></li>
 <li><p>Matrix input from files</p></li>
 </ul>
-</div></blockquote>
 <p>This example is specifically designed for BSE benchmark problems and shows how
 to use ChASE for pseudo-Hermitian eigenvalue problems, which require special
 handling compared to standard Hermitian problems.</p>
+</section>
+<section id="additional-benchmarks">
+<h2><span class="section-number">6.6. </span>Additional Benchmarks<a class="headerlink" href="#additional-benchmarks" title="Link to this heading"></a></h2>
+<p>ChASE also provides benchmark-oriented examples:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/6_householder_block_cyclic_benchmark">6_householder_block_cyclic_benchmark</a>
+for block-cyclic Householder QR benchmarking.</p></li>
+<li><p><a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/7_matrix_operations_benchmark">7_matrix_operations_benchmark</a>
+for matrix-operation performance studies.</p></li>
+</ul>
 </section>
 </section>
 
@@ -340,7 +321,7 @@ handling compared to standard Hermitian problems.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="module.html" class="btn btn-neutral float-left" title="5. Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="example/io.html" class="btn btn-neutral float-right" title="6.2.1. ChASE Object and Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="api/index.html" class="btn btn-neutral float-right" title="1. API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

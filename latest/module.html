@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>5. Modules &mdash; ChASE v1.3.0 documentation</title>
+  <title>5. Modules &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -55,10 +55,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -224,9 +220,10 @@ function switchVersion(url) {
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#linear-algebra-kernels">5.6. Linear Algebra Kernels</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-organization">5.6.1. Kernel Organization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#core-kernel-functions">5.6.2. Core Kernel Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#type-traits">5.6.3. Type Traits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#directory-and-backend-layout">5.6.1. Directory and Backend Layout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend-namespaces">5.6.2. Backend Namespaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#core-kernel-functions">5.6.3. Core Kernel Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-traits">5.6.4. Type Traits</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#platform-types">5.7. Platform Types</a></li>
@@ -418,7 +415,9 @@ its public members a reference to an object of type
 the members of the PerformanceDecoratorChase are called instead
 of the virtual function members of the <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> class. In this
 way, all parameters and counters are automatically invoked and
-returned in the correct order.</p>
+returned in the correct order.
+The method <code class="docutils literal notranslate"><span class="pre">GetPerfData()</span></code> is provided by <code class="docutils literal notranslate"><span class="pre">PerformanceDecoratorChase</span></code>, not by
+the concrete implementation classes (<code class="docutils literal notranslate"><span class="pre">ChASECPU</span></code>, <code class="docutils literal notranslate"><span class="pre">ChASEGPU</span></code>, <code class="docutils literal notranslate"><span class="pre">pChASECPU</span></code>, <code class="docutils literal notranslate"><span class="pre">pChASEGPU</span></code>).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more details of all available functions, including usage examples,
@@ -442,8 +441,8 @@ implementation of ChASE. It supports:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><strong>Matrix Types</strong>:
-- <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T&gt;</span></code> for Hermitian (symmetric) eigenvalue problems
-- <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T&gt;</span></code> for pseudo-Hermitian eigenvalue problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> for Hermitian (symmetric) eigenvalue problems
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> for pseudo-Hermitian eigenvalue problems</p></li>
 <li><p><strong>Backend</strong>: BLAS and LAPACK libraries for numerical computations</p></li>
 <li><p><strong>Use Case</strong>: Single-node, CPU-only eigenvalue problems</p></li>
 <li><p><strong>Platform</strong>: CPU only</p></li>
@@ -462,13 +461,16 @@ implementation of ChASE. It supports:</p>
 <li><p><strong>Matrix Types</strong>:
 - <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for Hermitian problems
 - <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for pseudo-Hermitian problems</p></li>
-<li><p><strong>Backend</strong>: cuBLAS and cuSOLVER libraries for GPU computations</p></li>
+<li><p><strong>Backend</strong>: CUDA (cuBLAS/cuSOLVER) on NVIDIA, or HIP (rocBLAS/rocSOLVER) on
+AMD/ROCm, selected at build time through the <code class="docutils literal notranslate"><span class="pre">gpu_backend</span></code> abstraction</p></li>
 <li><p><strong>Use Case</strong>: Single-node, GPU-accelerated eigenvalue problems</p></li>
 <li><p><strong>Platform</strong>: GPU only</p></li>
 </ul>
 </div></blockquote>
 <p>This implementation is suitable for problems that fit in GPU memory and can
-benefit from GPU acceleration on a single node.</p>
+benefit from GPU acceleration on a single node. On AMD/ROCm-only builds the
+alias <code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASEHIP&lt;T,</span> <span class="pre">MatrixType&gt;</span></code> is provided as a synonym for
+<code class="docutils literal notranslate"><span class="pre">ChASEGPU</span></code>.</p>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
 </section>
 </section>
@@ -476,7 +478,7 @@ benefit from GPU acceleration on a single node.</p>
 <h3><span class="section-number">5.3.2. </span>Parallel Implementations<a class="headerlink" href="#parallel-implementations" title="Link to this heading"></a></h3>
 <section id="chase-impl-pchasecpu">
 <h4><span class="section-number">5.3.2.1. </span>chase::Impl::pChASECPU<a class="headerlink" href="#chase-impl-pchasecpu" title="Link to this heading"></a></h4>
-<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">BackendType&gt;</span></code>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">CommBackend&gt;</span></code>
 provides a parallel CPU implementation of ChASE using MPI. It supports:</p>
 <blockquote>
 <div><ul class="simple">
@@ -499,7 +501,7 @@ memory computation across multiple nodes.</p>
 </section>
 <section id="chase-impl-pchasegpu">
 <h4><span class="section-number">5.3.2.2. </span>chase::Impl::pChASEGPU<a class="headerlink" href="#chase-impl-pchasegpu" title="Link to this heading"></a></h4>
-<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">BackendType&gt;</span></code>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">CommBackend&gt;</span></code>
 provides a parallel GPU implementation of ChASE. It supports:</p>
 <blockquote>
 <div><ul class="simple">
@@ -509,15 +511,15 @@ provides a parallel GPU implementation of ChASE. It supports:</p>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code></p></li>
 <li><p><strong>Backends</strong>:
-- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for CPU-based MPI communication
-- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> for GPU-to-GPU communication via NCCL</p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for MPI communication
+- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> for GPU-to-GPU communication via NCCL (NVIDIA) or RCCL (AMD/ROCm)</p></li>
 <li><p><strong>Use Case</strong>: Multi-node, multi-GPU eigenvalue problems</p></li>
-<li><p><strong>Platform</strong>: GPU with MPI/NCCL</p></li>
+<li><p><strong>Platform</strong>: GPU with MPI and optional NCCL/RCCL collectives</p></li>
 </ul>
 </div></blockquote>
 <p>This implementation is suitable for large-scale problems that require distributed
-memory computation across multiple nodes with GPU acceleration. The NCCL backend
-provides optimized GPU-to-GPU communication for better performance.</p>
+memory computation across multiple nodes with GPU acceleration. The NCCL/RCCL
+backend provides optimized GPU-to-GPU communication for better performance.</p>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
 </section>
 </section>
@@ -664,8 +666,9 @@ eigenvectors and workspace vectors in distributed memory:</p>
 Abstract base class for distributed multi-vectors</p></li>
 </ul>
 </div></blockquote>
-<p>The <code class="docutils literal notranslate"><span class="pre">CommunicatorType</span></code> can be <code class="docutils literal notranslate"><span class="pre">row</span></code>, <code class="docutils literal notranslate"><span class="pre">column</span></code>, or <code class="docutils literal notranslate"><span class="pre">all</span></code>, determining
-which MPI communicator is used for the distribution.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">CommunicatorType</span></code> values <code class="docutils literal notranslate"><span class="pre">row</span></code> and <code class="docutils literal notranslate"><span class="pre">column</span></code> are supported for distributed
+multi-vectors in the current implementation. The enum value <code class="docutils literal notranslate"><span class="pre">all</span></code> exists but is not
+currently supported by these concrete classes.</p>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
 </section>
 </section>
@@ -711,10 +714,9 @@ parallel computation and can also be used with CUDA-aware MPI for GPU computatio
 </section>
 <section id="chase-grid-backend-nccl">
 <h4><span class="section-number">5.5.3.2. </span>chase::grid::backend::NCCL<a class="headerlink" href="#chase-grid-backend-nccl" title="Link to this heading"></a></h4>
-<p>The struct <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> is a type tag indicating that NCCL
-(NVIDIA Collective Communications Library) should be used for GPU-to-GPU
-communication. This backend provides optimized communication for multi-GPU
-setups and is only available when NCCL is enabled.</p>
+<p>The struct <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> is a type tag indicating that GPU
+collective communication should be used for GPU-to-GPU communication. It maps
+to NCCL on NVIDIA systems and RCCL on AMD/ROCm systems when enabled.</p>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/grid.html#api-grid"><span class="std std-ref">Grid and Communication</span></a></p>
 </section>
 </section>
@@ -732,55 +734,92 @@ MPI grid:</p>
 </section>
 <section id="linear-algebra-kernels">
 <h2><span class="section-number">5.6. </span>Linear Algebra Kernels<a class="headerlink" href="#linear-algebra-kernels" title="Link to this heading"></a></h2>
-<p>The ChASE library implements low-level numerical kernels in the
-<code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> namespace. These kernels are organized by
-computational platform and provide the building blocks for the higher-level
-algorithm implementations.</p>
-<section id="kernel-organization">
-<h3><span class="section-number">5.6.1. </span>Kernel Organization<a class="headerlink" href="#kernel-organization" title="Link to this heading"></a></h3>
-<p>The kernels are organized into several sub-namespaces:</p>
+<p>The ChASE library implements low-level numerical kernels under the
+<code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> namespace. The kernels are organized by computational
+platform and communication backend, and provide the building blocks for the
+higher-level algorithm implementations. GPU code supports both NVIDIA (CUDA) and
+AMD/ROCm (HIP) backends, with vendor selection handled at build time.</p>
+<section id="directory-and-backend-layout">
+<h3><span class="section-number">5.6.1. </span>Directory and Backend Layout<a class="headerlink" href="#directory-and-backend-layout" title="Link to this heading"></a></h3>
+<p>The kernel sources are laid out under <code class="docutils literal notranslate"><span class="pre">linalg/internal/</span></code> as follows:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><strong>``chase::linalg::internal::cpu``</strong>: CPU-based kernels using BLAS/LAPACK
-(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
-<li><p><strong>``chase::linalg::internal::cuda``</strong>: GPU-based kernels using cuBLAS/cuSOLVER
-(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
-<li><p><strong>``chase::linalg::internal::mpi``</strong>: Distributed CPU kernels using MPI and ScaLAPACK
-(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
-<li><p><strong>``chase::linalg::internal::nccl``</strong>: Distributed GPU kernels using NCCL
-(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
-<li><p><strong>``chase::linalg::internal::cuda_aware_mpi``</strong>: GPU kernels with CUDA-aware MPI
-(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/cpu/</span></code>: sequential CPU kernels (BLAS/LAPACK)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/mpi/</span></code>: distributed CPU kernels (MPI and ScaLAPACK)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/backend/</span></code>: vendor-neutral GPU runtime, BLAS, and
+solver abstraction (dispatches to CUDA or HIP)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/serial/</span></code>: single-GPU algorithm entry points (CUDA and HIP)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/kernels/</span></code>: device kernels and launchers (CUDA and HIP)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/dist_mpi/</span></code>: distributed GPU kernels over GPU-aware MPI (CUDA and HIP)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/dist_xccl/</span></code>: distributed GPU kernels over GPU collectives (NCCL and RCCL)</p></li>
 </ul>
 </div></blockquote>
 </section>
+<section id="backend-namespaces">
+<h3><span class="section-number">5.6.2. </span>Backend Namespaces<a class="headerlink" href="#backend-namespaces" title="Link to this heading"></a></h3>
+<p>The corresponding backend identifiers in <code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>``cpu``</strong>: sequential CPU kernels using BLAS/LAPACK</p></li>
+<li><p><strong>``cpu_mpi``</strong>: distributed CPU kernels using MPI and ScaLAPACK
+(sources in <code class="docutils literal notranslate"><span class="pre">linalg/internal/mpi/</span></code>)</p></li>
+<li><p><strong>``cuda``</strong>: single-GPU kernels using cuBLAS/cuSOLVER (NVIDIA)</p></li>
+<li><p><strong>``hip``</strong>: single-GPU kernels using rocBLAS/rocSOLVER (AMD/ROCm)</p></li>
+<li><p><strong>``cuda_mpi``</strong>: distributed GPU kernels using CUDA-aware MPI</p></li>
+<li><p><strong>``hip_mpi``</strong>: distributed GPU kernels using HIP-aware MPI</p></li>
+<li><p><strong>``cuda_nccl``</strong>: distributed GPU kernels using NCCL collectives</p></li>
+<li><p><strong>``hip_rccl``</strong>: distributed GPU kernels using RCCL collectives</p></li>
+</ul>
+</div></blockquote>
+<p>The shared GPU abstraction layers are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>``gpu_backend``</strong> (<code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/backend/</span></code>): wraps device runtime
+(<code class="docutils literal notranslate"><span class="pre">cudaMalloc</span></code>/<code class="docutils literal notranslate"><span class="pre">hipMalloc</span></code>), BLAS, and solver handles. The active vendor is
+selected via <code class="docutils literal notranslate"><span class="pre">active_backend</span></code> (<code class="docutils literal notranslate"><span class="pre">cuda_backend</span></code> or <code class="docutils literal notranslate"><span class="pre">hip_backend</span></code>).</p></li>
+<li><p><strong>``gpu_device``</strong> (<code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/kernels/shared/</span></code>): backend-templated
+device-kernel dispatch to CUDA or HIP launchers.</p></li>
+<li><p><strong>``gpu_serial::impl``</strong>, <strong>``gpu_mpi``</strong>, <strong>``gpu_xccl``</strong>: shared
+implementations reused by both CUDA and HIP paths.</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>At most one GPU vendor is active per build. On NVIDIA builds <code class="docutils literal notranslate"><span class="pre">cuda</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cuda_mpi</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda_nccl</span></code> are used; on AMD/ROCm builds <code class="docutils literal notranslate"><span class="pre">hip</span></code>,
+<code class="docutils literal notranslate"><span class="pre">hip_mpi</span></code> and <code class="docutils literal notranslate"><span class="pre">hip_rccl</span></code> are used. In both cases the
+<code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> tag selects the collective backend
+(NCCL on NVIDIA, RCCL on AMD).</p>
+</div>
+</section>
 <section id="core-kernel-functions">
-<h3><span class="section-number">5.6.2. </span>Core Kernel Functions<a class="headerlink" href="#core-kernel-functions" title="Link to this heading"></a></h3>
-<p>Each kernel namespace provides implementations of the following operations:</p>
+<h3><span class="section-number">5.6.3. </span>Core Kernel Functions<a class="headerlink" href="#core-kernel-functions" title="Link to this heading"></a></h3>
+<p>Each backend provides implementations of the following operations (names as they
+appear in the code):</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><strong>Rayleigh-Ritz Projection</strong>:
 - <code class="docutils literal notranslate"><span class="pre">rayleighRitz()</span></code>: Standard Rayleigh-Ritz for Hermitian problems
-- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_rayleighRitz()</span></code>: Oblique Rayleigh-Ritz for pseudo-Hermitian problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_rayleighRitz()</span></code> / <code class="docutils literal notranslate"><span class="pre">rayleighRitz_v2()</span></code>: Oblique Rayleigh-Ritz for pseudo-Hermitian problems</p></li>
 <li><p><strong>Lanczos Algorithm</strong>:
-- <code class="docutils literal notranslate"><span class="pre">lanczos()</span></code>: Spectrum estimation for Hermitian problems
-- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_lanczos()</span></code>: Spectrum estimation for pseudo-Hermitian problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">lanczos()</span></code>: Spectrum estimation (overloaded for Hermitian and pseudo-Hermitian matrices)
+- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_lanczos()</span></code>: Explicit pseudo-Hermitian variant in the distributed backends</p></li>
 <li><p><strong>Matrix Operations</strong>:
-- <code class="docutils literal notranslate"><span class="pre">hemm()</span></code>: Hermitian matrix-matrix multiplication
-- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_hemm()</span></code>: Pseudo-Hermitian matrix-matrix multiplication</p></li>
+- <code class="docutils literal notranslate"><span class="pre">MatrixMultiplyMultiVectors()</span></code> (and redistribute variants): the Hermitian matrix-times-multivector product used by the filter</p></li>
 <li><p><strong>Factorization</strong>:
-- <code class="docutils literal notranslate"><span class="pre">cholqr()</span></code>: Cholesky-QR factorization (with S-orthonormalization for pseudo-Hermitian)</p></li>
+- <code class="docutils literal notranslate"><span class="pre">cholQR1()</span></code>, <code class="docutils literal notranslate"><span class="pre">cholQR2()</span></code>, <code class="docutils literal notranslate"><span class="pre">shiftedcholQR2()</span></code>: Cholesky-QR variants
+- <code class="docutils literal notranslate"><span class="pre">houseHoulderQR()</span></code>: Householder QR fallback</p></li>
 <li><p><strong>Residual Computation</strong>:
 - <code class="docutils literal notranslate"><span class="pre">residuals()</span></code>: Compute eigenpair residuals</p></li>
 <li><p><strong>Utility Functions</strong>:
-- <code class="docutils literal notranslate"><span class="pre">shiftDiagonal()</span></code>: Diagonal shifting for Chebyshev filter
-- <code class="docutils literal notranslate"><span class="pre">flipSign()</span></code>: Sign flipping operations
-- <code class="docutils literal notranslate"><span class="pre">symOrHerm()</span></code>: Symmetry/Hermiticity checks</p></li>
+- <code class="docutils literal notranslate"><span class="pre">shiftDiagonal()</span></code>: Diagonal shifting for the Chebyshev filter
+- <code class="docutils literal notranslate"><span class="pre">flipLowerHalfMatrixSign()</span></code>: Sign flipping for pseudo-Hermitian problems
+- <code class="docutils literal notranslate"><span class="pre">symOrHermMatrix()</span></code> / <code class="docutils literal notranslate"><span class="pre">checkSymmetryEasy()</span></code>: Symmetry/Hermiticity checks</p></li>
 </ul>
 </div></blockquote>
 </section>
 <section id="type-traits">
-<h3><span class="section-number">5.6.3. </span>Type Traits<a class="headerlink" href="#type-traits" title="Link to this heading"></a></h3>
+<h3><span class="section-number">5.6.4. </span>Type Traits<a class="headerlink" href="#type-traits" title="Link to this heading"></a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> namespace also provides type traits for
 determining multi-vector types:</p>
 <blockquote>

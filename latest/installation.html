@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.3.0 documentation</title>
+  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -267,9 +263,10 @@ one has to install or load the necessary dependencies.</p>
 </dd>
 <dt><strong>Optional Dependencies:</strong></dt><dd><ul class="simple">
 <li><p><a class="reference external" href="http://en.wikipedia.org/wiki/Message_Passing_Interface">MPI</a> - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).</p></li>
-<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Required only for GPU implementations (ChASEGPU, pChASEGPU)</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)</p></li>
+<li><p><a class="reference external" href="https://rocm.docs.amd.com">ROCm/HIP</a> - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)</p></li>
 <li><p><a class="reference external" href="http://www.netlib.org/scalapack/">ScaLAPACK</a> - Optional, for distributed Householder QR factorization</p></li>
-<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
 </ul>
 </dd>
 </dl>
@@ -321,7 +318,7 @@ bug appearing in some versions of the Intel Compiler.</p>
 </section>
 <section id="installation-with-gpu-support">
 <h3><span class="section-number">2.2.2. </span>Installation with GPU Support<a class="headerlink" href="#installation-with-gpu-support" title="Link to this heading"></a></h3>
-<p>In order to compile ChASE with GPU support one needs to have installed
+<p>In order to compile ChASE with NVIDIA GPU support one needs to have installed
 and loaded a CUDA compiler, which will also enable the use of
 <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>, <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> and <code class="docutils literal notranslate"><span class="pre">cuRAND</span></code>. On the JUWELS cluster this can
 be achieved by loading the module CUDA in addition to the
@@ -340,6 +337,11 @@ support on JUWELS:</p>
 <span class="go">make install</span>
 </pre></div>
 </div>
+<p>For AMD/ROCm systems, ChASE can be built with HIP support by setting
+<code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_HIP=ON</span></code> (or keeping <code class="docutils literal notranslate"><span class="pre">AUTO</span></code> and ensuring HIP is available).
+For distributed GPU communication on ROCm, use
+<code class="docutils literal notranslate"><span class="pre">-DCHASE_HIP_DISTRIBUTED_COLLECTIVES=NCCL</span></code> to enable RCCL or
+<code class="docutils literal notranslate"><span class="pre">-DCHASE_HIP_DISTRIBUTED_COLLECTIVES=MPI</span></code> to use MPI collectives.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is also recommended to build ChASE with the configuration of CUDA compute compatibility through <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code>. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=86</span></code>. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=&quot;70;75;80;86&quot;</span></code>.</p>
@@ -584,6 +586,25 @@ large matrices distributed across multiple MPI processes.</p></td>
 operations. This option is useful for performance analysis
 and debugging on NVIDIA GPUs using tools like Nsight Systems.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_HIP</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">AUTO</span></code></p></td>
+<td><p>Control HIP backend detection and enablement for AMD/ROCm GPU support.
+Allowed values are <code class="docutils literal notranslate"><span class="pre">AUTO</span></code>, <code class="docutils literal notranslate"><span class="pre">ON</span></code>, and <code class="docutils literal notranslate"><span class="pre">OFF</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_HIP_DISTRIBUTED_COLLECTIVES</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NCCL</span></code></p></td>
+<td><p>Select collective backend for distributed HIP builds. Supported values
+are <code class="docutils literal notranslate"><span class="pre">NCCL</span></code> (RCCL on AMD/ROCm systems) and <code class="docutils literal notranslate"><span class="pre">MPI</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_PROBE_HIP_AWARE_MPI_RUNTIME</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Probe whether the active MPI runtime supports HIP-aware communication.
+Useful for ROCm deployments using MPI-based GPU communication.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_PANEL_HIPREC</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable high-precision panel updates in selected kernels for HIP builds.</p></td>
+</tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_BUILD_WITH_EXAMPLES</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
 <td><p>Build the example programs provided with ChASE. When enabled,
@@ -614,9 +635,17 @@ for debugging and understanding numerical stability.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
 <td><p>Enable solving pseudo-Hermitian problems with XGEEV cusolver. When enabled, the pseudo-Hermitian problems will be solved with XGEEV cusolver.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISPLAY_COND_V_SVD</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
-<td><p>Compute and display the condition number of the matrix V from the Singular Value Decomposition (SVD). This is useful for debugging and understanding numerical stability.</p></td>
+<td><p>Enable optional warmup benchmarking logic during GPU constructor setup.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_GPU_RESIDENT_LANCZOS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
+<td><p>Keep Lanczos-related data resident on the GPU when supported by the backend.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_INTERFACE_WITH_BLOCKCYLIC</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
+<td><p>Enable block-cyclic initialization routines in the C/Fortran interface.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_QR_DOUBLE_PRECISION</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
@@ -653,6 +682,12 @@ for debugging and understanding numerical stability.</p></td>
 <li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> - CUDA compute capability architectures to target. Can be a single
 value (e.g., <code class="docutils literal notranslate"><span class="pre">86</span></code> for RTX 3090) or a semicolon-separated list (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;70;75;80;86&quot;</span></code>).
 This option should always be set when building with CUDA support, regardless of CMake version.</p></li>
+</ul>
+</dd>
+<dt><strong>ROCm/HIP Configuration:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_HIP</span></code> - Enable HIP backend explicitly (<code class="docutils literal notranslate"><span class="pre">ON</span></code>), disable it (<code class="docutils literal notranslate"><span class="pre">OFF</span></code>), or use auto-detection (<code class="docutils literal notranslate"><span class="pre">AUTO</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_HIP_DISTRIBUTED_COLLECTIVES</span></code> - Select distributed collective backend for HIP builds:
+<code class="docutils literal notranslate"><span class="pre">NCCL</span></code> (RCCL) or <code class="docutils literal notranslate"><span class="pre">MPI</span></code>.</p></li>
 </ul>
 </dd>
 <dt><strong>Build Type:</strong></dt><dd><ul class="simple">

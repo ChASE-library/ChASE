@@ -124,6 +124,29 @@ Additional Parameters
      - Enable cluster-aware degree optimization (``true``) to improve convergence for clustered eigenvalues. Disable (``false``) only if you experience performance issues.
      - ``true``
 
+Logging Parameters
+==================
+
+The configuration object also provides logging controls:
+
+.. list-table:: Logging Parameters
+   :widths: 12 38
+   :header-rows: 1
+
+   * - Method
+     - Description
+   * - ``SetVerbosity(LogLevel level)``
+     - Set verbosity level for runtime logging.
+   * - ``GetLogLevel()``
+     - Query currently configured log level.
+   * - ``SetLogRank(int rank)``
+     - Restrict log output to a selected MPI rank.
+   * - ``GetLogRank()``
+     - Query the currently selected log rank.
+
+By default, ChASE initializes logging behavior from environment variables
+(``LogLevelFromEnv()`` and ``LogRankFromEnv()`` internally).
+
 .. _configuration_object:
 
 Configuration Object

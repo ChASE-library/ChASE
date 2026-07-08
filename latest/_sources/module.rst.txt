@@ -181,6 +181,8 @@ the members of the PerformanceDecoratorChase are called instead
 of the virtual function members of the ``chase::ChaseBase<T>`` class. In this
 way, all parameters and counters are automatically invoked and
 returned in the correct order.
+The method ``GetPerfData()`` is provided by ``PerformanceDecoratorChase``, not by
+the concrete implementation classes (``ChASECPU``, ``ChASEGPU``, ``pChASECPU``, ``pChASEGPU``).
 
 .. note::
 
@@ -210,8 +212,8 @@ The class ``chase::Impl::ChASECPU<T, MatrixType>`` provides a sequential CPU
 implementation of ChASE. It supports:
 
   * **Matrix Types**: 
-    - ``chase::matrix::Matrix<T>`` for Hermitian (symmetric) eigenvalue problems
-    - ``chase::matrix::PseudoHermitianMatrix<T>`` for pseudo-Hermitian eigenvalue problems
+    - ``chase::matrix::Matrix<T, Platform, Allocator>`` for Hermitian (symmetric) eigenvalue problems
+    - ``chase::matrix::PseudoHermitianMatrix<T, Platform, Allocator>`` for pseudo-Hermitian eigenvalue problems
 
   * **Backend**: BLAS and LAPACK libraries for numerical computations
 
@@ -235,14 +237,17 @@ implementation of ChASE. It supports:
     - ``chase::matrix::Matrix<T, chase::platform::GPU>`` for Hermitian problems
     - ``chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>`` for pseudo-Hermitian problems
 
-  * **Backend**: cuBLAS and cuSOLVER libraries for GPU computations
+  * **Backend**: CUDA (cuBLAS/cuSOLVER) on NVIDIA, or HIP (rocBLAS/rocSOLVER) on
+    AMD/ROCm, selected at build time through the ``gpu_backend`` abstraction
 
   * **Use Case**: Single-node, GPU-accelerated eigenvalue problems
 
   * **Platform**: GPU only
 
 This implementation is suitable for problems that fit in GPU memory and can 
-benefit from GPU acceleration on a single node.
+benefit from GPU acceleration on a single node. On AMD/ROCm-only builds the
+alias ``chase::Impl::ChASEHIP<T, MatrixType>`` is provided as a synonym for
+``ChASEGPU``.
 
 **API Reference**: :ref:`api_implementations`
 
@@ -253,7 +258,7 @@ Parallel Implementations
 chase::Impl::pChASECPU
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The class ``chase::Impl::pChASECPU<MatrixType, InputMultiVectorType, BackendType>`` 
+The class ``chase::Impl::pChASECPU<MatrixType, InputMultiVectorType, CommBackend>`` 
 provides a parallel CPU implementation of ChASE using MPI. It supports:
 
   * **Matrix Types**: Distributed matrix classes
@@ -280,7 +285,7 @@ memory computation across multiple nodes.
 chase::Impl::pChASEGPU
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The class ``chase::Impl::pChASEGPU<MatrixType, InputMultiVectorType, BackendType>`` 
+The class ``chase::Impl::pChASEGPU<MatrixType, InputMultiVectorType, CommBackend>`` 
 provides a parallel GPU implementation of ChASE. It supports:
 
   * **Matrix Types**: Distributed GPU matrix classes
@@ -290,16 +295,16 @@ provides a parallel GPU implementation of ChASE. It supports:
     - ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>``
 
   * **Backends**: 
-    - ``chase::grid::backend::MPI`` for CPU-based MPI communication
-    - ``chase::grid::backend::NCCL`` for GPU-to-GPU communication via NCCL
+    - ``chase::grid::backend::MPI`` for MPI communication
+    - ``chase::grid::backend::NCCL`` for GPU-to-GPU communication via NCCL (NVIDIA) or RCCL (AMD/ROCm)
 
   * **Use Case**: Multi-node, multi-GPU eigenvalue problems
 
-  * **Platform**: GPU with MPI/NCCL
+  * **Platform**: GPU with MPI and optional NCCL/RCCL collectives
 
 This implementation is suitable for large-scale problems that require distributed 
-memory computation across multiple nodes with GPU acceleration. The NCCL backend 
-provides optimized GPU-to-GPU communication for better performance.
+memory computation across multiple nodes with GPU acceleration. The NCCL/RCCL
+backend provides optimized GPU-to-GPU communication for better performance.
 
 **API Reference**: :ref:`api_implementations`
 
@@ -416,7 +421,7 @@ Pseudo-Hermitian Distributed Matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 chase::distMatrix::PseudoHermitianBlockBlockMatrix
-"""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The class ``chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>`` 
 provides block-wise distribution for pseudo-Hermitian matrices.
@@ -428,7 +433,7 @@ provides block-wise distribution for pseudo-Hermitian matrices.
 
 
 chase::distMatrix::PseudoHermitianBlockCyclicMatrix
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The class ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>`` 
 provides block-cyclic distribution for pseudo-Hermitian matrices.
@@ -454,8 +459,9 @@ eigenvectors and workspace vectors in distributed memory:
   * ``chase::distMultiVector::AbstractDistMultiVector<T, CommunicatorType, Derived, Platform>``: 
     Abstract base class for distributed multi-vectors
 
-The ``CommunicatorType`` can be ``row``, ``column``, or ``all``, determining 
-which MPI communicator is used for the distribution.
+The ``CommunicatorType`` values ``row`` and ``column`` are supported for distributed
+multi-vectors in the current implementation. The enum value ``all`` exists but is not
+currently supported by these concrete classes.
 
 **API Reference**: :ref:`api_matrices`
 
@@ -514,10 +520,9 @@ parallel computation and can also be used with CUDA-aware MPI for GPU computatio
 chase::grid::backend::NCCL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The struct ``chase::grid::backend::NCCL`` is a type tag indicating that NCCL 
-(NVIDIA Collective Communications Library) should be used for GPU-to-GPU 
-communication. This backend provides optimized communication for multi-GPU 
-setups and is only available when NCCL is enabled.
+The struct ``chase::grid::backend::NCCL`` is a type tag indicating that GPU
+collective communication should be used for GPU-to-GPU communication. It maps
+to NCCL on NVIDIA systems and RCCL on AMD/ROCm systems when enabled.
 
 **API Reference**: :ref:`api_grid`
 
@@ -535,54 +540,87 @@ MPI grid:
 Linear Algebra Kernels
 ======================
 
-The ChASE library implements low-level numerical kernels in the 
-``chase::linalg::internal`` namespace. These kernels are organized by 
-computational platform and provide the building blocks for the higher-level 
-algorithm implementations.
+The ChASE library implements low-level numerical kernels under the
+``chase::linalg::internal`` namespace. The kernels are organized by computational
+platform and communication backend, and provide the building blocks for the
+higher-level algorithm implementations. GPU code supports both NVIDIA (CUDA) and
+AMD/ROCm (HIP) backends, with vendor selection handled at build time.
 
-Kernel Organization
---------------------
+Directory and Backend Layout
+----------------------------
 
-The kernels are organized into several sub-namespaces:
+The kernel sources are laid out under ``linalg/internal/`` as follows:
 
-  * **``chase::linalg::internal::cpu``**: CPU-based kernels using BLAS/LAPACK
-    (:ref:`API Reference <api_kernels>`)
-  * **``chase::linalg::internal::cuda``**: GPU-based kernels using cuBLAS/cuSOLVER
-    (:ref:`API Reference <api_kernels>`)
-  * **``chase::linalg::internal::mpi``**: Distributed CPU kernels using MPI and ScaLAPACK
-    (:ref:`API Reference <api_kernels>`)
-  * **``chase::linalg::internal::nccl``**: Distributed GPU kernels using NCCL
-    (:ref:`API Reference <api_kernels>`)
-  * **``chase::linalg::internal::cuda_aware_mpi``**: GPU kernels with CUDA-aware MPI
-    (:ref:`API Reference <api_kernels>`)
+  * ``linalg/internal/cpu/``: sequential CPU kernels (BLAS/LAPACK)
+  * ``linalg/internal/mpi/``: distributed CPU kernels (MPI and ScaLAPACK)
+  * ``linalg/internal/gpu/backend/``: vendor-neutral GPU runtime, BLAS, and
+    solver abstraction (dispatches to CUDA or HIP)
+  * ``linalg/internal/gpu/serial/``: single-GPU algorithm entry points (CUDA and HIP)
+  * ``linalg/internal/gpu/kernels/``: device kernels and launchers (CUDA and HIP)
+  * ``linalg/internal/gpu/dist_mpi/``: distributed GPU kernels over GPU-aware MPI (CUDA and HIP)
+  * ``linalg/internal/gpu/dist_xccl/``: distributed GPU kernels over GPU collectives (NCCL and RCCL)
+
+Backend Namespaces
+------------------
+
+The corresponding backend identifiers in ``chase::linalg::internal`` are:
+
+  * **``cpu``**: sequential CPU kernels using BLAS/LAPACK
+  * **``cpu_mpi``**: distributed CPU kernels using MPI and ScaLAPACK
+    (sources in ``linalg/internal/mpi/``)
+  * **``cuda``**: single-GPU kernels using cuBLAS/cuSOLVER (NVIDIA)
+  * **``hip``**: single-GPU kernels using rocBLAS/rocSOLVER (AMD/ROCm)
+  * **``cuda_mpi``**: distributed GPU kernels using CUDA-aware MPI
+  * **``hip_mpi``**: distributed GPU kernels using HIP-aware MPI
+  * **``cuda_nccl``**: distributed GPU kernels using NCCL collectives
+  * **``hip_rccl``**: distributed GPU kernels using RCCL collectives
+
+The shared GPU abstraction layers are:
+
+  * **``gpu_backend``** (``linalg/internal/gpu/backend/``): wraps device runtime
+    (``cudaMalloc``/``hipMalloc``), BLAS, and solver handles. The active vendor is
+    selected via ``active_backend`` (``cuda_backend`` or ``hip_backend``).
+  * **``gpu_device``** (``linalg/internal/gpu/kernels/shared/``): backend-templated
+    device-kernel dispatch to CUDA or HIP launchers.
+  * **``gpu_serial::impl``**, **``gpu_mpi``**, **``gpu_xccl``**: shared
+    implementations reused by both CUDA and HIP paths.
+
+.. note::
+
+   At most one GPU vendor is active per build. On NVIDIA builds ``cuda``,
+   ``cuda_mpi`` and ``cuda_nccl`` are used; on AMD/ROCm builds ``hip``,
+   ``hip_mpi`` and ``hip_rccl`` are used. In both cases the
+   ``chase::grid::backend::NCCL`` tag selects the collective backend
+   (NCCL on NVIDIA, RCCL on AMD).
 
 Core Kernel Functions
 ---------------------
 
-Each kernel namespace provides implementations of the following operations:
+Each backend provides implementations of the following operations (names as they
+appear in the code):
 
   * **Rayleigh-Ritz Projection**:
     - ``rayleighRitz()``: Standard Rayleigh-Ritz for Hermitian problems
-    - ``pseudo_hermitian_rayleighRitz()``: Oblique Rayleigh-Ritz for pseudo-Hermitian problems
+    - ``pseudo_hermitian_rayleighRitz()`` / ``rayleighRitz_v2()``: Oblique Rayleigh-Ritz for pseudo-Hermitian problems
 
   * **Lanczos Algorithm**:
-    - ``lanczos()``: Spectrum estimation for Hermitian problems
-    - ``pseudo_hermitian_lanczos()``: Spectrum estimation for pseudo-Hermitian problems
+    - ``lanczos()``: Spectrum estimation (overloaded for Hermitian and pseudo-Hermitian matrices)
+    - ``pseudo_hermitian_lanczos()``: Explicit pseudo-Hermitian variant in the distributed backends
 
   * **Matrix Operations**:
-    - ``hemm()``: Hermitian matrix-matrix multiplication
-    - ``pseudo_hermitian_hemm()``: Pseudo-Hermitian matrix-matrix multiplication
+    - ``MatrixMultiplyMultiVectors()`` (and redistribute variants): the Hermitian matrix-times-multivector product used by the filter
 
   * **Factorization**:
-    - ``cholqr()``: Cholesky-QR factorization (with S-orthonormalization for pseudo-Hermitian)
+    - ``cholQR1()``, ``cholQR2()``, ``shiftedcholQR2()``: Cholesky-QR variants
+    - ``houseHoulderQR()``: Householder QR fallback
 
   * **Residual Computation**:
     - ``residuals()``: Compute eigenpair residuals
 
   * **Utility Functions**:
-    - ``shiftDiagonal()``: Diagonal shifting for Chebyshev filter
-    - ``flipSign()``: Sign flipping operations
-    - ``symOrHerm()``: Symmetry/Hermiticity checks
+    - ``shiftDiagonal()``: Diagonal shifting for the Chebyshev filter
+    - ``flipLowerHalfMatrixSign()``: Sign flipping for pseudo-Hermitian problems
+    - ``symOrHermMatrix()`` / ``checkSymmetryEasy()``: Symmetry/Hermiticity checks
 
 Type Traits
 -----------

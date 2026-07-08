@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.3.0 documentation</title>
+  <title>Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -52,10 +52,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -206,16 +202,13 @@ function switchVersion(url) {
   <section id="orthogonalization-and-rayleigh-ritz">
 <span id="qr-rr-algorithm"></span><h1>Orthogonalization and Rayleigh-Ritz<a class="headerlink" href="#orthogonalization-and-rayleigh-ritz" title="Link to this heading"></a></h1>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE">
-<span id="_CPPv3N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::ChaseBase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1ChaseBase_1af3698145d13ebaed07325548a03af791"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2QRE4BaseI1TE">
+<span id="_CPPv3N5chase9ChaseBase2QRE4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase2QRE4BaseI1TE"></span><span id="chase::ChaseBase::QR__Base:T:"></span><span class="target" id="classchase_1_1ChaseBase_1a7f21ad93ff0b34d48348cd04e7ba9ad1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2QRE4BaseI1TE" title="Link to this definition"></a><br /></dt>
 <dd><p>Performs QR factorization with optional Householder transformation. </p>
 <p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fixednev</strong> – Total number of converged eigenpairs before the QR factorization. </p></li>
-<li><p><strong>cond</strong> – Condition number for controlling the factorization process. </p></li>
-</ul>
+<dd class="field-odd"><p><strong>cond</strong> – Condition number for controlling the factorization process. </p>
 </dd>
 </dl>
 </dd></dl>

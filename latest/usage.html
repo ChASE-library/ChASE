@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3. How to use ChASE &mdash; ChASE v1.3.0 documentation</title>
+  <title>3. How to use ChASE &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/documentation_options.js?v=f8b929d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,10 +54,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -174,15 +170,15 @@ function switchVersion(url) {
 <li class="toctree-l1 current"><a class="current reference internal" href="#">3. How to use ChASE</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#use-chase-as-a-standalone-solver">3.1. Use ChASE as a standalone solver</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sequential-chase-shared-memory">3.1.1. Sequential ChASE (Shared-Memory)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#include-headers">3.1.1.1. Include Headers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#creating-the-solver">3.1.1.2. Creating the Solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#include-headers-sequential">3.1.1.1. Include Headers (Sequential)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-the-solver-sequential">3.1.1.2. Creating the Solver (Sequential)</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#parallel-chase-distributed-memory">3.1.2. Parallel ChASE (Distributed-Memory)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id1">3.1.2.1. Include Headers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#include-headers-parallel">3.1.2.1. Include Headers (Parallel)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#setting-up-mpi-grid">3.1.2.2. Setting up MPI Grid</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#creating-distributed-matrices-and-vectors">3.1.2.3. Creating Distributed Matrices and Vectors</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id2">3.1.2.4. Creating the Solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-the-solver">3.1.2.4. Creating the Solver</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#parameter-configuration">3.1.3. Parameter Configuration</a></li>
@@ -194,6 +190,7 @@ function switchVersion(url) {
 <li class="toctree-l3"><a class="reference internal" href="#performance-decorator">3.1.5. Performance Decorator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#extract-the-results">3.1.6. Extract the Results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#i-o-for-distributed-matrices">3.1.7. I/O for Distributed Matrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#matrix-redistribution">3.1.8. Matrix Redistribution</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#use-chase-from-external-applications">3.2. Use ChASE from external applications</a><ul>
@@ -230,14 +227,16 @@ function switchVersion(url) {
 <li class="toctree-l4"><a class="reference internal" href="#sequential-i-o-functions">3.3.6.3. Sequential I/O Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#unified-configuration-setter-functions">3.3.7. Unified Configuration Setter Functions</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#name-convention">3.3.7.1. Name Convention</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#available-configuration-setters">3.3.7.2. Available Configuration Setters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extracting-eigenpairs-from-internal-buffers">3.3.7. Extracting Eigenpairs from Internal Buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-and-backend-query-functions">3.3.8. Build and Backend Query Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unified-configuration-setter-functions">3.3.9. Unified Configuration Setter Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#name-convention">3.3.9.1. Name Convention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#available-configuration-setters">3.3.9.2. Available Configuration Setters</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.8. Examples</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.8.1. Example of C interface</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.8.2. Example of Fortran interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.10. Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.10.1. Example of C interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.10.2. Example of Fortran interface</a></li>
 </ul>
 </li>
 </ul>
@@ -295,14 +294,16 @@ helps users use ChASE to solve their own eigenvalue problems on preferred archit
 <li><p><strong>Configuration</strong>: <code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig&lt;T&gt;</span></code> for parameter setup</p></li>
 <li><p><strong>Solve Function</strong>: <code class="docutils literal notranslate"><span class="pre">chase::Solve()</span></code> for executing the eigensolver</p></li>
 </ul>
+<p>The matrix classes also accept an optional allocator template parameter. Most users can
+use the defaults shown in this guide.</p>
 <p>All implementations share a uniform interface for solving, parameter configuration,
 and performance decoration.</p>
 <section id="sequential-chase-shared-memory">
 <h3><span class="section-number">3.1.1. </span>Sequential ChASE (Shared-Memory)<a class="headerlink" href="#sequential-chase-shared-memory" title="Link to this heading"></a></h3>
 <p>Sequential implementations of ChASE are designed for single-node execution and can
 be built with or without GPU support.</p>
-<section id="include-headers">
-<h4><span class="section-number">3.1.1.1. </span>Include Headers<a class="headerlink" href="#include-headers" title="Link to this heading"></a></h4>
+<section id="include-headers-sequential">
+<h4><span class="section-number">3.1.1.1. </span>Include Headers (Sequential)<a class="headerlink" href="#include-headers-sequential" title="Link to this heading"></a></h4>
 <p>For <strong>CPU-only</strong> sequential ChASE, include:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Impl/chase_cpu/chase_cpu.hpp&quot;</span>
 </pre></div>
@@ -312,8 +313,8 @@ be built with or without GPU support.</p>
 </pre></div>
 </div>
 </section>
-<section id="creating-the-solver">
-<h4><span class="section-number">3.1.1.2. </span>Creating the Solver<a class="headerlink" href="#creating-the-solver" title="Link to this heading"></a></h4>
+<section id="creating-the-solver-sequential">
+<h4><span class="section-number">3.1.1.2. </span>Creating the Solver (Sequential)<a class="headerlink" href="#creating-the-solver-sequential" title="Link to this heading"></a></h4>
 <p>The sequential ChASE solvers can be constructed in two ways:</p>
 <p><strong>Constructor 1: Using raw pointers</strong></p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// N: global size of matrix to be diagonalized</span>
@@ -355,8 +356,8 @@ for pseudo-Hermitian problems:</p>
 <p>Parallel implementations of ChASE use MPI for distributed-memory execution and can
 be built with or without GPU support. They support multiple matrix distribution
 schemes (Block, Block-Cyclic, Redundant).</p>
-<section id="id1">
-<h4><span class="section-number">3.1.2.1. </span>Include Headers<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<section id="include-headers-parallel">
+<h4><span class="section-number">3.1.2.1. </span>Include Headers (Parallel)<a class="headerlink" href="#include-headers-parallel" title="Link to this heading"></a></h4>
 <p>For <strong>CPU-only</strong> parallel ChASE, include:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Impl/pchase_cpu/pchase_cpu.hpp&quot;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;grid/mpiGrid2D.hpp&quot;</span>
@@ -421,21 +422,23 @@ schemes (Block, Block-Cyclic, Redundant).</p>
 </pre></div>
 </div>
 </section>
-<section id="id2">
-<h4><span class="section-number">3.1.2.4. </span>Creating the Solver<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<section id="creating-the-solver">
+<h4><span class="section-number">3.1.2.4. </span>Creating the Solver<a class="headerlink" href="#creating-the-solver" title="Link to this heading"></a></h4>
 <p><strong>CPU Version (pChASECPU)</strong></p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">Lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">chase</span><span class="o">::</span><span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">nev</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nex</span><span class="p">);</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">pChASECPU</span><span class="p">(</span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Hmat</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Vec</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
 </pre></div>
 </div>
 <p><strong>GPU Version (pChASEGPU)</strong></p>
-<p>For GPU version, you can optionally specify the communication backend:</p>
+<p>For GPU version, you can optionally specify the communication backend. On
+NVIDIA builds this backend uses NCCL collectives. On AMD/ROCm builds, the same
+backend type is backed by RCCL when available.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Using MPI backend (default)</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">pChASEGPU</span><span class="p">(</span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Hmat</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Vec</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
 
-<span class="c1">// Using NCCL backend for optimized GPU communication</span>
-<span class="k">using</span><span class="w"> </span><span class="n">BackendType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">grid</span><span class="o">::</span><span class="n">backend</span><span class="o">::</span><span class="n">NCCL</span><span class="p">;</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">pChASEGPU</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">Hmat</span><span class="p">),</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">Vec</span><span class="p">),</span><span class="w"> </span><span class="n">BackendType</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="c1">// Using NCCL/RCCL backend for optimized GPU communication</span>
+<span class="k">using</span><span class="w"> </span><span class="n">CommBackend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">grid</span><span class="o">::</span><span class="n">backend</span><span class="o">::</span><span class="n">NCCL</span><span class="p">;</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">pChASEGPU</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">Hmat</span><span class="p">),</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">Vec</span><span class="p">),</span><span class="w"> </span><span class="n">CommBackend</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">    </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Hmat</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Vec</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
 </pre></div>
 </div>
@@ -511,7 +514,7 @@ which returns a reference to a <code class="docutils literal notranslate"><span 
 
 <span class="c1">// Additional parameters (optional)</span>
 <span class="n">config</span><span class="p">.</span><span class="n">SetMaxDeg</span><span class="p">(</span><span class="mi">36</span><span class="p">);</span><span class="w">              </span><span class="c1">// Maximum degree of Chebyshev filter</span>
-<span class="n">config</span><span class="p">.</span><span class="n">SetLanczosIter</span><span class="p">(</span><span class="mi">26</span><span class="p">);</span><span class="w">         </span><span class="c1">// Number of Lanczos iterations</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetLanczosIter</span><span class="p">(</span><span class="mi">25</span><span class="p">);</span><span class="w">         </span><span class="c1">// Number of Lanczos iterations</span>
 <span class="n">config</span><span class="p">.</span><span class="n">SetNumLanczos</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w">            </span><span class="c1">// Number of stochastic vectors for spectral estimates</span>
 </pre></div>
 </div>
@@ -657,6 +660,9 @@ such as <a class="reference external" href="https://www.hdfgroup.org/solutions/h
 <span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">gpu_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Hmat</span><span class="p">.</span><span class="n">gpu_data</span><span class="p">();</span>
 </pre></div>
 </div>
+</section>
+<section id="matrix-redistribution">
+<h3><span class="section-number">3.1.8. </span>Matrix Redistribution<a class="headerlink" href="#matrix-redistribution" title="Link to this heading"></a></h3>
 <p>ChASE provides a <code class="docutils literal notranslate"><span class="pre">redistributeImpl()</span></code> method to redistribute matrices between
 different distribution schemes:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Create a redundant matrix (full copy on each rank)</span>
@@ -809,24 +815,18 @@ Block-Cyclic data layout.</p></li>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The naming logic of the interface functions:</p>
-<blockquote>
-<div><ul>
+<ul class="simple">
 <li><p>For the names of all functions for distributed memory ChASE, they start with
 a prefix <code class="docutils literal notranslate"><span class="pre">p</span></code>, following the same naming convention as ScaLAPACK.</p></li>
-<li><p>For <strong>Block</strong> and <strong>Block-Cyclic</strong> data layouts:
-- They share the same interface for <strong>Solving</strong> and <strong>Finalization</strong> steps
-- But use different interfaces for the <strong>Initialization</strong> step. For</p>
-<blockquote>
-<div><p><strong>Block-Cyclic</strong> data layout, the related <strong>Initialization function</strong> ends
-with the suffix <code class="docutils literal notranslate"><span class="pre">blockcyclic</span></code>.</p>
-</div></blockquote>
-</li>
+<li><p>For <strong>Block</strong> and <strong>Block-Cyclic</strong> data layouts, they share the same
+interface for <strong>Solving</strong> and <strong>Finalization</strong> steps but use different
+interfaces for <strong>Initialization</strong>. For <strong>Block-Cyclic</strong> data layout, the
+related initialization function ends with the suffix <code class="docutils literal notranslate"><span class="pre">blockcyclic</span></code>.</p></li>
 <li><p>The Fortran interfaces are implemented based on <code class="docutils literal notranslate"><span class="pre">iso_c_binding</span></code>, a standard
 intrinsic module which defines named constants, types, and procedures for
 inter-operation with C functions. C and Fortran functions share the same names.
 Additionally, unlike the Fortran routines, C functions have a suffix <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p></li>
 </ul>
-</div></blockquote>
 </div>
 <p>Different scalar types are also supported by the interfaces of ChASE. We use
 abbreviations <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;</span></code> for the corresponding short type to make a more concise and
@@ -878,6 +878,26 @@ table below. Unless otherwise specified, <code class="docutils literal notransla
 ChASE is initialized with the buffers <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">v</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, which should be
 allocated externally by users. These buffers will be re-used when a sequence of
 eigenproblems are to be solved.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Internal-workspace variants are also available with suffix <code class="docutils literal notranslate"><span class="pre">_internal</span></code> (for
+example <code class="docutils literal notranslate"><span class="pre">dchase_init_internal_</span></code> and <code class="docutils literal notranslate"><span class="pre">pzchase_init_blockcyclic_internal_</span></code>).
+These variants let ChASE allocate and manage internal eigenvector/eigenvalue
+buffers, and are useful when the application does not need to provide <code class="docutils literal notranslate"><span class="pre">v</span></code>
+and <code class="docutils literal notranslate"><span class="pre">ritzv</span></code> at initialization time.</p>
+<p>Fortran also provides matching internal initializers through the same generic
+interfaces, for example:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">dchase_init_internal</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">schase_init_internal</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">cchase_init_internal</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">zchase_init_internal</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pdchase_init_internal</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pschase_init_internal</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pcchase_init_internal</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pzchase_init_internal</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <p>The APIs for the C interfaces are as follows:</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
 <span class="kt">void</span><span class="w"> </span><span class="n">dchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
@@ -1517,10 +1537,51 @@ function works for both regular and pseudo-Hermitian matrices.</p>
 </div>
 </section>
 </section>
+<section id="extracting-eigenpairs-from-internal-buffers">
+<h3><span class="section-number">3.3.7. </span>Extracting Eigenpairs from Internal Buffers<a class="headerlink" href="#extracting-eigenpairs-from-internal-buffers" title="Link to this heading"></a></h3>
+<p>When an <code class="docutils literal notranslate"><span class="pre">*_init_internal</span></code> initializer is used, ChASE stores eigenpairs in
+internally managed buffers. After solve, they can be copied out through:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">dchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">schase_get_eigenpairs_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">cchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">zchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pdchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pschase_get_eigenpairs_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pcchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pzchase_get_eigenpairs_</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Fortran wrappers are also available:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">dchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">schase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">cchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">zchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pdchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pschase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pcchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+<span class="k">subroutine </span><span class="n">pzchase_get_eigenpairs</span><span class="p">(</span><span class="n">LEigsV</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="build-and-backend-query-functions">
+<h3><span class="section-number">3.3.8. </span>Build and Backend Query Functions<a class="headerlink" href="#build-and-backend-query-functions" title="Link to this heading"></a></h3>
+<p>The C interface also provides utility functions to query ChASE build
+capabilities at runtime:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">chase_get_version_</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">version</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_cuda_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_hip_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_nccl_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_rccl_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_scalapack_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_has_mpi_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">chase_print_config_</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
 <section id="unified-configuration-setter-functions">
-<h3><span class="section-number">3.3.7. </span>Unified Configuration Setter Functions<a class="headerlink" href="#unified-configuration-setter-functions" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.9. </span>Unified Configuration Setter Functions<a class="headerlink" href="#unified-configuration-setter-functions" title="Link to this heading"></a></h3>
 <section id="name-convention">
-<h4><span class="section-number">3.3.7.1. </span>Name Convention<a class="headerlink" href="#name-convention" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.9.1. </span>Name Convention<a class="headerlink" href="#name-convention" title="Link to this heading"></a></h4>
 <p>ChASE provides unified configuration setter functions that work regardless of
 matrix type (Hermitian or pseudo-Hermitian), precision, architecture (sequential
 or distributed), or distribution scheme (block or block-cyclic). These functions
@@ -1535,9 +1596,9 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="available-configuration-setters">
-<h4><span class="section-number">3.3.7.2. </span>Available Configuration Setters<a class="headerlink" href="#available-configuration-setters" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.9.2. </span>Available Configuration Setters<a class="headerlink" href="#available-configuration-setters" title="Link to this heading"></a></h4>
 <section id="chase-set-tol">
-<h5><span class="section-number">3.3.7.2.1. </span>chase_set_tol<a class="headerlink" href="#chase-set-tol" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.1. </span>chase_set_tol<a class="headerlink" href="#chase-set-tol" title="Link to this heading"></a></h5>
 <p>Set the tolerance threshold for eigenpair residuals.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_tol_</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">tol</span><span class="p">)</span>
 </pre></div>
@@ -1566,7 +1627,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-deg">
-<h5><span class="section-number">3.3.7.2.2. </span>chase_set_deg<a class="headerlink" href="#chase-set-deg" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.2. </span>chase_set_deg<a class="headerlink" href="#chase-set-deg" title="Link to this heading"></a></h5>
 <p>Set the initial degree of the Chebyshev polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg</span><span class="p">)</span>
 </pre></div>
@@ -1595,7 +1656,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-max-deg">
-<h5><span class="section-number">3.3.7.2.3. </span>chase_set_max_deg<a class="headerlink" href="#chase-set-max-deg" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.3. </span>chase_set_max_deg<a class="headerlink" href="#chase-set-max-deg" title="Link to this heading"></a></h5>
 <p>Set the maximum degree of the Chebyshev polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_deg</span><span class="p">)</span>
 </pre></div>
@@ -1605,7 +1666,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-deg-extra">
-<h5><span class="section-number">3.3.7.2.4. </span>chase_set_deg_extra<a class="headerlink" href="#chase-set-deg-extra" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.4. </span>chase_set_deg_extra<a class="headerlink" href="#chase-set-deg-extra" title="Link to this heading"></a></h5>
 <p>Set the extra degree added to the polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_extra_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg_extra</span><span class="p">)</span>
 </pre></div>
@@ -1615,7 +1676,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-max-iter">
-<h5><span class="section-number">3.3.7.2.5. </span>chase_set_max_iter<a class="headerlink" href="#chase-set-max-iter" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.5. </span>chase_set_max_iter<a class="headerlink" href="#chase-set-max-iter" title="Link to this heading"></a></h5>
 <p>Set the maximum number of subspace iterations.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_iter</span><span class="p">)</span>
 </pre></div>
@@ -1625,7 +1686,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-lanczos-iter">
-<h5><span class="section-number">3.3.7.2.6. </span>chase_set_lanczos_iter<a class="headerlink" href="#chase-set-lanczos-iter" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.6. </span>chase_set_lanczos_iter<a class="headerlink" href="#chase-set-lanczos-iter" title="Link to this heading"></a></h5>
 <p>Set the number of Lanczos iterations for spectral estimates.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_lanczos_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">lanczos_iter</span><span class="p">)</span>
 </pre></div>
@@ -1635,7 +1696,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-num-lanczos">
-<h5><span class="section-number">3.3.7.2.7. </span>chase_set_num_lanczos<a class="headerlink" href="#chase-set-num-lanczos" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.7. </span>chase_set_num_lanczos<a class="headerlink" href="#chase-set-num-lanczos" title="Link to this heading"></a></h5>
 <p>Set the number of stochastic vectors for spectral estimates.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_num_lanczos_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">num_lanczos</span><span class="p">)</span>
 </pre></div>
@@ -1645,7 +1706,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-approx">
-<h5><span class="section-number">3.3.7.2.8. </span>chase_set_approx<a class="headerlink" href="#chase-set-approx" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.8. </span>chase_set_approx<a class="headerlink" href="#chase-set-approx" title="Link to this heading"></a></h5>
 <p>Set the approximate mode flag.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_approx_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1674,7 +1735,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-opt">
-<h5><span class="section-number">3.3.7.2.9. </span>chase_set_opt<a class="headerlink" href="#chase-set-opt" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.9. </span>chase_set_opt<a class="headerlink" href="#chase-set-opt" title="Link to this heading"></a></h5>
 <p>Set the optimization flag for Chebyshev polynomial degree.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_opt_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1703,7 +1764,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-cholqr">
-<h5><span class="section-number">3.3.7.2.10. </span>chase_set_cholqr<a class="headerlink" href="#chase-set-cholqr" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.10. </span>chase_set_cholqr<a class="headerlink" href="#chase-set-cholqr" title="Link to this heading"></a></h5>
 <p>Set the CholQR flag (flexible CholeskyQR vs Householder QR).</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cholqr_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1732,7 +1793,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-enable-sym-check">
-<h5><span class="section-number">3.3.7.2.11. </span>chase_enable_sym_check<a class="headerlink" href="#chase-enable-sym-check" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.11. </span>chase_enable_sym_check<a class="headerlink" href="#chase-enable-sym-check" title="Link to this heading"></a></h5>
 <p>Enable or disable symmetry checking.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_enable_sym_check_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1742,7 +1803,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-decaying-rate">
-<h5><span class="section-number">3.3.7.2.12. </span>chase_set_decaying_rate<a class="headerlink" href="#chase-set-decaying-rate" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.12. </span>chase_set_decaying_rate<a class="headerlink" href="#chase-set-decaying-rate" title="Link to this heading"></a></h5>
 <p>Set the decaying rate for the polynomial lower bound.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_decaying_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">decaying_rate</span><span class="p">)</span>
 </pre></div>
@@ -1752,7 +1813,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-cluster-aware-degrees">
-<h5><span class="section-number">3.3.7.2.13. </span>chase_set_cluster_aware_degrees<a class="headerlink" href="#chase-set-cluster-aware-degrees" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.13. </span>chase_set_cluster_aware_degrees<a class="headerlink" href="#chase-set-cluster-aware-degrees" title="Link to this heading"></a></h5>
 <p>Enable or disable cluster-aware degree optimization.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cluster_aware_degrees_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1762,7 +1823,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-upperb-scale-rate">
-<h5><span class="section-number">3.3.7.2.14. </span>chase_set_upperb_scale_rate<a class="headerlink" href="#chase-set-upperb-scale-rate" title="Link to this heading"></a></h5>
+<h5><span class="section-number">3.3.9.2.14. </span>chase_set_upperb_scale_rate<a class="headerlink" href="#chase-set-upperb-scale-rate" title="Link to this heading"></a></h5>
 <p>Set the scale rate for upper bound based on its sign.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_upperb_scale_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">upperb_scale_rate</span><span class="p">)</span>
 </pre></div>
@@ -1780,21 +1841,21 @@ and <code class="docutils literal notranslate"><span class="pre">libchase_f.a</s
 </section>
 </section>
 <section id="examples">
-<h3><span class="section-number">3.3.8. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.10. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
 <p>Complete examples for both C and Fortran interfaces with both shared-memory
 and distributed-memory architectures are provided in
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">./examples/4_interface</a>.</p>
 <section id="example-of-c-interface">
-<h4><span class="section-number">3.3.8.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.10.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;mpi.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;chase_c.h&quot;</span><span class="c1">  // Include ChASE C interface header</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;chase_c_interface.h&quot;</span><span class="c1">  // Include ChASE C interface header</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="nf">pzchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span>
 <span class="w">                   </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">H</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">V</span><span class="p">,</span>
 <span class="w">                   </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span>
 <span class="w">                   </span><span class="n">MPI_Comm</span><span class="o">*</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">);</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">pzchase_finalize_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">);</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">pzchase_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">opt</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pzchase_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">qr</span><span class="p">);</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span>
 <span class="p">{</span>
@@ -1857,7 +1918,7 @@ and distributed-memory architectures are provided in
 </div>
 </section>
 <section id="example-of-fortran-interface">
-<h4><span class="section-number">3.3.8.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.10.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
 <div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">PROGRAM </span><span class="n">main</span>
 <span class="k">use </span><span class="n">mpi</span>
 <span class="k">use </span><span class="n">chase_diag</span><span class="w"> </span><span class="c">! use chase fortran interface module</span>

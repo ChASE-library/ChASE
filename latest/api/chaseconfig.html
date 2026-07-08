@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1.1.3. chase::ChaseConfig &mdash; ChASE v1.3.0 documentation</title>
+  <title>1.1.3. chase::ChaseConfig &mdash; ChASE v1.7.0 documentation</title>
       <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/documentation_options.js?v=f8b929d9"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -55,10 +55,6 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -569,6 +565,30 @@ function switchVersion(url) {
 <span id="_CPPv3N5chase11ChaseConfig18SetUpperbScaleRateEf"></span><span id="_CPPv2N5chase11ChaseConfig18SetUpperbScaleRateEf"></span><span id="chase::ChaseConfig::SetUpperbScaleRate__float"></span><span class="target" id="classchase_1_1ChaseConfig_1a4f4dd00eeff1d3fc6ba9a648ce9237e7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SetUpperbScaleRate</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upperbScaleRate</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig18SetUpperbScaleRateEf" title="Link to this definition"></a><br /></dt>
 <dd><p>Sets the scale rate for upperb based on its sign. </p>
 <p>This variable controls how upperb is scaled based on its sign. For positive upperb, it’s multiplied by this rate. For negative upperb, it’s multiplied by (2 - rate). Default value is 1.2. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase11ChaseConfig12SetVerbosityE8LogLevel">
+<span id="_CPPv3N5chase11ChaseConfig12SetVerbosityE8LogLevel"></span><span id="_CPPv2N5chase11ChaseConfig12SetVerbosityE8LogLevel"></span><span id="chase::ChaseConfig::SetVerbosity__LogLevel"></span><span class="target" id="classchase_1_1ChaseConfig_1a60b3d4fbf79c177b2b825fadf788366a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SetVerbosity</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">LogLevel</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">level</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig12SetVerbosityE8LogLevel" title="Link to this definition"></a><br /></dt>
+<dd><p>Set verbosity threshold for ChASE logging (Error &lt; Warn &lt; Info &lt; Debug &lt; Trace). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase11ChaseConfig11GetLogLevelEv">
+<span id="_CPPv3NK5chase11ChaseConfig11GetLogLevelEv"></span><span id="_CPPv2NK5chase11ChaseConfig11GetLogLevelEv"></span><span id="chase::ChaseConfig::GetLogLevelC"></span><span class="target" id="classchase_1_1ChaseConfig_1a716815a6b3cdd0fa3ae1acd184e3249b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">LogLevel</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLogLevel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig11GetLogLevelEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get current log level threshold. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase11ChaseConfig10SetLogRankEi">
+<span id="_CPPv3N5chase11ChaseConfig10SetLogRankEi"></span><span id="_CPPv2N5chase11ChaseConfig10SetLogRankEi"></span><span id="chase::ChaseConfig::SetLogRank__i"></span><span class="target" id="classchase_1_1ChaseConfig_1af543e1aa3c2c76ea7d75d7bb0d4e1261"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SetLogRank</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">rank</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig10SetLogRankEi" title="Link to this definition"></a><br /></dt>
+<dd><p>Set which MPI rank may log: 0 = only rank 0, -1 = all ranks. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase11ChaseConfig10GetLogRankEv">
+<span id="_CPPv3NK5chase11ChaseConfig10GetLogRankEv"></span><span id="_CPPv2NK5chase11ChaseConfig10GetLogRankEv"></span><span id="chase::ChaseConfig::GetLogRankC"></span><span class="target" id="classchase_1_1ChaseConfig_1a9307daed6eb605de1667896911349fa8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLogRank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig10GetLogRankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get current log rank filter. </p>
 </dd></dl>
 
 </div>
