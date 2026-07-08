@@ -35,9 +35,10 @@ one has to install or load the necessary dependencies.
 
 **Optional Dependencies:**
    * `MPI <http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).
-   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Required only for GPU implementations (ChASEGPU, pChASEGPU)
+   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)
+   * `ROCm/HIP <https://rocm.docs.amd.com>`__ - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)
    * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
-   * `NCCL <https://developer.nvidia.com/nccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+   * `NCCL <https://developer.nvidia.com/nccl>`__ or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU
 
 Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required.
 
@@ -94,7 +95,7 @@ The following snippet shows how to install ChASE on the JUWELS cluster
 Installation with GPU Support
 ------------------------------------
 
-In order to compile ChASE with GPU support one needs to have installed
+In order to compile ChASE with NVIDIA GPU support one needs to have installed
 and loaded a CUDA compiler, which will also enable the use of
 ``cuBLAS``, ``cuSOLVER`` and ``cuRAND``. On the JUWELS cluster this can
 be achieved by loading the module CUDA in addition to the
@@ -114,6 +115,12 @@ support on JUWELS:
   ml GCC/8.3.0  ParaStationMPI/5.4.4-1 imkl CUDA CMake
   cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
   make install
+
+For AMD/ROCm systems, ChASE can be built with HIP support by setting
+``-DCHASE_ENABLE_HIP=ON`` (or keeping ``AUTO`` and ensuring HIP is available).
+For distributed GPU communication on ROCm, use
+``-DCHASE_HIP_DISTRIBUTED_COLLECTIVES=NCCL`` to enable RCCL or
+``-DCHASE_HIP_DISTRIBUTED_COLLECTIVES=MPI`` to use MPI collectives.
 
 
 .. note::
@@ -374,6 +381,21 @@ ChASE-Specific Options
      - Enable NVIDIA Tools Extension (NVTX) for profiling GPU
        operations. This option is useful for performance analysis
        and debugging on NVIDIA GPUs using tools like Nsight Systems.
+   * - ``CHASE_ENABLE_HIP``
+     - ``AUTO``
+     - Control HIP backend detection and enablement for AMD/ROCm GPU support.
+       Allowed values are ``AUTO``, ``ON``, and ``OFF``.
+   * - ``CHASE_HIP_DISTRIBUTED_COLLECTIVES``
+     - ``NCCL``
+     - Select collective backend for distributed HIP builds. Supported values
+       are ``NCCL`` (RCCL on AMD/ROCm systems) and ``MPI``.
+   * - ``CHASE_PROBE_HIP_AWARE_MPI_RUNTIME``
+     - ``OFF``
+     - Probe whether the active MPI runtime supports HIP-aware communication.
+       Useful for ROCm deployments using MPI-based GPU communication.
+   * - ``CHASE_PANEL_HIPREC``
+     - ``OFF``
+     - Enable high-precision panel updates in selected kernels for HIP builds.
    * - ``CHASE_BUILD_WITH_EXAMPLES``
      - ``OFF``
      - Build the example programs provided with ChASE. When enabled,
@@ -398,9 +420,15 @@ ChASE-Specific Options
    * - ``CHASE_ENABLE_XGEEV_RAYLEIGHRITZ``
      - ``OFF``
      - Enable solving pseudo-Hermitian problems with XGEEV cusolver. When enabled, the pseudo-Hermitian problems will be solved with XGEEV cusolver.
-   * - ``CHASE_DISPLAY_COND_V_SVD``
+   * - ``CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP``
      - ``OFF``
-     - Compute and display the condition number of the matrix V from the Singular Value Decomposition (SVD). This is useful for debugging and understanding numerical stability.
+     - Enable optional warmup benchmarking logic during GPU constructor setup.
+   * - ``CHASE_ENABLE_GPU_RESIDENT_LANCZOS``
+     - ``ON``
+     - Keep Lanczos-related data resident on the GPU when supported by the backend.
+   * - ``CHASE_INTERFACE_WITH_BLOCKCYLIC``
+     - ``ON``
+     - Enable block-cyclic initialization routines in the C/Fortran interface.
    * - ``CHASE_QR_DOUBLE_PRECISION``
      - ``ON``
      - Operate QR in Double Precision. When enabled, the QR factorization will be operated in double precision.
@@ -430,6 +458,11 @@ The following standard CMake variables can also be used to configure the build:
    * ``CMAKE_CUDA_ARCHITECTURES`` - CUDA compute capability architectures to target. Can be a single
      value (e.g., ``86`` for RTX 3090) or a semicolon-separated list (e.g., ``"70;75;80;86"``).
      This option should always be set when building with CUDA support, regardless of CMake version.
+
+**ROCm/HIP Configuration:**
+   * ``CHASE_ENABLE_HIP`` - Enable HIP backend explicitly (``ON``), disable it (``OFF``), or use auto-detection (``AUTO``).
+   * ``CHASE_HIP_DISTRIBUTED_COLLECTIVES`` - Select distributed collective backend for HIP builds:
+     ``NCCL`` (RCCL) or ``MPI``.
 
 **Build Type:**
    * ``CMAKE_BUILD_TYPE`` - Build type: ``Release`` (optimized), ``Debug`` (with debug symbols),

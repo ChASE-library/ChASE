@@ -102,3 +102,20 @@ You'll see output like:
    [58-implement-distributed-memory-chase-extension-for-bse-matrix a1a7583] test hooks
     1 file changed, 6 insertions(+), 6 deletions(-)
 
+Documentation Housekeeping Proposal
+===================================
+
+The following files in ``docs/`` are internal planning/engineering notes and are
+not part of the Sphinx user documentation:
+
+* ``amd_port_convergence_plan.md``
+* ``amd_gpu_port_architecture.md``
+* ``plan_pchase_cpu_pseudo_hermitian.md``
+* ``solve_pseudo_missing_vs_julia.md``
+* ``frontier_gpu_collective_benchmark.md``
+* ``frontier_amd_gpu_porting_plan.md``
+* ``GITLAB_CI_DOCS_SNIPPET.yml``
+
+Recommended follow-up: move these files into a dedicated developer-notes location
+(``docs/dev/`` or top-level ``notes/``) to keep the user-facing docs tree focused.
+

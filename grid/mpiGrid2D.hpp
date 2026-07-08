@@ -61,20 +61,20 @@ namespace backend
 {
 /**
  * @ingroup PlatformTypes
- * @brief Represents the CPU platform.
+ * @brief Backend tag for MPI-based communication.
  *
- * This structure is used to specify that an operation or matrix class
- * is targeting the CPU platform.
+ * This structure is used as a communication backend tag for distributed
+ * operations using MPI collectives.
  */
 struct MPI
 {
 };
 /**
  * @ingroup PlatformTypes
- * @brief Represents the GPU platform.
+ * @brief Backend tag for GPU collective communication.
  *
- * This structure is used to specify that an operation or matrix class
- * is targeting the GPU platform.
+ * This structure selects the GPU collective backend (NCCL on NVIDIA platforms,
+ * RCCL on AMD/ROCm platforms).
  */
 struct NCCL
 {
