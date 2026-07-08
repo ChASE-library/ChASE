@@ -10,6 +10,7 @@
 #include <complex>
 #include <fstream>
 #include <functional>
+#include <string>
 #include <sys/stat.h>
 
 namespace chase
@@ -199,7 +200,7 @@ struct PrecisionTrait<std::complex<double>>
  * @param s The file path as a string.
  * @return `true` if the path exists, `false` otherwise.
  */
-bool isPathExist(const std::string& s)
+inline bool isPathExist(const std::string& s)
 {
     struct stat buffer;
     return (stat(s.c_str(), &buffer) == 0);
@@ -229,7 +230,7 @@ T getRandomT(std::function<double(void)> f);
  * @return A random `double` value.
  */
 template <>
-double getRandomT(std::function<double(void)> f)
+inline double getRandomT(std::function<double(void)> f)
 {
     return double(f());
 }
@@ -241,7 +242,7 @@ double getRandomT(std::function<double(void)> f)
  * @return A random `float` value.
  */
 template <>
-float getRandomT(std::function<double(void)> f)
+inline float getRandomT(std::function<double(void)> f)
 {
     return float(f());
 }
@@ -253,7 +254,7 @@ float getRandomT(std::function<double(void)> f)
  * @return A random `std::complex<double>` value.
  */
 template <>
-std::complex<double> getRandomT(std::function<double(void)> f)
+inline std::complex<double> getRandomT(std::function<double(void)> f)
 {
     return std::complex<double>(f(), f());
 }
@@ -265,7 +266,7 @@ std::complex<double> getRandomT(std::function<double(void)> f)
  * @return A random `std::complex<float>` value.
  */
 template <>
-std::complex<float> getRandomT(std::function<double(void)> f)
+inline std::complex<float> getRandomT(std::function<double(void)> f)
 {
     return std::complex<float>(f(), f());
 }

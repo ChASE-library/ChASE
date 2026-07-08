@@ -6,7 +6,9 @@
 
 #include "algorithm/algorithm.hpp"
 #include "Impl/chase_cpu/chase_cpu.hpp"
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
+#include "Impl/chase_gpu/chase_gpu.hpp"
+#elif defined(HAS_HIP)
 #include "Impl/chase_gpu/chase_gpu.hpp"
 #endif
 #include "linalg/matrix/matrix.hpp"
@@ -134,11 +136,11 @@ protected:
 TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
 {
     const Backend backend = GetParam();
-#ifdef HAS_CUDA
-    if (backend == Backend::GPU) { /* GPU test runs when HAS_CUDA */ }
+#if defined(HAS_CUDA) || defined(HAS_HIP)
+    if (backend == Backend::GPU) { /* GPU test runs when a GPU backend is built */ }
 #else
     if (backend == Backend::GPU)
-        GTEST_SKIP() << "GPU backend not built (no HAS_CUDA)";
+        GTEST_SKIP() << "GPU backend not built (no HAS_CUDA or HAS_HIP)";
 #endif
 
     int rank = 0;
@@ -158,7 +160,7 @@ TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
             n_, nev_, nex_, Hmat_.get(), V_.data(), n_, Lambda_.data());
         single = cpu_single;
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
     else
     {
         using GPUMatrixType =
@@ -166,6 +168,15 @@ TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
         auto* gpu_single = new chase::Impl::ChASEGPU<T, GPUMatrixType>(
             n_, nev_, nex_, Hmat_->data(), Hmat_->ld(), V_.data(), n_, Lambda_.data());
         single = gpu_single;
+    }
+#elif defined(HAS_HIP)
+    else
+    {
+        using GPUMatrixType =
+            chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>;
+        auto* hip_single = new chase::Impl::ChASEGPU<T, GPUMatrixType>(
+            n_, nev_, nex_, Hmat_->data(), Hmat_->ld(), V_.data(), n_, Lambda_.data());
+        single = hip_single;
     }
 #endif
 
@@ -250,7 +261,14 @@ TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
     // Free backend-specific object (no-op for stack-based CPU in old design; here we used new)
     if (backend == Backend::CPU)
         delete static_cast<chase::Impl::ChASECPU<T, chase::matrix::PseudoHermitianMatrix<T>>*>(single);
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA)
+    else
+    {
+        using GPUMatrixType =
+            chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>;
+        delete static_cast<chase::Impl::ChASEGPU<T, GPUMatrixType>*>(single);
+    }
+#elif defined(HAS_HIP)
     else
     {
         using GPUMatrixType =
@@ -260,8 +278,8 @@ TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
 #endif
 }
 
-// Instantiate: CPU always; CPU+GPU when HAS_CUDA
-#ifdef HAS_CUDA
+// Instantiate: CPU always; CPU+GPU when HAS_CUDA or HAS_HIP
+#if defined(HAS_CUDA) || defined(HAS_HIP)
 INSTANTIATE_TEST_SUITE_P(CPU_and_GPU, ChaseSerialSolvePseudoBSETest,
                          ::testing::Values(Backend::CPU, Backend::GPU));
 #else

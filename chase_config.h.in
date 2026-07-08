@@ -71,8 +71,20 @@
 #cmakedefine HAS_CUDA
 #endif
 
+#ifndef HAS_HIP
+#cmakedefine HAS_HIP
+#endif
+
+#ifndef HAS_HIP_AWARE_MPI
+#cmakedefine HAS_HIP_AWARE_MPI
+#endif
+
 #ifndef HAS_NCCL
 #cmakedefine HAS_NCCL
+#endif
+
+#ifndef HAS_RCCL
+#cmakedefine HAS_RCCL
 #endif
 
 #ifndef HAS_SCALAPACK
@@ -91,7 +103,7 @@
 /**
  * @brief Check if ChASE was built with GPU support
  */
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP)
   #define CHASE_HAS_GPU_SUPPORT 1
 #else
   #define CHASE_HAS_GPU_SUPPORT 0
@@ -104,6 +116,24 @@
   #define CHASE_HAS_NCCL_SUPPORT 1
 #else
   #define CHASE_HAS_NCCL_SUPPORT 0
+#endif
+
+/**
+ * @brief Check if ChASE was built with RCCL support (ROCm GPU collectives)
+ */
+#ifdef HAS_RCCL
+  #define CHASE_HAS_RCCL_SUPPORT 1
+#else
+  #define CHASE_HAS_RCCL_SUPPORT 0
+#endif
+
+/**
+ * @brief Check if ChASE was built with NCCL or RCCL GPU collective support
+ */
+#if defined(HAS_NCCL) || defined(HAS_RCCL)
+  #define CHASE_HAS_GPU_COLLECTIVE_SUPPORT 1
+#else
+  #define CHASE_HAS_GPU_COLLECTIVE_SUPPORT 0
 #endif
 
 /**

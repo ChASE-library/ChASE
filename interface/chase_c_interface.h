@@ -233,7 +233,9 @@ extern "C"
     // Returns the build configuration that ChASE was compiled with
     void chase_get_version_(char* version, int* len);
     void chase_has_cuda_(int* flag);         // Returns 1 if built with CUDA, 0 otherwise
+    void chase_has_hip_(int* flag);          // Returns 1 if built with HIP, 0 otherwise
     void chase_has_nccl_(int* flag);         // Returns 1 if built with NCCL, 0 otherwise
+    void chase_has_rccl_(int* flag);         // Returns 1 if built with RCCL, 0 otherwise
     void chase_has_scalapack_(int* flag);    // Returns 1 if built with ScaLAPACK, 0 otherwise
     void chase_has_mpi_(int* flag);          // Returns 1 if built with MPI, 0 otherwise
     void chase_print_config_();              // Prints the build configuration to stdout

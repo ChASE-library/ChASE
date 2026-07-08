@@ -25,6 +25,11 @@
 template <typename T, typename SeqMatrixType =
                           chase::matrix::Matrix<T, chase::platform::GPU>>
 using SeqSolverType = chase::Impl::ChASEGPU<T, SeqMatrixType>;
+#elif defined(HAS_HIP)
+#include "Impl/chase_gpu/chase_gpu.hpp"
+template <typename T, typename SeqMatrixType =
+                          chase::matrix::Matrix<T, chase::platform::GPU>>
+using SeqSolverType = chase::Impl::ChASEGPU<T, SeqMatrixType>;
 #else
 #include "Impl/chase_cpu/chase_cpu.hpp"
 template <typename T, typename SeqMatrixType =
@@ -35,6 +40,7 @@ using SeqSolverType = chase::Impl::ChASECPU<T, SeqMatrixType>;
 #ifdef HAS_CUDA
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
 using ARCH = chase::platform::GPU;
+using SEQ_ARCH = chase::platform::GPU;
 #ifdef HAS_NCCL
 #ifdef CHASE_INTERFACE_DISABLE_NCCL
 template <typename MatrixType>
@@ -55,9 +61,30 @@ using DistSolverType =
                            typename ColumnMultiVectorType<MatrixType>::type,
                            chase::grid::backend::MPI>;
 #endif
+#elif defined(HAS_HIP)
+#include "Impl/pchase_gpu/pchase_gpu.hpp"
+using ARCH = chase::platform::GPU;
+using SEQ_ARCH = chase::platform::GPU;
+// AMD/HIP default: RCCL when linked (see grid/default_distributed_backend.hpp).
+// GPU-aware MPI is opt-out via CHASE_DISTRIBUTED_GPU_BACKEND_MPI (CMake
+// -DCHASE_HIP_DISTRIBUTED_COLLECTIVES=MPI).
+#if defined(HAS_RCCL)
+template <typename MatrixType>
+using DistSolverType =
+    chase::Impl::pChASEGPU<MatrixType,
+                           typename ColumnMultiVectorType<MatrixType>::type,
+                           chase::grid::backend::DefaultDistributedGpu>;
+#else
+template <typename MatrixType>
+using DistSolverType =
+    chase::Impl::pChASEGPU<MatrixType,
+                           typename ColumnMultiVectorType<MatrixType>::type,
+                           chase::grid::backend::MPI>;
+#endif
 #else
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
 using ARCH = chase::platform::CPU;
+using SEQ_ARCH = chase::platform::CPU;
 template <typename MatrixType>
 using DistSolverType =
     chase::Impl::pChASECPU<MatrixType,
@@ -68,21 +95,21 @@ using DistSolverType =
 
 // Static members shared across all template instantiations
 // Regular matrices (use platform-appropriate matrix type)
-SeqSolverType<double, chase::matrix::Matrix<double, ARCH>>* dchaseSeq = nullptr;
-SeqSolverType<float, chase::matrix::Matrix<float, ARCH>>* schaseSeq = nullptr;
+SeqSolverType<double, chase::matrix::Matrix<double, SEQ_ARCH>>* dchaseSeq = nullptr;
+SeqSolverType<float, chase::matrix::Matrix<float, SEQ_ARCH>>* schaseSeq = nullptr;
 SeqSolverType<std::complex<double>,
-              chase::matrix::Matrix<std::complex<double>, ARCH>>* zchaseSeq =
+              chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>* zchaseSeq =
     nullptr;
 SeqSolverType<std::complex<float>,
-              chase::matrix::Matrix<std::complex<float>, ARCH>>* cchaseSeq =
+              chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>* cchaseSeq =
     nullptr;
 
 // Pseudo-Hermitian matrices
 SeqSolverType<std::complex<double>,
-              chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>*
+              chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>*
     zchaseSeqPseudo = nullptr;
 SeqSolverType<std::complex<float>,
-              chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>*
+              chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>*
     cchaseSeqPseudo = nullptr;
 
 std::vector<double> dVec_seq;
@@ -121,7 +148,7 @@ public:
 // Initialize specializations for regular matrices (chase::matrix::Matrix<T,
 // ARCH>)
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
+int ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::Initialize(
     int N, int nev, int nex, double* H, int ldh, double* V, double* ritzv)
 {
     if (dchaseSeq)
@@ -144,13 +171,13 @@ int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
     {
         dRitz_ptr.reset();
     }
-    dchaseSeq = new SeqSolverType<double, chase::matrix::Matrix<double, ARCH>>(
+    dchaseSeq = new SeqSolverType<double, chase::matrix::Matrix<double, SEQ_ARCH>>(
         N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(int N, int nev,
+int ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::Initialize(int N, int nev,
                                                               int nex, float* H,
                                                               int ldh, float* V,
                                                               float* ritzv)
@@ -174,13 +201,13 @@ int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(int N, int nev,
     {
         sRitz_ptr.reset();
     }
-    schaseSeq = new SeqSolverType<float, chase::matrix::Matrix<float, ARCH>>(
+    schaseSeq = new SeqSolverType<float, chase::matrix::Matrix<float, SEQ_ARCH>>(
         N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Initialize(
+int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::Initialize(
     int N, int nev, int nex, std::complex<double>* H, int ldh,
     std::complex<double>* V, double* ritzv)
 {
@@ -207,13 +234,13 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Initialize(
     }
     zchaseSeq =
         new SeqSolverType<std::complex<double>,
-                          chase::matrix::Matrix<std::complex<double>, ARCH>>(
+                          chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>(
             N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Initialize(
+int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::Initialize(
     int N, int nev, int nex, std::complex<float>* H, int ldh,
     std::complex<float>* V, float* ritzv)
 {
@@ -239,7 +266,7 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Initialize(
     }
     cchaseSeq =
         new SeqSolverType<std::complex<float>,
-                          chase::matrix::Matrix<std::complex<float>, ARCH>>(
+                          chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>(
             N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
@@ -247,7 +274,7 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Initialize(
 // Initialize specializations for pseudo-Hermitian matrices
 template <>
 int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
-    std::complex<double>, ARCH>>::Initialize(int N, int nev, int nex,
+    std::complex<double>, SEQ_ARCH>>::Initialize(int N, int nev, int nex,
                                              std::complex<double>* H, int ldh,
                                              std::complex<double>* V,
                                              double* ritzv)
@@ -276,13 +303,13 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
     }
     zchaseSeqPseudo = new SeqSolverType<
         std::complex<double>,
-        chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>(
+        chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>(
         N, nev, nex, H, ldh, vec_ptr, N, dRitz);
     return 1;
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
+int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::
     Initialize(int N, int nev, int nex, std::complex<float>* H, int ldh,
                std::complex<float>* V, float* ritzv)
 {
@@ -310,14 +337,14 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
     }
     cchaseSeqPseudo = new SeqSolverType<
         std::complex<float>,
-        chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>(
+        chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>(
         N, nev, nex, H, ldh, vec_ptr, N, fRitz);
     return 1;
 }
 
 // Finalize specializations for regular matrices
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Finalize()
+int ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::Finalize()
 {
     delete dchaseSeq;
     dchaseSeq = nullptr;
@@ -327,7 +354,7 @@ int ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Finalize()
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Finalize()
+int ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::Finalize()
 {
     delete schaseSeq;
     schaseSeq = nullptr;
@@ -337,7 +364,7 @@ int ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Finalize()
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Finalize()
+int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::Finalize()
 {
     // Finalize pseudo-Hermitian types first (inheritance allows unified
     // interface)
@@ -353,7 +380,7 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::Finalize()
 }
 
 template <>
-int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Finalize()
+int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::Finalize()
 {
     // Finalize pseudo-Hermitian types first (inheritance allows unified
     // interface)
@@ -371,7 +398,7 @@ int ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::Finalize()
 // Finalize specializations for pseudo-Hermitian matrices
 template <>
 int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>,
-                                                   ARCH>>::Finalize()
+                                                   SEQ_ARCH>>::Finalize()
 {
     delete zchaseSeqPseudo;
     zchaseSeqPseudo = nullptr;
@@ -382,7 +409,7 @@ int ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>,
 
 template <>
 int ChASE_SEQ<
-    chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::Finalize()
+    chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::Finalize()
 {
     delete cchaseSeqPseudo;
     cchaseSeqPseudo = nullptr;
@@ -393,25 +420,25 @@ int ChASE_SEQ<
 
 // getChase specializations for regular matrices
 template <>
-auto ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::getChase()
+auto ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::getChase()
 {
     return dchaseSeq;
 }
 
 template <>
-auto ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::getChase()
+auto ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::getChase()
 {
     return schaseSeq;
 }
 
 template <>
-auto ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::getChase()
+auto ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::getChase()
 {
     return cchaseSeq;
 }
 
 template <>
-auto ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase()
+auto ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::getChase()
 {
     return zchaseSeq;
 }
@@ -419,14 +446,14 @@ auto ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase()
 // getChase specializations for pseudo-Hermitian matrices
 template <>
 auto ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>,
-                                                    ARCH>>::getChase()
+                                                    SEQ_ARCH>>::getChase()
 {
     return zchaseSeqPseudo;
 }
 
 template <>
 auto ChASE_SEQ<
-    chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::getChase()
+    chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::getChase()
 {
     return cchaseSeqPseudo;
 }
@@ -2056,14 +2083,14 @@ chase::ChaseConfig<T>* getActiveConfig()
     if constexpr (std::is_same_v<T, double>)
     {
         auto* single =
-            ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::getChase();
+            ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::getChase();
         if (single != nullptr)
             return &(single->GetConfig());
     }
     else if constexpr (std::is_same_v<T, float>)
     {
         auto* single =
-            ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::getChase();
+            ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::getChase();
         if (single != nullptr)
             return &(single->GetConfig());
     }
@@ -2072,12 +2099,12 @@ chase::ChaseConfig<T>* getActiveConfig()
         // Check pseudo-Hermitian first
         auto* single_pseudo =
             ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>,
-                                                           ARCH>>::getChase();
+                                                           SEQ_ARCH>>::getChase();
         if (single_pseudo != nullptr)
             return &(single_pseudo->GetConfig());
         // Then check regular
         auto* single = ChASE_SEQ<
-            chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase();
+            chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::getChase();
         if (single != nullptr)
             return &(single->GetConfig());
     }
@@ -2086,12 +2113,12 @@ chase::ChaseConfig<T>* getActiveConfig()
         // Check pseudo-Hermitian first
         auto* single_pseudo =
             ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>,
-                                                           ARCH>>::getChase();
+                                                           SEQ_ARCH>>::getChase();
         if (single_pseudo != nullptr)
             return &(single_pseudo->GetConfig());
         // Then check regular
         auto* single = ChASE_SEQ<
-            chase::matrix::Matrix<std::complex<float>, ARCH>>::getChase();
+            chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::getChase();
         if (single != nullptr)
             return &(single->GetConfig());
     }
@@ -2106,28 +2133,28 @@ extern "C"
                       double* V, double* ritzv, int* init)
     {
         reset_vec(dVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
+        *init = ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, V, ritzv);
     }
     void dchase_init_internal_(int* N, int* nev, int* nex, double* H, int* ldh,
                                int* init)
     {
         reset_vec(dVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Initialize(
+        *init = ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, nullptr, nullptr);
     }
     void schase_init_(int* N, int* nev, int* nex, float* H, int* ldh, float* V,
                       float* ritzv, int* init)
     {
         reset_vec(sVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(
+        *init = ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, V, ritzv);
     }
     void schase_init_internal_(int* N, int* nev, int* nex, float* H, int* ldh,
                                int* init)
     {
         reset_vec(sVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Initialize(
+        *init = ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::Initialize(
             *N, *nev, *nex, H, *ldh, nullptr, nullptr);
     }
 
@@ -2135,7 +2162,7 @@ extern "C"
                       float _Complex* V, float* ritzv, int* init)
     {
         reset_vec(cVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv);
@@ -2144,7 +2171,7 @@ extern "C"
                                int* ldh, int* init)
     {
         reset_vec(cVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
                        nullptr);
@@ -2154,7 +2181,7 @@ extern "C"
                       double _Complex* V, double* ritzv, int* init)
     {
         reset_vec(zVec_seq);
-        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv);
@@ -2165,7 +2192,7 @@ extern "C"
     {
         reset_vec(zVec_seq);
 
-        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::
+        *init = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        nullptr,
@@ -2174,31 +2201,31 @@ extern "C"
 
     void dchase_finalize_(int* flag)
     {
-        *flag = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::Finalize();
+        *flag = ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::Finalize();
     }
     void schase_finalize_(int* flag)
     {
-        *flag = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::Finalize();
+        *flag = ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::Finalize();
     }
     void cchase_finalize_(int* flag)
     {
         *flag = ChASE_SEQ<
-            chase::matrix::Matrix<std::complex<float>, ARCH>>::Finalize();
+            chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::Finalize();
     }
     void zchase_finalize_(int* flag)
     {
         *flag = ChASE_SEQ<
-            chase::matrix::Matrix<std::complex<double>, ARCH>>::Finalize();
+            chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::Finalize();
     }
 
     void dchase_(int* deg, double* tol, char* mode, char* opt, char* qr)
     {
-        ChASE_SEQ_Solve<chase::matrix::Matrix<double, ARCH>>(deg, tol, mode,
+        ChASE_SEQ_Solve<chase::matrix::Matrix<double, SEQ_ARCH>>(deg, tol, mode,
                                                              opt, qr);
     }
     void schase_(int* deg, float* tol, char* mode, char* opt, char* qr)
     {
-        ChASE_SEQ_Solve<chase::matrix::Matrix<float, ARCH>>(deg, tol, mode, opt,
+        ChASE_SEQ_Solve<chase::matrix::Matrix<float, SEQ_ARCH>>(deg, tol, mode, opt,
                                                             qr);
     }
     void zchase_(int* deg, double* tol, char* mode, char* opt, char* qr)
@@ -2207,11 +2234,11 @@ extern "C"
         if (zchaseSeqPseudo != nullptr)
         {
             ChASE_SEQ_Solve<chase::matrix::PseudoHermitianMatrix<
-                std::complex<double>, ARCH>>(deg, tol, mode, opt, qr);
+                std::complex<double>, SEQ_ARCH>>(deg, tol, mode, opt, qr);
         }
         else
         {
-            ChASE_SEQ_Solve<chase::matrix::Matrix<std::complex<double>, ARCH>>(
+            ChASE_SEQ_Solve<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>(
                 deg, tol, mode, opt, qr);
         }
     }
@@ -2221,11 +2248,11 @@ extern "C"
         if (cchaseSeqPseudo != nullptr)
         {
             ChASE_SEQ_Solve<chase::matrix::PseudoHermitianMatrix<
-                std::complex<float>, ARCH>>(deg, tol, mode, opt, qr);
+                std::complex<float>, SEQ_ARCH>>(deg, tol, mode, opt, qr);
         }
         else
         {
-            ChASE_SEQ_Solve<chase::matrix::Matrix<std::complex<float>, ARCH>>(
+            ChASE_SEQ_Solve<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>(
                 deg, tol, mode, opt, qr);
         }
     }
@@ -2237,7 +2264,7 @@ extern "C"
     {
         reset_vec(cVec_seq_pseudo);
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv);
@@ -2247,7 +2274,7 @@ extern "C"
     {
         reset_vec(cVec_seq_pseudo);
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh, nullptr,
                        nullptr);
@@ -2259,7 +2286,7 @@ extern "C"
     {
         reset_vec(zVec_seq_pseudo);
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv);
@@ -2271,7 +2298,7 @@ extern "C"
         reset_vec(zVec_seq_pseudo);
 
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        nullptr,
@@ -2281,14 +2308,14 @@ extern "C"
     void cchase_pseudo_(int* deg, float* tol, char* mode, char* opt, char* qr)
     {
         ChASE_SEQ_Solve<
-            chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>(
+            chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>(
             deg, tol, mode, opt, qr);
     }
 
     void zchase_pseudo_(int* deg, double* tol, char* mode, char* opt, char* qr)
     {
         ChASE_SEQ_Solve<
-            chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>(
+            chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>(
             deg, tol, mode, opt, qr);
     }
 
@@ -2298,7 +2325,7 @@ extern "C"
                                int* init)
     {
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<float>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<float>*>(H), *ldh,
                        reinterpret_cast<std::complex<float>*>(V), ritzv);
@@ -2309,7 +2336,7 @@ extern "C"
                                int* init)
     {
         *init = ChASE_SEQ<
-            chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+            chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>::
             Initialize(*N, *nev, *nex,
                        reinterpret_cast<std::complex<double>*>(H), *ldh,
                        reinterpret_cast<std::complex<double>*>(V), ritzv);
@@ -2328,7 +2355,7 @@ extern "C"
 
     void dchase_get_eigenpairs_(double* LEigsV, int* ld, double* ritzv)
     {
-        auto* single = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::getChase();
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::getChase();
         if (single == nullptr || ld == nullptr)
             return;
         copy_first_nev_results(dVec_seq.data(), single->GetRitzv(),
@@ -2339,7 +2366,7 @@ extern "C"
 
     void schase_get_eigenpairs_(float* LEigsV, int* ld, float* ritzv)
     {
-        auto* single = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::getChase();
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::getChase();
         if (single == nullptr || ld == nullptr)
             return;
         copy_first_nev_results(sVec_seq.data(), single->GetRitzv(),
@@ -2355,7 +2382,7 @@ extern "C"
         if (cchaseSeqPseudo != nullptr)
         {
             auto* single = ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
-                std::complex<float>, ARCH>>::getChase();
+                std::complex<float>, SEQ_ARCH>>::getChase();
             if (single == nullptr)
                 return;
             copy_first_nev_results(
@@ -2367,7 +2394,7 @@ extern "C"
         else
         {
             auto* single = ChASE_SEQ<
-                chase::matrix::Matrix<std::complex<float>, ARCH>>::getChase();
+                chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::getChase();
             if (single == nullptr)
                 return;
             copy_first_nev_results(
@@ -2387,7 +2414,7 @@ extern "C"
         if (zchaseSeqPseudo != nullptr)
         {
             auto* single = ChASE_SEQ<
-                chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::
+                chase::matrix::PseudoHermitianMatrix<std::complex<double>, SEQ_ARCH>>::
                 getChase();
             if (single == nullptr)
                 return;
@@ -2400,7 +2427,7 @@ extern "C"
         else
         {
             auto* single = ChASE_SEQ<
-                chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase();
+                chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::getChase();
             if (single == nullptr)
                 return;
             copy_first_nev_results(
@@ -3750,13 +3777,13 @@ extern "C"
     // ---------------------------------------------------------------------------
     void schase_readHam_(const char* filename)
     {
-        ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::readHam(
+        ChASE_SEQ<chase::matrix::Matrix<float, SEQ_ARCH>>::readHam(
             std::string(filename));
     }
 
     void dchase_readHam_(const char* filename)
     {
-        ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::readHam(
+        ChASE_SEQ<chase::matrix::Matrix<double, SEQ_ARCH>>::readHam(
             std::string(filename));
     }
 
@@ -3767,11 +3794,11 @@ extern "C"
         if (cchaseSeqPseudo != nullptr)
         {
             ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
-                std::complex<float>, ARCH>>::readHam(std::string(filename));
+                std::complex<float>, SEQ_ARCH>>::readHam(std::string(filename));
         }
         else if (cchaseSeq != nullptr)
         {
-            ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::
+            ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, SEQ_ARCH>>::
                 readHam(std::string(filename));
         }
     }
@@ -3783,11 +3810,11 @@ extern "C"
         if (zchaseSeqPseudo != nullptr)
         {
             ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<
-                std::complex<double>, ARCH>>::readHam(std::string(filename));
+                std::complex<double>, SEQ_ARCH>>::readHam(std::string(filename));
         }
         else if (zchaseSeq != nullptr)
         {
-            ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::
+            ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, SEQ_ARCH>>::
                 readHam(std::string(filename));
         }
     }
@@ -4180,9 +4207,27 @@ extern "C"
         #endif
     }
 
+    void chase_has_hip_(int* flag)
+    {
+        #ifdef HAS_HIP
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
     void chase_has_nccl_(int* flag)
     {
         #ifdef HAS_NCCL
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
+    void chase_has_rccl_(int* flag)
+    {
+        #ifdef HAS_RCCL
         *flag = 1;
         #else
         *flag = 0;
@@ -4209,6 +4254,11 @@ extern "C"
 
     void chase_print_config_()
     {
+        int grank = 0;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        if (grank != 0)
+            return;
+
         std::ostringstream oss;
         oss << "========================================\n"
             << "ChASE Build Configuration\n"
@@ -4225,10 +4275,20 @@ extern "C"
 #else
         oss << "  ✗ CUDA support:      DISABLED\n";
 #endif
+#ifdef HAS_HIP
+        oss << "  ✓ HIP support:       ENABLED\n";
+#else
+        oss << "  ✗ HIP support:       DISABLED\n";
+#endif
 #ifdef HAS_NCCL
         oss << "  ✓ NCCL support:      ENABLED\n";
 #else
         oss << "  ✗ NCCL support:      DISABLED\n";
+#endif
+#ifdef HAS_RCCL
+        oss << "  ✓ RCCL support:      ENABLED\n";
+#else
+        oss << "  ✗ RCCL support:      DISABLED\n";
 #endif
 #ifdef HAS_SCALAPACK
         oss << "  ✓ ScaLAPACK support: ENABLED\n";

@@ -5,32 +5,47 @@
 // https://github.com/ChASE-library/ChASE
 
 #pragma once
-#include <complex>
-#include <cuda_runtime.h>
-#include <iostream>
-#include <nccl.h>
 
-#ifdef HAS_NCCL
+#include "grid/gpu_collective_config.hpp"
+
+#include <complex>
+#include <iostream>
+
+#if defined(HAS_NCCL)
+#include <cuda_runtime.h>
+#include <nccl.h>
+#elif defined(HAS_RCCL)
+#include <hip/hip_runtime.h>
+#include <rccl/rccl.h>
+#endif
+
+#ifdef CHASE_HAS_GPU_COLLECTIVE
 #define CHECK_NCCL_ERROR(val) checkNccl((val), #val, __FILE__, __LINE__)
 
-void checkNccl(ncclResult_t err, const char* const func, const char* const file,
-               const int line)
+inline void checkNccl(ncclResult_t err, const char* const func,
+                      const char* const file, const int line)
 {
     if (err != ncclSuccess)
     {
-        std::cerr << "NCCL Runtime Error at: " << file << ":" << line
+        std::cerr << "GPU collective runtime error at: " << file << ":" << line
                   << std::endl;
         std::cerr << ncclGetErrorString(err) << " in function " << func
                   << std::endl;
         std::exit(EXIT_FAILURE);
     }
 }
+
+#if defined(HAS_NCCL)
+using GpuCollectiveStream_t = cudaStream_t;
+#elif defined(HAS_RCCL)
+using GpuCollectiveStream_t = hipStream_t;
 #endif
+#endif // CHASE_HAS_GPU_COLLECTIVE
 
 /**
  * @page chase_nccl_namespace chase::nccl Namespace
- * @brief  The `chase::nccl` namespace for NCCL type mappings, helper functions
- * and templated communication functions.
+ * @brief  The `chase::nccl` namespace for NCCL/RCCL type mappings, helper
+ * functions and templated communication functions.
  *
  *
  * The `chase::nccl` namespace contains type mappings between C++ data types
@@ -175,6 +190,7 @@ struct DataCountMultiplier<std::complex<double>>
         2; // Complex<double> has 2 components (real, imag)
 };
 
+#ifdef CHASE_HAS_GPU_COLLECTIVE
 // templated NCCL allreduce
 /**
  * @ingroup nccl_templated_communications
@@ -192,20 +208,20 @@ struct DataCountMultiplier<std::complex<double>>
  * @param count The number of elements to reduce.
  * @param op The reduction operation (e.g., sum, max).
  * @param comm The NCCL communicator.
- * @param stream The CUDA stream for asynchronous operations (optional).
+ * @param stream The GPU stream for asynchronous operations (optional).
  *
  * @return NCCL result status.
  */
 template <typename T>
 ncclResult_t ncclAllReduceWrapper(T* sendbuf, T* recvbuf, std::size_t count,
                                   ncclRedOp_t op, ncclComm_t comm,
-                                  cudaStream_t* stream = nullptr)
+                                  GpuCollectiveStream_t* stream = nullptr)
 {
     ncclDataType_t ncclType =
         NcclType<T>::value; // Get the corresponding NCCL type
     std::size_t adjustedCount =
         count * DataCountMultiplier<T>::value; // Adjust count if necessary
-    cudaStream_t usedStream = (stream == nullptr) ? 0 : *stream;
+    GpuCollectiveStream_t usedStream = (stream == nullptr) ? 0 : *stream;
     // Call the NCCL function
     ncclResult_t status;
     status = ncclAllReduce(sendbuf, recvbuf, adjustedCount, ncclType, op, comm,
@@ -228,19 +244,20 @@ ncclResult_t ncclAllReduceWrapper(T* sendbuf, T* recvbuf, std::size_t count,
  * @param count The number of elements to broadcast.
  * @param root The root rank that broadcasts the data.
  * @param comm The NCCL communicator.
- * @param stream The CUDA stream for asynchronous operations (optional).
+ * @param stream The GPU stream for asynchronous operations (optional).
  *
  * @return NCCL result status.
  */
 template <typename T>
 ncclResult_t ncclBcastWrapper(T* buffer, std::size_t count, int root,
-                              ncclComm_t comm, cudaStream_t* stream = nullptr)
+                              ncclComm_t comm,
+                              GpuCollectiveStream_t* stream = nullptr)
 {
     ncclDataType_t ncclType =
         NcclType<T>::value; // Get the corresponding NCCL type
     std::size_t adjustedCount =
         count * DataCountMultiplier<T>::value; // Adjust count for complex types
-    cudaStream_t usedStream = (stream == nullptr) ? 0 : *stream;
+    GpuCollectiveStream_t usedStream = (stream == nullptr) ? 0 : *stream;
     ncclResult_t status;
     // Call the NCCL broadcast function
     status = ncclBroadcast(buffer, buffer, adjustedCount, ncclType, root, comm,
@@ -250,44 +267,43 @@ ncclResult_t ncclBcastWrapper(T* buffer, std::size_t count, int root,
 
 /**
  * @ingroup nccl_templated_communications
- * @brief Templated NCCL Broadcast function wrapper.
+ * @brief Templated NCCL send/recv function wrapper.
  *
- * This function wraps the NCCL broadcast operation, adjusting the data
- * count for complex types and handling different data types. It uses the
- * appropriate NCCL data type and handles complex types by adjusting the
- * data count accordingly.
- *
- * @tparam T The type of the elements to broadcast (supports real and complex
- * types).
- * @param buffer Pointer to the buffer to broadcast.
- * @param count The number of elements to broadcast.
- * @param root The root rank that broadcasts the data.
- * @param comm The NCCL communicator.
- * @param stream The CUDA stream for asynchronous operations (optional).
+ * @tparam T Element type.
+ * @param sendbuffer Device send buffer.
+ * @param sendcount Number of elements to send.
+ * @param dest_rank Destination rank.
+ * @param recvbuffer Device receive buffer.
+ * @param recvcount Number of elements to receive.
+ * @param src_rank Source rank.
+ * @param comm NCCL/RCCL communicator.
+ * @param stream Optional GPU stream.
  *
  * @return NCCL result status.
  */
- template <typename T>
- ncclResult_t ncclSendrecvWrapper(T* sendbuffer, std::size_t sendcount, int dest_rank,
-                                  T* recvbuffer, std::size_t recvcount, int src_rank,
-                                    ncclComm_t comm, cudaStream_t* stream = nullptr)
- {
-     ncclDataType_t ncclType =
-         NcclType<T>::value; // Get the corresponding NCCL type
-     std::size_t adjustedSendCount =
-         sendcount * DataCountMultiplier<T>::value; // Adjust count for complex types
+template <typename T>
+ncclResult_t ncclSendrecvWrapper(T* sendbuffer, std::size_t sendcount,
+                                 int dest_rank, T* recvbuffer,
+                                 std::size_t recvcount, int src_rank,
+                                 ncclComm_t comm,
+                                 GpuCollectiveStream_t* stream = nullptr)
+{
+    ncclDataType_t ncclType =
+        NcclType<T>::value; // Get the corresponding NCCL type
+    std::size_t adjustedSendCount =
+        sendcount * DataCountMultiplier<T>::value; // Adjust count for complex types
     std::size_t adjustedRecvCount =
-         recvcount * DataCountMultiplier<T>::value; // Adjust count for complex types
-     cudaStream_t usedStream = (stream == nullptr) ? 0 : *stream;
-     ncclResult_t status;
-     // Call the NCCL broadcast function
-     ncclGroupStart();
-     status = ncclSend(sendbuffer, adjustedSendCount, ncclType, dest_rank, comm,
-        usedStream);
+        recvcount * DataCountMultiplier<T>::value; // Adjust count for complex types
+    GpuCollectiveStream_t usedStream = (stream == nullptr) ? 0 : *stream;
+    ncclResult_t status;
+    ncclGroupStart();
+    status = ncclSend(sendbuffer, adjustedSendCount, ncclType, dest_rank, comm,
+                      usedStream);
     status = ncclRecv(recvbuffer, adjustedRecvCount, ncclType, src_rank, comm,
-        usedStream);
+                      usedStream);
     ncclGroupEnd();
     return status;
- }
+}
+#endif // CHASE_HAS_GPU_COLLECTIVE
 } // namespace nccl
 } // namespace chase

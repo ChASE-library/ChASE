@@ -13,6 +13,7 @@
 #include <complex>
 #include <cstring>
 #include <gtest/gtest.h>
+#include <random>
 
 template <typename T>
 class PseudoHEMMCPUDistTest : public ::testing::Test

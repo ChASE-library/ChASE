@@ -11,8 +11,9 @@
 #include <random>
 #include <type_traits>
 #include <vector>
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
+#include "grid/default_distributed_backend.hpp"
 #else
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
 #endif
@@ -20,13 +21,12 @@
 using T = std::complex<double>;
 using namespace chase;
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
 using ARCH = chase::platform::GPU;
-#ifdef HAS_NCCL
-using BackendType = chase::grid::backend::NCCL;
-#else
-using BackendType = chase::grid::backend::MPI;
-#endif
+// NVIDIA defaults to NCCL, AMD/HIP defaults to RCCL when linked. GPU-aware MPI is
+// opt-out via CHASE_DISTRIBUTED_GPU_BACKEND_MPI. See
+// grid/default_distributed_backend.hpp.
+using CommBackend = chase::grid::backend::DefaultDistributedGpu;
 #else
 using ARCH = chase::platform::CPU;
 #endif
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         //    chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
 
         T* Clement_data;
-    #ifdef HAS_CUDA
+    #if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
         Clement.allocate_cpu_data();
         Hmat.allocate_cpu_data();
         Vec.allocate_cpu_data();
@@ -128,11 +128,9 @@ int main(int argc, char** argv)
             if (i != N - 1)
                 Clement_data[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
         }
-    #ifdef HAS_CUDA
-        // auto single = chase::Impl::ChaseNCCLGPU(nev, nex, &Hmat, &Vec,
-        // Lambda.data());
+    #if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
         auto single =
-            chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+            chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), CommBackend>(
                 nev, nex, &Hmat, &Vec, Lambda.data());
     #else
         auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());

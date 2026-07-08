@@ -29,11 +29,11 @@
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/cuda/random_normal_distribution.cuh"
-#include "linalg/internal/nccl/nccl_kernels.hpp"
+#include "linalg/internal/gpu/kernels/cuda/launchers/random_normal_distribution.cuh"
+#include "linalg/internal/gpu/dist_xccl/nccl/nccl_kernels.hpp"
 
 using ARCH = chase::platform::GPU;
-using BackendType = chase::grid::backend::NCCL;
+using CommBackend = chase::grid::backend::NCCL;
 
 namespace
 {

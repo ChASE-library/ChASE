@@ -19,5 +19,7 @@ Libs: -L${libdir}@CHASE_LINK_LIBRARIES@
 
 # Configuration information for users
 chase_has_mpi=@IS_ENABLE_MPI@
+chase_has_hip=@IS_ENABLE_HIP@
 chase_has_nccl=@IS_ENABLE_NCCL@
+chase_has_rccl=@IS_ENABLE_RCCL@
 chase_has_scalapack=@IS_ENABLE_SCALAPACK@

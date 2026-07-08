@@ -1,23 +1,43 @@
 add_library(chase_gpu INTERFACE)
-# Link against linalg libraries
-target_link_libraries(chase_gpu 
-                        INTERFACE 
-                        chase_algorithm 
-                        blaspp 
-                        lapackpp 
-                        linalg_internal_cpu 
-                        cublaspp 
-                        cusolverpp 
-                        linalg_internal_cuda
-                        matrix_gpu)
 
-target_include_directories(chase_gpu INTERFACE 
-                                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/chase_gpu>")
+target_link_libraries(chase_gpu
+  INTERFACE
+    chase_algorithm
+    chase_cpu_linalg
+    linalg_internal_cpu
+)
 
-# NO_MPI is not defined here to avoid conflicts when chase_c links to both serial and parallel targets
-# The interface layer (chase_c) will handle NO_MPI definition based on actual usage
-target_compile_definitions(chase_gpu INTERFACE HAS_CUDA=1)
+if(TARGET linalg_internal_cuda)
+  target_link_libraries(chase_gpu
+    INTERFACE
+      chase_nvidia_gpu_linalg
+      linalg_internal_cuda
+      linalg_internal_gpu_serial_cuda
+      matrix_gpu
+  )
+  target_compile_definitions(chase_gpu INTERFACE HAS_CUDA=1)
+endif()
+
+if(TARGET linalg_internal_hip)
+  target_link_libraries(chase_gpu
+    INTERFACE
+      chase_amd_gpu_linalg
+      chase_hip_kernels
+      linalg_internal_hip
+      linalg_internal_gpu_serial_hip
+      matrix_hip
+  )
+  target_compile_definitions(chase_gpu INTERFACE HAS_HIP=1)
+endif()
+
+target_include_directories(chase_gpu INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/chase_gpu>"
+)
+
+if(TARGET linalg_internal_hip)
+  add_library(chase_hip ALIAS chase_gpu)
+endif()
 
 install(TARGETS chase_gpu
   EXPORT chase_targets

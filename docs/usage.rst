@@ -195,8 +195,8 @@ For GPU version, you can optionally specify the communication backend:
     auto solver = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda.data());
     
     // Using NCCL backend for optimized GPU communication
-    using BackendType = chase::grid::backend::NCCL;
-    auto solver = chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+    using CommBackend = chase::grid::backend::NCCL;
+    auto solver = chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), CommBackend>(
         nev, nex, &Hmat, &Vec, Lambda.data());
 
 **Complete Example: Parallel ChASE with Block-Cyclic Distribution**

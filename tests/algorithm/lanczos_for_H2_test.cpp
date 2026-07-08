@@ -5,8 +5,8 @@
 // https://github.com/ChASE-library/ChASE
 
 #include "algorithm/algorithm.hpp"
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "Impl/chase_cpu/chase_cpu.hpp"
 #ifdef HAS_CUDA
@@ -147,7 +147,7 @@ TEST_F(AlgorithmLanczosForH2Test, LanczosForH2_ReturnsH2Bounds)
             V_[i + j * n_] = T(dist(col_gen), dist(col_gen));
     }
     single.initVecs(false);
-    single.QR(0, 1.0);
+    single.QR(1.0);
 
     Base upperb = 0;
     std::size_t idx = chase::Algorithm<T>::lanczos_for_H2(
@@ -290,7 +290,7 @@ TEST_F(AlgorithmLanczosForH2Test, LanczosForH2_GPU_ReturnsH2Bounds)
             V_[i + j * n_] = T(dist(col_gen), dist(col_gen));
     }
     single.initVecs(false);
-    single.QR(0, 1.0);
+    single.QR(1.0);
 
     Base upperb = 0;
     std::size_t idx = chase::Algorithm<T>::lanczos_for_H2(

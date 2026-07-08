@@ -14,6 +14,8 @@
 #include "algorithm/algorithm.hpp"
 #ifdef HAS_CUDA
 #include "Impl/chase_gpu/chase_gpu.hpp"
+#elif defined(HAS_HIP)
+#include "Impl/chase_gpu/chase_gpu.hpp"
 #endif
 #include "Impl/chase_cpu/chase_cpu.hpp"
 
@@ -194,6 +196,54 @@ TYPED_TEST(ChaseSerialSolveTest, ChaseGPU_Solve_Clement_Converges)
     //check the reiduals with this->V_.data(), this->H_.data(), this->Lambda_.data()
     chase::linalg::internal::cpu::residuals(this->N_, this->H_.data(), this->LDH_, this->nev_, this->Lambda_.data(), this->V_.data(), this->N_, resid);
     //make sure this residuals are below the tolerance. but not empty, as zero for example.
+    for (std::size_t i = 0; i < this->nev_; ++i)
+    {
+        EXPECT_LT(resid[i], tol)
+            << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
+        EXPECT_NE(resid[i], 0)
+            << "resid[" << i << "] = " << resid[i] << " should not be zero";
+    }
+}
+#elif defined(HAS_HIP)
+TYPED_TEST(ChaseSerialSolveTest, ChaseHIP_Solve_Clement_Converges)
+{
+    using T = TypeParam;
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank != 0)
+        return;
+
+    chase::ChaseBase<T>* single = nullptr;
+    chase::Impl::ChASEGPU<T> hip_single(
+        static_cast<std::size_t>(this->N_), this->nev_, this->nex_,
+        this->H_.data(), this->LDH_, this->V_.data(), this->N_,
+        this->Lambda_.data());
+    single = &hip_single;
+
+    auto& config = single->GetConfig();
+    config.SetTol(1e-10);
+    config.SetDeg(16);
+    config.SetOpt(true);
+    config.SetApprox(false);
+    config.SetMaxIter(25);
+
+    ASSERT_NO_THROW(chase::Solve(single));
+
+    chase::Base<T>* resid = single->GetResid();
+    ASSERT_NE(resid, nullptr);
+
+    chase::Base<T> tol = getResidualTolerance<T>();
+    for (std::size_t i = 0; i < std::min(std::size_t(5), this->nev_); ++i)
+    {
+        EXPECT_TRUE(std::isfinite(this->Lambda_[i]))
+            << "Lambda[" << i << "] is not finite";
+        EXPECT_TRUE(std::isfinite(resid[i]))
+            << "resid[" << i << "] is not finite";
+        EXPECT_LT(resid[i], tol)
+            << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
+    }
+
+    chase::linalg::internal::cpu::residuals(this->N_, this->H_.data(), this->LDH_, this->nev_, this->Lambda_.data(), this->V_.data(), this->N_, resid);
     for (std::size_t i = 0; i < this->nev_; ++i)
     {
         EXPECT_LT(resid[i], tol)

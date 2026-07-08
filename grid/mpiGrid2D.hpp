@@ -7,13 +7,25 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
 #include "mpi.h"
 #ifdef HAS_SCALAPACK
-#include "external/scalapackpp/scalapackpp.hpp"
+#include "external/scalapack/scalapackpp/scalapackpp.hpp"
 #endif
-#ifdef HAS_NCCL
+#include "grid/gpu_collective_config.hpp"
+#ifdef CHASE_HAS_GPU_COLLECTIVE
 #include "grid/nccl_utils.hpp"
+#if defined(HAS_NCCL)
 #include <nccl.h>
+#elif defined(HAS_RCCL)
+#include <rccl/rccl.h>
+#endif
+#endif
+#if defined(HAS_NCCL) && !defined(HAS_RCCL)
+#include <cuda_runtime.h>
+#endif
+#if defined(HAS_HIP)
+#include <hip/hip_runtime.h>
 #endif
 
 #ifdef CHASE_OUTPUT
@@ -137,7 +149,7 @@ public:
      * @return GridMajor The grid's major ordering (RowMajor or ColMajor).
      */
     virtual GridMajor getGridMajor() const = 0;
-#ifdef HAS_NCCL
+#ifdef CHASE_HAS_GPU_COLLECTIVE
     /**
      * @brief Returns the NCCL global communicator for the grid.
      * @return MPI_Comm Global communicator.
@@ -210,6 +222,14 @@ public:
             throw std::invalid_argument("Row dimension of 2D MPI grid must be greater than or equal to column dimension");
         }
 
+        MPI_Comm_size(comm_, &nprocs_);
+        MPI_Comm_rank(comm_, &myrank_);
+#if defined(HAS_NCCL) && !defined(HAS_RCCL)
+        bindLocalCudaDevice();
+#elif defined(HAS_HIP)
+        bindLocalHipDevice();
+#endif
+
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
@@ -219,39 +239,6 @@ public:
         }
 #endif        
 
-        MPI_Comm_size(comm_, &nprocs_);
-        MPI_Comm_rank(comm_, &myrank_);
-#ifdef HAS_NCCL
-        MPI_Comm shm_comm_;
-        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
-                            &shm_comm_);
-        int shm_rank_;
-        MPI_Comm_rank(shm_comm_, &shm_rank_);
-        int num_devices = -1;
-        cudaGetDeviceCount(&num_devices);
-        // std::cout << "visible cuda devices = " << num_devices << std::endl;
-        cudaSetDevice(shm_rank_);
-
-#ifdef CHASE_OUTPUT
-        {
-            cudaDeviceProp prop{};
-            cudaGetDeviceProperties(&prop, shm_rank_);
-    
-            std::ostringstream oss;
-            oss << "[GRID] MPI rank " << myrank_
-                << " (node-local rank " << shm_rank_
-                << ") bound to GPU device " << shm_rank_
-                << " out of " << num_devices << " visible devices\n"
-                << "       GPU name: " << prop.name << "\n";
-    
-            chase::GetLogger().Log(chase::LogLevel::Trace,
-                                   "grid",
-                                   oss.str(),
-                                   myrank_);
-        }
-#endif        
-
-#endif
         create2DGrid();
     }
     /**
@@ -265,6 +252,11 @@ public:
         MPI_Comm_size(comm_, &nprocs_);
         MPI_Dims_create(nprocs_, 2, dims_);
         MPI_Comm_rank(comm_, &myrank_);
+#if defined(HAS_NCCL) && !defined(HAS_RCCL)
+        bindLocalCudaDevice();
+#elif defined(HAS_HIP)
+        bindLocalHipDevice();
+#endif
 
 #ifdef CHASE_OUTPUT
         {
@@ -273,38 +265,6 @@ public:
                 << ", cols=" << dims_[1] << ", nprocs=" << nprocs_ << "\n";
             chase::GetLogger().Log(chase::LogLevel::Trace, "grid", oss.str(), myrank_);
         }
-#endif         
-
-#ifdef HAS_NCCL
-        MPI_Comm shm_comm_;
-        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
-                            &shm_comm_);
-        int shm_rank_;
-        MPI_Comm_rank(shm_comm_, &shm_rank_);
-        int num_devices = -1;
-        cudaGetDeviceCount(&num_devices);
-        // std::cout << "visible cuda devices = " << num_devices << std::endl;
-        cudaSetDevice(shm_rank_);
-
-#ifdef CHASE_OUTPUT
-        {
-            cudaDeviceProp prop{};
-            cudaGetDeviceProperties(&prop, shm_rank_);
-    
-            std::ostringstream oss;
-            oss << "[GRID] MPI rank " << myrank_
-                << " (node-local rank " << shm_rank_
-                << ") bound to GPU device " << shm_rank_
-                << " out of " << num_devices << " visible devices\n"
-                << "       GPU name: " << prop.name << "\n";
-    
-            chase::GetLogger().Log(chase::LogLevel::Trace,
-                                   "grid",
-                                   oss.str(),
-                                   myrank_);
-        }
-#endif 
-
 #endif
 
         create2DGrid();
@@ -324,11 +284,14 @@ public:
         {
             MPI_Comm_free(&col_comm_);
         }
-#ifdef HAS_NCCL
-        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_comm_));
-        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_row_comm_));
-        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_col_comm_));
-        MPI_Barrier(comm_);
+#ifdef CHASE_HAS_GPU_COLLECTIVE
+        if (gpu_collective_initialized_)
+        {
+            CHECK_NCCL_ERROR(ncclCommDestroy(nccl_comm_));
+            CHECK_NCCL_ERROR(ncclCommDestroy(nccl_row_comm_));
+            CHECK_NCCL_ERROR(ncclCommDestroy(nccl_col_comm_));
+            MPI_Barrier(comm_);
+        }
 #endif
     }
 
@@ -383,10 +346,22 @@ public:
     int* get_dims() override { return dims_; }
     GridMajor getGridMajor() const override { return MajorOrder; }
 
-#ifdef HAS_NCCL
-    ncclComm_t get_nccl_comm() const override { return nccl_comm_; };
-    ncclComm_t get_nccl_row_comm() const override { return nccl_row_comm_; };
-    ncclComm_t get_nccl_col_comm() const override { return nccl_col_comm_; };
+#ifdef CHASE_HAS_GPU_COLLECTIVE
+    ncclComm_t get_nccl_comm() const override
+    {
+        ensureGpuCollectiveInitialized();
+        return nccl_comm_;
+    };
+    ncclComm_t get_nccl_row_comm() const override
+    {
+        ensureGpuCollectiveInitialized();
+        return nccl_row_comm_;
+    };
+    ncclComm_t get_nccl_col_comm() const override
+    {
+        ensureGpuCollectiveInitialized();
+        return nccl_col_comm_;
+    };
 #endif
 
 #ifdef HAS_SCALAPACK
@@ -396,6 +371,123 @@ public:
 #endif
 
 private:
+#if defined(HAS_NCCL) && !defined(HAS_RCCL)
+    void bindLocalCudaDevice() const
+    {
+        MPI_Comm shm_comm = MPI_COMM_NULL;
+        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
+                            &shm_comm);
+        int shm_rank = 0;
+        MPI_Comm_rank(shm_comm, &shm_rank);
+        MPI_Comm_free(&shm_comm);
+
+        int num_devices = 0;
+        cudaGetDeviceCount(&num_devices);
+        const int device =
+            (num_devices > 0) ? (shm_rank % num_devices) : 0;
+        cudaSetDevice(device);
+
+#ifdef CHASE_OUTPUT
+        {
+            cudaDeviceProp prop{};
+            cudaGetDeviceProperties(&prop, device);
+
+            std::ostringstream oss;
+            oss << "[GRID] MPI rank " << myrank_
+                << " (node-local rank " << shm_rank
+                << ") bound to GPU device " << device << " out of "
+                << num_devices << " visible devices\n"
+                << "       GPU name: " << prop.name << "\n";
+
+            chase::GetLogger().Log(chase::LogLevel::Trace, "grid", oss.str(),
+                                   myrank_);
+        }
+#endif
+    }
+#endif
+#if defined(HAS_HIP)
+    void bindLocalHipDevice() const
+    {
+        MPI_Comm shm_comm = MPI_COMM_NULL;
+        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
+                            &shm_comm);
+        int shm_rank = 0;
+        MPI_Comm_rank(shm_comm, &shm_rank);
+        MPI_Comm_free(&shm_comm);
+
+        int num_devices = 0;
+        if (hipGetDeviceCount(&num_devices) != hipSuccess || num_devices <= 0)
+        {
+            throw std::runtime_error(
+                "MpiGrid2D: no HIP devices visible on this node");
+        }
+
+        const hipError_t rc =
+            hipSetDevice(shm_rank % num_devices);
+        if (rc != hipSuccess)
+        {
+            throw std::runtime_error(
+                "MpiGrid2D: hipSetDevice failed for node-local rank");
+        }
+    }
+#endif
+
+#ifdef CHASE_HAS_GPU_COLLECTIVE
+    void ensureGpuCollectiveInitialized() const
+    {
+        if (gpu_collective_initialized_)
+        {
+            return;
+        }
+
+        ncclUniqueId id;
+        if (myrank_ == 0)
+        {
+            CHECK_NCCL_ERROR(ncclGetUniqueId(&id));
+        }
+        MPI_Bcast((void*)&id, sizeof(id), MPI_BYTE, 0, comm_);
+        CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_comm_, nprocs_, id, myrank_));
+
+        ncclUniqueId nccl_id{};
+        std::vector<ncclUniqueId> nccl_ids(static_cast<std::size_t>(nprocs_));
+        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id));
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
+                      nccl_ids.data(), sizeof(ncclUniqueId), MPI_UINT8_T,
+                      comm_);
+        // nccl row comm
+        for (auto i = 0; i < dims_[0]; i++)
+        {
+            if (coords_[0] == i)
+            {
+                CHECK_NCCL_ERROR(ncclCommInitRank(
+                    &nccl_row_comm_, dims_[1],
+                    nccl_ids[static_cast<std::size_t>(i)], coords_[1]));
+            }
+        }
+
+        // nccl column comm
+        ncclUniqueId nccl_id_2{};
+        std::vector<ncclUniqueId> nccl_ids_2(static_cast<std::size_t>(nprocs_));
+        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id_2));
+        MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
+                      nccl_ids_2.data(), sizeof(ncclUniqueId), MPI_UINT8_T,
+                      comm_);
+
+        for (auto i = 0; i < dims_[1]; i++)
+        {
+            if (coords_[1] == i)
+            {
+                CHECK_NCCL_ERROR(ncclCommInitRank(
+                    &nccl_col_comm_, dims_[0],
+                    nccl_ids_2[static_cast<std::size_t>(i * dims_[0])],
+                    coords_[0]));
+            }
+        }
+
+        gpu_collective_initialized_ = true;
+    }
+#endif
+
     /**
      * @brief Helper function to create a 2D grid with MPI Cartesian topology.
      */
@@ -445,46 +537,6 @@ private:
         MPI_Comm_size(col_comm_, &col_procs_);
 
         MPI_Comm_free(&cartComm);
-#ifdef HAS_NCCL
-        ncclUniqueId id;
-        if (myrank_ == 0)
-        {
-            CHECK_NCCL_ERROR(ncclGetUniqueId(&id));
-        }
-        MPI_Bcast((void*)&id, sizeof(id), MPI_BYTE, 0, comm_);
-        CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_comm_, nprocs_, id, myrank_));
-
-        ncclUniqueId nccl_id, nccl_ids[nprocs_];
-        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id));
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
-                      sizeof(ncclUniqueId), MPI_UINT8_T, comm_);
-        // nccl row comm
-        for (auto i = 0; i < dims_[0]; i++)
-        {
-            if (coords_[0] == i)
-            {
-                CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_row_comm_, dims_[1],
-                                                  nccl_ids[i], coords_[1]));
-            }
-        }
-
-        // nccl column comm
-        ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
-        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id_2));
-        MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm_);
-
-        for (auto i = 0; i < dims_[1]; i++)
-        {
-            if (coords_[1] == i)
-            {
-                CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_col_comm_, dims_[0],
-                                                  nccl_ids_2[i * dims_[0]],
-                                                  coords_[0]));
-            }
-        }
-
-#endif
 
 #ifdef HAS_SCALAPACK
         int one = 1;
@@ -492,7 +544,7 @@ private:
         // instead of relying on the global BLACS system context.
         int ictxt = chase::linalg::scalapackpp::Csys2blacs_handle(comm_);
         colComm1D_ctxt_ = ictxt;
-        int userMap[dims_[0]];
+        std::vector<int> userMap(dims_[0]);
         if (MajorOrder == GridMajor::ColMajor)
         {
             for (int i = 0; i < dims_[0]; i++)
@@ -510,7 +562,7 @@ private:
 
          // 1D column communicator context (dims_[0] x 1 grid) using C BLACS
         chase::linalg::scalapackpp::Cblacs_gridmap(
-                &colComm1D_ctxt_, userMap, dims_[0], dims_[0], 1);
+                &colComm1D_ctxt_, userMap.data(), dims_[0], dims_[0], 1);
 
         // 2D BLACS grid context over the same communicator
         int ictxt_2 = chase::linalg::scalapackpp::Csys2blacs_handle(comm_);
@@ -539,10 +591,11 @@ private:
     int col_procs_;        ///< Number of processes in each column
     int nprocs_;           ///< Total number of processes in the grid
     int myrank_; ///< Rank of the current process within the communicator
-#ifdef HAS_NCCL
-    ncclComm_t nccl_comm_;     ///< NCCL communicator for the grid
-    ncclComm_t nccl_row_comm_; ///< NCCL communicator for row dimension
-    ncclComm_t nccl_col_comm_; ///< NCCL communicator for column dimension
+#ifdef CHASE_HAS_GPU_COLLECTIVE
+    mutable bool gpu_collective_initialized_ = false;
+    mutable ncclComm_t nccl_comm_ = nullptr;     ///< NCCL/RCCL communicator for the grid
+    mutable ncclComm_t nccl_row_comm_ = nullptr; ///< NCCL/RCCL communicator for row dimension
+    mutable ncclComm_t nccl_col_comm_ = nullptr; ///< NCCL/RCCL communicator for column dimension
 #endif
 #ifdef HAS_SCALAPACK
     int comm2D_ctxt_;    ///< ScaLAPACK context for 2D grid

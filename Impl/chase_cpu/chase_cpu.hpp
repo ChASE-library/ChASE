@@ -8,8 +8,8 @@
 
 #include "algorithm/chaseBase.hpp"
 #include "algorithm/types.hpp"
-#include "external/blaspp/blaspp.hpp"
-#include "external/lapackpp/lapackpp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
+#include "external/cpu/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/cpu_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
@@ -326,7 +326,7 @@ public:
                                          Vec2_.ld());
     }
 
-    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+    void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
                       std::size_t n_indices) override
     {
         if (n_indices == 0)
@@ -335,14 +335,14 @@ public:
         std::normal_distribution<> d;
         for (std::size_t c = 0; c < n_indices; ++c)
         {
-            std::size_t j = fixednev + col_indices[c];
+            std::size_t j = base_col + col_indices[c];
             for (auto i = 0; i < Vec1_.rows(); i++)
                 Vec1_.data()[i + j * Vec1_.ld()] =
                     getRandomT<T>([&]() { return d(gen); });
         }
         for (std::size_t c = 0; c < n_indices; ++c)
         {
-            std::size_t j = fixednev + col_indices[c];
+            std::size_t j = base_col + col_indices[c];
             for (auto i = 0; i < Vec2_.rows(); i++)
                 Vec2_.data()[i + j * Vec2_.ld()] = Vec1_.data()[i + j * Vec1_.ld()];
         }
@@ -587,7 +587,7 @@ public:
         }
     }
 
-    void QR(std::size_t fixednev, chase::Base<T> cond) override
+    void QR(chase::Base<T> cond) override
     {
 
         chase::linalg::lapackpp::t_lacpy('A', Vec2_.rows(), locked_,
@@ -598,10 +598,7 @@ public:
                           MatrixType,
                           chase::matrix::PseudoHermitianMatrix<T>>::value)
         {
-            // Symmetric locking: layout [locked_ | active 2*unconverged | locked_]. Save both sides.
-            /*chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
-            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(), Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),
-            Vec2_.ld());*/
+            // Symmetric locking: layout [locked_ | active 2*unconverged | locked_].
 
             //std::size_t col_cpy = std::min(Vec1_.cols() - 2*locked_, locked_);
             
@@ -801,14 +798,8 @@ public:
               chase::Base<T>* resid) override
     {}
 
-    //TODO / TO DO : Remove fixednev. 
-    void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
-              std::size_t fixednev) override
+    void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd) override
     {
-        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        /*std::size_t unconverged = 
-            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));*/
-            
         std::size_t subSize = nevex_ - locked_;
         chase::linalg::internal::cpu::residuals(
             Hmat_->rows(), Hmat_->data(), Hmat_->ld(), subSize,

@@ -4,7 +4,7 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include "external/blaspp/blaspp.hpp"
+#include "external/cpu/blaspp/blaspp.hpp"
 #include "linalg/internal/cpu/lanczos.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/matrix/matrix.hpp"

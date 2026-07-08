@@ -5,7 +5,7 @@
 // https://github.com/ChASE-library/ChASE
 
 #include "linalg/internal/mpi/rayleighRitz.hpp"
-#include "external/scalapackpp/scalapackpp.hpp"
+#include "external/scalapack/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"

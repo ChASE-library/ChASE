@@ -1,7 +1,7 @@
 add_library(chase_cpu INTERFACE)
 
 # Link against linalg libraries
-target_link_libraries(chase_cpu INTERFACE chase_algorithm blaspp lapackpp linalg_internal_cpu matrix)
+target_link_libraries(chase_cpu INTERFACE chase_algorithm chase_cpu_linalg linalg_internal_cpu matrix)
 
 target_include_directories(chase_cpu INTERFACE 
                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

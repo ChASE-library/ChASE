@@ -4,9 +4,10 @@
 ! License is 3-clause BSD:
 ! https://github.com/ChASE-library/ChASE
 !
-! Fortran interface test analogous to chase_serial_solve.cpp:
-! Single-rank Clement matrix, s/d/c/z chase init/solve/finalize.
-! After solve: compute residuals ||H*v_i - lambda_i*v_i|| from stored H, v, lambda;
+! Fortran interface test aligned with the C++ serial integration tests:
+! single-rank pure Clement matrix, s/d/c/z chase init/solve/finalize.
+! Sequence of solves with approximate mode after the first (no matrix perturbation).
+! After the final solve: compute residuals ||H*v_i - lambda_i*v_i|| from stored H, v, lambda;
 ! require residuals < tol and residuals /= 0 (CPU/GPU agnostic).
 
 program main
@@ -16,22 +17,25 @@ program main
 
   implicit none
   integer :: ierr, rank
-  integer :: n, nev, nex, ldh
-  integer :: init, deg, i, j
-  real(real64) :: perturb, tol
+  integer :: n, nev, nex, ldh, idx_max, idx
+  integer :: init
   character :: mode, opt, qr
+  ! Solver settings: single precision uses looser tolerance.
+  integer, parameter :: deg_s = 16
+  integer, parameter :: deg_d = 20
+  real(real32), parameter :: chase_tol_s = 1.0e-4_real32
+  real(real64), parameter :: chase_tol_d = 1.0e-8_real64
   ! Residual check tolerances (match getResidualTolerance: single 1e-3, double 1e-8)
   real(real32), parameter :: resid_tol_s = 1.0e-3_real32
   real(real64), parameter :: resid_tol_d = 1.0e-8_real64
 
-  ! Test parameters (match chase_serial_solve.cpp)
+  ! Keep this as a stable Fortran interface smoke test.  The heavier Clement
+  ! cases are covered by the C++ integration tests and examples.
   n = 256
   ldh = n
   nev = 24
   nex = 16
-  perturb = 1.0e-6_real64
-  tol = 1.0e-10_real64
-  deg = 16
+  idx_max = 2
   mode = 'R'
   opt = 'S'
   qr = 'C'
@@ -58,15 +62,16 @@ contains
   subroutine test_schase()
     real(real32), allocatable :: h(:,:), v(:,:), resid(:)
     real(real32), allocatable :: ritzv(:)
-    integer :: seed(8)
-    seed = 42
-    call random_seed(put=seed)
     allocate(h(ldh, n), v(n, nev+nex), ritzv(nev+nex), resid(nev))
-    call build_clement_real_s(h, ldh, n, perturb)
+    call build_clement_real_s(h, ldh, n)
     v = 0.0_real32
     ritzv = 0.0_real32
     call schase_init(n, nev, nex, h, ldh, v, ritzv, init)
-    call schase(deg, real(tol, real32), mode, opt, qr)
+    mode = 'R'
+    do idx = 1, idx_max
+      call schase(deg_s, chase_tol_s, mode, opt, qr)
+      if (idx < idx_max) mode = 'A'
+    end do
     call check_ritz_finite_s(ritzv, nev)
     call compute_residuals_s(n, ldh, h, nev, v, n, ritzv, resid)
     call check_residuals_s(nev, resid, resid_tol_s)
@@ -77,15 +82,16 @@ contains
   subroutine test_dchase()
     real(real64), allocatable :: h(:,:), v(:,:), resid(:)
     real(real64), allocatable :: ritzv(:)
-    integer :: seed(8)
-    seed = 42
-    call random_seed(put=seed)
     allocate(h(ldh, n), v(n, nev+nex), ritzv(nev+nex), resid(nev))
-    call build_clement_real_d(h, ldh, n, perturb)
+    call build_clement_real_d(h, ldh, n)
     v = 0.0_real64
     ritzv = 0.0_real64
     call dchase_init(n, nev, nex, h, ldh, v, ritzv, init)
-    call dchase(deg, tol, mode, opt, qr)
+    mode = 'R'
+    do idx = 1, idx_max
+      call dchase(deg_d, chase_tol_d, mode, opt, qr)
+      if (idx < idx_max) mode = 'A'
+    end do
     call check_ritz_finite_d(ritzv, nev)
     call compute_residuals_d(n, ldh, h, nev, v, n, ritzv, resid)
     call check_residuals_d(nev, resid, resid_tol_d)
@@ -96,15 +102,16 @@ contains
   subroutine test_cchase()
     complex(real32), allocatable :: h(:,:), v(:,:)
     real(real32), allocatable :: ritzv(:), resid(:)
-    integer :: seed(8)
-    seed = 42
-    call random_seed(put=seed)
     allocate(h(ldh, n), v(n, nev+nex), ritzv(nev+nex), resid(nev))
-    call build_clement_cmplx_s(h, ldh, n, real(perturb, real32))
+    call build_clement_cmplx_s(h, ldh, n)
     v = (0.0_real32, 0.0_real32)
     ritzv = 0.0_real32
     call cchase_init(n, nev, nex, h, ldh, v, ritzv, init)
-    call cchase(deg, real(tol, real32), mode, opt, qr)
+    mode = 'R'
+    do idx = 1, idx_max
+      call cchase(deg_s, chase_tol_s, mode, opt, qr)
+      if (idx < idx_max) mode = 'A'
+    end do
     call check_ritz_finite_s(ritzv, nev)
     call compute_residuals_c(n, ldh, h, nev, v, n, ritzv, resid)
     call check_residuals_s(nev, resid, resid_tol_s)
@@ -115,15 +122,16 @@ contains
   subroutine test_zchase()
     complex(real64), allocatable :: h(:,:), v(:,:)
     real(real64), allocatable :: ritzv(:), resid(:)
-    integer :: seed(8)
-    seed = 42
-    call random_seed(put=seed)
     allocate(h(ldh, n), v(n, nev+nex), ritzv(nev+nex), resid(nev))
-    call build_clement_cmplx_d(h, ldh, n, perturb)
+    call build_clement_cmplx_d(h, ldh, n)
     v = (0.0_real64, 0.0_real64)
     ritzv = 0.0_real64
     call zchase_init(n, nev, nex, h, ldh, v, ritzv, init)
-    call zchase(deg, tol, mode, opt, qr)
+    mode = 'R'
+    do idx = 1, idx_max
+      call zchase(deg_d, chase_tol_d, mode, opt, qr)
+      if (idx < idx_max) mode = 'A'
+    end do
     call check_ritz_finite_d(ritzv, nev)
     call compute_residuals_z(n, ldh, h, nev, v, n, ritzv, resid)
     call check_residuals_d(nev, resid, resid_tol_d)
@@ -131,13 +139,10 @@ contains
     deallocate(h, v, ritzv, resid)
   end subroutine test_zchase
 
-  subroutine build_clement_real_s(h, ldh, n, perturb)
+  subroutine build_clement_real_s(h, ldh, n)
     integer, intent(in) :: ldh, n
     real(real32), intent(inout) :: h(ldh, n)
-    real(real64), intent(in) :: perturb
-    integer :: i, j
-    real(real32) :: ep
-    real(real64) :: rn
+    integer :: i
     h = 0.0_real32
     do i = 1, n
       h(i, i) = 0.0_real32
@@ -146,22 +151,12 @@ contains
         h(i, i+1) = h(i+1, i)
       end if
     end do
-    do i = 2, n
-      do j = 1, i-1
-        call random_normal(rn)
-        ep = real(rn * perturb, real32)
-        h(j, i) = h(j, i) + ep
-        h(i, j) = h(i, j) + ep
-      end do
-    end do
   end subroutine build_clement_real_s
 
-  subroutine build_clement_real_d(h, ldh, n, perturb)
+  subroutine build_clement_real_d(h, ldh, n)
     integer, intent(in) :: ldh, n
     real(real64), intent(inout) :: h(ldh, n)
-    real(real64), intent(in) :: perturb
-    integer :: i, j
-    real(real64) :: ep, rn
+    integer :: i
     h = 0.0_real64
     do i = 1, n
       h(i, i) = 0.0_real64
@@ -170,77 +165,39 @@ contains
         h(i, i+1) = h(i+1, i)
       end if
     end do
-    do i = 2, n
-      do j = 1, i-1
-        call random_normal(rn)
-        ep = rn * perturb
-        h(j, i) = h(j, i) + ep
-        h(i, j) = h(i, j) + ep
-      end do
-    end do
   end subroutine build_clement_real_d
 
-  subroutine build_clement_cmplx_s(h, ldh, n, perturb)
+  subroutine build_clement_cmplx_s(h, ldh, n)
     integer, intent(in) :: ldh, n
     complex(real32), intent(inout) :: h(ldh, n)
-    real(real32), intent(in) :: perturb
-    integer :: i, j
-    complex(real32) :: ep
-    real(real64) :: rn1, rn2
+    integer :: i
+    real(real64) :: tmp
     h = (0.0_real32, 0.0_real32)
     do i = 1, n
       h(i, i) = (0.0_real32, 0.0_real32)
       if (i < n) then
-        h(i+1, i) = cmplx(sqrt(real(i*(n+1-i), real64)), 0.0_real64, real32)
+        tmp = real(i*(n+1-i), real64)
+        h(i+1, i) = cmplx(sqrt(tmp), 0.0_real64, real32)
         h(i, i+1) = h(i+1, i)
       end if
     end do
-    do i = 2, n
-      do j = 1, i-1
-        call random_normal(rn1)
-        call random_normal(rn2)
-        ep = cmplx(real(rn1*perturb, real32), real(rn2*perturb, real32), real32)
-        h(j, i) = h(j, i) + ep
-        h(i, j) = h(i, j) + conjg(ep)
-      end do
-    end do
   end subroutine build_clement_cmplx_s
 
-  subroutine build_clement_cmplx_d(h, ldh, n, perturb)
+  subroutine build_clement_cmplx_d(h, ldh, n)
     integer, intent(in) :: ldh, n
     complex(real64), intent(inout) :: h(ldh, n)
-    real(real64), intent(in) :: perturb
-    integer :: i, j
-    complex(real64) :: ep
-    real(real64) :: rn1, rn2
+    integer :: i
+    real(real64) :: tmp
     h = (0.0_real64, 0.0_real64)
     do i = 1, n
       h(i, i) = (0.0_real64, 0.0_real64)
       if (i < n) then
-        h(i+1, i) = cmplx(sqrt(real(i*(n+1-i), real64)), 0.0_real64, real64)
+        tmp = real(i*(n+1-i), real64)
+        h(i+1, i) = cmplx(sqrt(tmp), 0.0_real64, real64)
         h(i, i+1) = h(i+1, i)
       end if
     end do
-    do i = 2, n
-      do j = 1, i-1
-        call random_normal(rn1)
-        call random_normal(rn2)
-        ep = cmplx(rn1*perturb, rn2*perturb, real64)
-        h(j, i) = h(j, i) + ep
-        h(i, j) = h(i, j) + conjg(ep)
-      end do
-    end do
   end subroutine build_clement_cmplx_d
-
-  subroutine random_normal(randn)
-    real(real64), intent(out) :: randn
-    real(real64) :: u1, u2, pi
-    pi = 3.14159265358979323846_real64
-    call random_number(u1)
-    call random_number(u2)
-    if (u1 <= 0.0_real64) u1 = 1.0_real64
-    randn = sqrt(-2.0_real64*log(u1)) * cos(2.0_real64*pi*u2)
-  end subroutine random_normal
 
   ! Compute residuals resid(i) = || H*v_i - lambda_i*v_i ||_2 (same as C++ residuals())
   subroutine compute_residuals_s(n, ldh, h, nev, v, ldv, ritzv, resid)

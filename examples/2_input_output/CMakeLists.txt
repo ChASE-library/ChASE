@@ -30,12 +30,12 @@ if(POPL_FOUND)
     add_executable( "2_input_output_mgpu" "2_input_output.cpp")
     target_link_libraries( "2_input_output_mgpu" PRIVATE pchase_gpu )
     target_include_directories( "2_input_output_mgpu" PRIVATE ${POPL_INCLUDE_DIR})
-    target_compile_definitions( "2_input_output_mgpu" PRIVATE PRINT_EIGENVALUES=1)
+    target_compile_definitions( "2_input_output_mgpu" PRIVATE PRINT_EIGENVALUES=1 USE_MPI=1)
 
     add_executable( "2_input_output_blockcyclic_mgpu" "2_input_output.cpp")
     target_link_libraries( "2_input_output_blockcyclic_mgpu" PRIVATE pchase_gpu )
     target_include_directories( "2_input_output_blockcyclic_mgpu" PRIVATE ${POPL_INCLUDE_DIR})
-    target_compile_definitions( "2_input_output_blockcyclic_mgpu" PRIVATE PRINT_EIGENVALUES=1 USE_BLOCKCYCLIC=1)
+    target_compile_definitions( "2_input_output_blockcyclic_mgpu" PRIVATE PRINT_EIGENVALUES=1 USE_MPI=1 USE_BLOCKCYCLIC=1)
 
   endif()
 

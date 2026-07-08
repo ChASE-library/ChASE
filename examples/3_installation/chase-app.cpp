@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     //    mpi_grid);
 
     T* Clement_data;
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
     Clement.allocate_cpu_data();
     Hmat.allocate_cpu_data();
     Vec.allocate_cpu_data();
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
         if (i != N - 1)
             Clement_data[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_HIP) || defined(HAS_NCCL)
     auto single = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());

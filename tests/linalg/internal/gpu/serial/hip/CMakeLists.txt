@@ -1,0 +1,7 @@
+setup_test_serial(hipKernelsSmokeHIPTest hip_kernels_smoke.cpp LIBRARIES chase_hip_kernels chase_hip)
+setup_test_serial(cholqrHIPTest cholqr.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)
+setup_test_serial(rayleighRitzHIPTest rayleighRitz.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)
+setup_test_serial(residualsMatrixHIPTest residuals_matrix.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)
+setup_test_serial(lanczosHIPTest lanczos.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)
+setup_test_serial(PseudoHermitianLanczosHIPTest pseudo_hermitian_lanczos.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)
+setup_test_serial(PseudoHermitianRayleighRitzHIPTest pseudo_hermitian_rayleighRitz.cpp LIBRARIES chase_hip chase_cpu chase_amd_gpu_linalg)

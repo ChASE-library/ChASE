@@ -27,3 +27,6 @@ __pycache__/
 migrate_worktree/
 deploy_worktree/
 fix_worktree/
+
+# Frontier incremental patch files (local apply helpers)
+frontier_*.patch
