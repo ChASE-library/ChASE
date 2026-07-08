@@ -6,10 +6,11 @@ ChASE is a modern C++ library for solving dense eigenvalue problems. The library
 provides multiple implementation variants to support different computing
 architectures and problem types. ChASE can be installed with minimal dependencies
 (BLAS, LAPACK) for sequential execution, or with MPI/ScaLAPACK for parallel
-execution on distributed systems. The library also supports NVIDIA GPU
-acceleration with CUDA, cuBLAS, and cuSOLVER, and distributed GPU execution
-using NCCL (NVIDIA Collective Communications Library) for optimized multi-GPU
-communication.
+execution on distributed systems. The library supports GPU acceleration on both
+NVIDIA and AMD platforms. On NVIDIA systems, ChASE uses CUDA, cuBLAS, and
+cuSOLVER, and supports distributed GPU execution via NCCL. On AMD/ROCm systems,
+ChASE uses HIP-based backends and supports distributed GPU communication through
+RCCL or MPI-based collectives.
 
 Implementation Variants
 =======================
@@ -27,10 +28,10 @@ Sequential Implementations
      pseudo-Hermitian matrices.
 
    * **ChASEGPU** (``chase::Impl::ChASEGPU``): Sequential GPU implementation
-     for single-GPU execution with GPU acceleration. This configuration
-     offloads computations to GPU using CUDA, cuBLAS, and cuSOLVER libraries.
-     Ideal for systems with one GPU cards, supporting both Hermitian
-     and pseudo-Hermitian matrices.
+     for single-GPU execution with GPU acceleration. Depending on the build
+     backend, it uses CUDA libraries on NVIDIA systems or HIP libraries on
+     AMD/ROCm systems. It supports both Hermitian and pseudo-Hermitian
+     matrices.
 
 Parallel Implementations
 ------------------------
@@ -42,11 +43,10 @@ Parallel Implementations
      domain and OpenMP threads for intra-node parallelism.
 
    * **pChASEGPU** (``chase::Impl::pChASEGPU``): Parallel GPU implementation
-     using MPI or NCCL for distributed-memory systems with GPU acceleration.
-     This configuration supports both MPI (with CUDA-aware MPI) and NCCL
-     backends for inter-node GPU communication. Currently supports one GPU
-     card per MPI rank. Ideal for heterogeneous computing clusters with
-     multiple GPU nodes.
+     for distributed-memory systems with GPU acceleration. Supported
+     communication backends include MPI and NCCL on NVIDIA platforms, and MPI
+     and RCCL on AMD/ROCm platforms. Current usage is one GPU per MPI rank.
+     This configuration is suitable for heterogeneous multi-GPU clusters.
 
 Matrix Types
 ============
@@ -192,11 +192,10 @@ Backend Communication
 For parallel GPU implementations, ChASE supports multiple communication backends:
 
    * **MPI Backend** (``chase::grid::backend::MPI``): Standard MPI
-     communication, with support for CUDA-aware MPI when available. This
-     backend is suitable for systems with standard MPI installations and
-     provides good performance for inter-node communication.
+     communication, with support for CUDA-aware or HIP-aware MPI where
+     available. This backend is suitable for systems with standard MPI
+     installations and provides good inter-node communication performance.
 
-   * **NCCL Backend** (``chase::grid::backend::NCCL``): NVIDIA Collective
-     Communications Library for optimized GPU-to-GPU communication. This
-     backend provides superior performance for multi-GPU systems, especially
-     on systems with high-speed interconnects like NVLink or InfiniBand.
+   * **NCCL/RCCL Backend** (``chase::grid::backend::NCCL``): GPU collective
+     communication backend. It maps to NCCL on NVIDIA platforms and RCCL on
+     AMD/ROCm platforms when enabled in the build configuration.

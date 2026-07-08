@@ -23,7 +23,6 @@ ChASE's Documentation
    parameters
    module
    example
-..   output
 
 .. toctree::
    :maxdepth: 2

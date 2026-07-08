@@ -20,6 +20,9 @@ The ChASE library is organized into the following main components:
 * **Configuration**: ``chase::ChaseConfig<T>`` for parameter setup
 * **Solve Function**: ``chase::Solve()`` for executing the eigensolver
 
+The matrix classes also accept an optional allocator template parameter. Most users can
+use the defaults shown in this guide.
+
 All implementations share a uniform interface for solving, parameter configuration,
 and performance decoration.
 
@@ -29,8 +32,8 @@ Sequential ChASE (Shared-Memory)
 Sequential implementations of ChASE are designed for single-node execution and can
 be built with or without GPU support.
 
-Include Headers
-^^^^^^^^^^^^^^^^^^^^^^^
+Include Headers (Sequential)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For **CPU-only** sequential ChASE, include:
 
@@ -44,8 +47,8 @@ For **GPU** sequential ChASE, include:
 
     #include "Impl/chase_gpu/chase_gpu.hpp"
 
-Creating the Solver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating the Solver (Sequential)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The sequential ChASE solvers can be constructed in two ways:
 
@@ -90,14 +93,14 @@ for pseudo-Hermitian problems:
         N, nev, nex, Hmat, V.data(), N, Lambda.data());
 
 Parallel ChASE (Distributed-Memory)
-----------------------------------
+-----------------------------------
 
 Parallel implementations of ChASE use MPI for distributed-memory execution and can
 be built with or without GPU support. They support multiple matrix distribution
 schemes (Block, Block-Cyclic, Redundant).
 
-Include Headers
-^^^^^^^^^^^^^^^^^^^^^^^
+Include Headers (Parallel)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For **CPU-only** parallel ChASE, include:
 
@@ -187,14 +190,16 @@ Creating the Solver
 
 **GPU Version (pChASEGPU)**
 
-For GPU version, you can optionally specify the communication backend:
+For GPU version, you can optionally specify the communication backend. On
+NVIDIA builds this backend uses NCCL collectives. On AMD/ROCm builds, the same
+backend type is backed by RCCL when available.
 
 .. code-block:: c++
 
     // Using MPI backend (default)
     auto solver = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda.data());
     
-    // Using NCCL backend for optimized GPU communication
+    // Using NCCL/RCCL backend for optimized GPU communication
     using CommBackend = chase::grid::backend::NCCL;
     auto solver = chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), CommBackend>(
         nev, nex, &Hmat, &Vec, Lambda.data());
@@ -275,7 +280,7 @@ which returns a reference to a ``chase::ChaseConfig<T>`` object.
     
     // Additional parameters (optional)
     config.SetMaxDeg(36);              // Maximum degree of Chebyshev filter
-    config.SetLanczosIter(26);         // Number of Lanczos iterations
+    config.SetLanczosIter(25);         // Number of Lanczos iterations
     config.SetNumLanczos(4);            // Number of stochastic vectors for spectral estimates
 
 All implementations (ChASECPU, ChASEGPU, pChASECPU, pChASEGPU) share the same
@@ -418,7 +423,7 @@ where ``chase::Base<T>`` represents the base type of the scalar type ``T``:
     }
 
 I/O for Distributed Matrices
-----
+----------------------------
 
 ChASE itself doesn't provide parallel I/O functions to load large matrices from
 binary files. For most applications, the matrix is already well-distributed by the
@@ -445,7 +450,7 @@ For distributed matrices, you can access local data using:
     T* gpu_data = Hmat.gpu_data();
 
 Matrix Redistribution
-""""""""""""""""""""""""""
+---------------------
 
 ChASE provides a ``redistributeImpl()`` method to redistribute matrices between
 different distribution schemes:
@@ -606,17 +611,16 @@ Both C and Fortran interfaces of ChASE provide 3 versions of utilization:
 .. note::
   The naming logic of the interface functions:
 
-    - For the names of all functions for distributed memory ChASE, they start with
-      a prefix ``p``, following the same naming convention as ScaLAPACK.
-    - For **Block** and **Block-Cyclic** data layouts:
-      - They share the same interface for **Solving** and **Finalization** steps
-      - But use different interfaces for the **Initialization** step. For
-        **Block-Cyclic** data layout, the related **Initialization function** ends
-        with the suffix ``blockcyclic``.
-    - The Fortran interfaces are implemented based on ``iso_c_binding``, a standard
-      intrinsic module which defines named constants, types, and procedures for
-      inter-operation with C functions. C and Fortran functions share the same names.
-      Additionally, unlike the Fortran routines, C functions have a suffix ``_``.
+  - For the names of all functions for distributed memory ChASE, they start with
+    a prefix ``p``, following the same naming convention as ScaLAPACK.
+  - For **Block** and **Block-Cyclic** data layouts, they share the same
+    interface for **Solving** and **Finalization** steps but use different
+    interfaces for **Initialization**. For **Block-Cyclic** data layout, the
+    related initialization function ends with the suffix ``blockcyclic``.
+  - The Fortran interfaces are implemented based on ``iso_c_binding``, a standard
+    intrinsic module which defines named constants, types, and procedures for
+    inter-operation with C functions. C and Fortran functions share the same names.
+    Additionally, unlike the Fortran routines, C functions have a suffix ``_``.
 
 Different scalar types are also supported by the interfaces of ChASE. We use
 abbreviations ``<x>`` for the corresponding short type to make a more concise and
@@ -658,6 +662,27 @@ Initialization Functions
 ChASE is initialized with the buffers ``h``, ``v``, ``ritzv``, which should be
 allocated externally by users. These buffers will be re-used when a sequence of
 eigenproblems are to be solved.
+
+.. note::
+  Internal-workspace variants are also available with suffix ``_internal`` (for
+  example ``dchase_init_internal_`` and ``pzchase_init_blockcyclic_internal_``).
+  These variants let ChASE allocate and manage internal eigenvector/eigenvalue
+  buffers, and are useful when the application does not need to provide ``v``
+  and ``ritzv`` at initialization time.
+
+  Fortran also provides matching internal initializers through the same generic
+  interfaces, for example:
+
+  .. code-block:: Fortran
+
+    subroutine dchase_init_internal(n, nev, nex, h, ldh, init)
+    subroutine schase_init_internal(n, nev, nex, h, ldh, init)
+    subroutine cchase_init_internal(n, nev, nex, h, ldh, init)
+    subroutine zchase_init_internal(n, nev, nex, h, ldh, init)
+    subroutine pdchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init)
+    subroutine pschase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init)
+    subroutine pcchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init)
+    subroutine pzchase_init_internal(nn, nev, nex, m, n, h, ldh, dim0, dim1, grid_major, fcomm, init)
 
 The APIs for the C interfaces are as follows:
 
@@ -1276,6 +1301,53 @@ For sequential/single-GPU interfaces, convenience aliases are provided:
   subroutine  cchase_readHam (filename)
   subroutine  zchase_readHam (filename)
 
+Extracting Eigenpairs from Internal Buffers
+-------------------------------------------
+
+When an ``*_init_internal`` initializer is used, ChASE stores eigenpairs in
+internally managed buffers. After solve, they can be copied out through:
+
+.. code-block:: C
+
+  void dchase_get_eigenpairs_(double* LEigsV, int* ld, double* ritzv);
+  void schase_get_eigenpairs_(float* LEigsV, int* ld, float* ritzv);
+  void cchase_get_eigenpairs_(float _Complex* LEigsV, int* ld, float* ritzv);
+  void zchase_get_eigenpairs_(double _Complex* LEigsV, int* ld, double* ritzv);
+  void pdchase_get_eigenpairs_(double* LEigsV, int* ld, double* ritzv);
+  void pschase_get_eigenpairs_(float* LEigsV, int* ld, float* ritzv);
+  void pcchase_get_eigenpairs_(float _Complex* LEigsV, int* ld, float* ritzv);
+  void pzchase_get_eigenpairs_(double _Complex* LEigsV, int* ld, double* ritzv);
+
+Fortran wrappers are also available:
+
+.. code-block:: Fortran
+
+  subroutine dchase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine schase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine cchase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine zchase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine pdchase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine pschase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine pcchase_get_eigenpairs(LEigsV, ld, ritzv)
+  subroutine pzchase_get_eigenpairs(LEigsV, ld, ritzv)
+
+Build and Backend Query Functions
+---------------------------------
+
+The C interface also provides utility functions to query ChASE build
+capabilities at runtime:
+
+.. code-block:: C
+
+  void chase_get_version_(char* version, int* len);
+  void chase_has_cuda_(int* flag);
+  void chase_has_hip_(int* flag);
+  void chase_has_nccl_(int* flag);
+  void chase_has_rccl_(int* flag);
+  void chase_has_scalapack_(int* flag);
+  void chase_has_mpi_(int* flag);
+  void chase_print_config_();
+
 Unified Configuration Setter Functions
 ---------------------------------------
 
@@ -1557,14 +1629,14 @@ Example of C interface
 .. code-block:: C
 
   #include <mpi.h>
-  #include "chase_c.h"  // Include ChASE C interface header
+  #include "chase_c_interface.h"  // Include ChASE C interface header
   
   void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                      double _Complex* H, int* ldh, double _Complex* V,
                      double* ritzv, int* dim0, int* dim1, char* grid_major,
                      MPI_Comm* comm, int* init);
   void pzchase_finalize_(int* flag);
-  void pzchase_(int* deg, double* tol, char* mode, char* opt);
+  void pzchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
 
   int main(int argc, char** argv)
   {

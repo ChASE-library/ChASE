@@ -28,7 +28,7 @@ It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout v1.6.0
+    git checkout v1.7.0
 
 
 Dependencies
@@ -44,9 +44,10 @@ ChASE has the following dependencies:
 
 **Optional Dependencies:**
    * `MPI <http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).
-   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Required only for GPU implementations (ChASEGPU, pChASEGPU)
+   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)
+   * `ROCm/HIP <https://rocm.docs.amd.com>`__ - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)
    * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
-   * `NCCL <https://developer.nvidia.com/nccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+   * `NCCL <https://developer.nvidia.com/nccl>`__ or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU
 
 Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required. 
 
@@ -187,7 +188,7 @@ ChASE can be built for different configurations depending on your needs:
 
 **Sequential Build (Single Node)**
    For sequential execution on a single node, you only need BLAS and LAPACK.
-   MPI is not required. This will build ChASECPU (and ChASEGPU if CUDA is available).
+   MPI is not required. This will build ChASECPU (and ChASEGPU if CUDA or HIP is available).
 
 .. code-block:: sh
       
@@ -199,7 +200,7 @@ ChASE can be built for different configurations depending on your needs:
 
 **Parallel Build (Multi-Node)**
    For parallel execution across multiple nodes, MPI is required. This will
-   build pChASECPU (and pChASEGPU if CUDA is available).
+   build pChASECPU (and pChASEGPU if CUDA or HIP is available).
 
 .. code-block:: sh
       
@@ -212,7 +213,7 @@ ChASE can be built for different configurations depending on your needs:
 In the commands above, the variable ``${ChASEROOT}`` is the path to install
 ChASE on your system. CMake will auto-detect the dependencies and select the
 default installed modules. If MPI is found, parallel implementations will be
-built automatically. If CUDA is found, GPU implementations will be built
+built automatically. If CUDA or HIP is found, GPU implementations will be built
 automatically.
 
 In order to select a specific module installation, especially when multiple
@@ -244,6 +245,27 @@ Accelerate, one could execute the following command:
 
 .. note::
    If you want to try with ChASE or use ChASE as standalone eigensolver, the CMake flag ``-DCMAKE_INSTALL_PREFIX=${ChASEROOT}`` is not mandatory. 
+
+Building Documentation
+----------------------
+
+To build the Sphinx and API documentation locally, configure ChASE with the
+documentation option enabled:
+
+.. code-block:: sh
+
+    cd ChASE/
+    mkdir build
+    cd build/
+    cmake .. -DCHASE_BUILD_WITH_DOCS=ON
+    make
+
+Documentation is generated under ``build/sphinx/html``. You can also use the
+helper script:
+
+.. code-block:: sh
+
+    ./scripts/build_docs.sh
 
 Quick Hands-on by Examples
 ------------------------------
@@ -312,23 +334,3 @@ For sake of completeness we provide a complete list of parameters in this exampl
 .. note::
   For a complete explanation of all the examples, please visit :ref:`examples-chase`.
 
-
-
-
-
-
-..
-   note:: Some LOOSE suggestions for sections and content (SEBASTIAN)
-
-   * A driver for the reference implementation
-
-     * Snippets of code
-     * Link to a driver in the repository
-
-   * A driver for the MPI (Elemental) implementation
-
-     * Snippets of code
-     * Link to a driver in the repository
-
-   * Examples of usage
-   * Regression system: Boost

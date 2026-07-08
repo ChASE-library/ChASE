@@ -6,7 +6,7 @@
 
 The **Ch**ebyshev **A**ccelerated **S**ubspace **E**igensolver (ChASE) is a modern and scalable library based on subspace iteration with polynomial acceleration to solve dense Hermitian (Symmetric) and pseudo-Hermitian algebraic eigenvalue problems, especially solving dense eigenproblems arranged in a sequence. Novel to ChASE is the computation of the spectral estimates that enter in the filter and an optimization of the polynomial degree that further reduces the necessary floating-point operations. 
 
-ChASE is written in C++ using the modern software engineering concepts that favor a simple integration in application codes and a straightforward portability over heterogeneous platforms. When solving sequences of eigenproblems for a portion of their extremal spectrum, ChASE greatly benefits from the sequence's spectral properties and outperforms direct solvers in many scenarios. The library ships with multiple parallelization schemes, supports NVIDIA GPU acceleration with CUDA, cuBLAS, and cuSOLVER, and distributed GPU execution using NCCL (NVIDIA Collective Communications Library) for optimized multi-GPU communication. ChASE is easily extensible to other parallel computing architectures.
+ChASE is written in C++ using the modern software engineering concepts that favor a simple integration in application codes and a straightforward portability over heterogeneous platforms. When solving sequences of eigenproblems for a portion of their extremal spectrum, ChASE greatly benefits from the sequence's spectral properties and outperforms direct solvers in many scenarios. The library ships with multiple parallelization schemes and supports GPU acceleration on both NVIDIA (CUDA, cuBLAS, cuSOLVER, NCCL) and AMD/ROCm systems (HIP with RCCL/MPI collectives). ChASE is easily extensible to other parallel computing architectures.
 
 ## Use Case and Features
 
@@ -25,9 +25,9 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 ChASE supports different builds for different systems with different architectures:
    - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single GPU. 
    - **MPI+Threads build:** On multi-core homogeneous CPU clusters, ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per NUMA domain and as many threads as number of available cores per NUMA domain.
-   - **Multi-GPU build:** ChASE can be configured to take advantage of NVIDIA GPUs on heterogeneous computing clusters with CUDA, cuBLAS, and cuSOLVER. Currently we support the use of one GPU per MPI rank. Multiple-GPU per computing node can be used when MPI rank number per node equals to the GPU number per node. 
-      - **NCCL Backend:** by default, ChASE uses **[NCCL](https://developer.nvidia.com/nccl)** (NVIDIA Collective Communications Library) as backend for optimized collective communications across different GPUs.
-      - **CUDA-Aware MPI Backend**: alternatively, CUDA-Aware MPI can be used for the communications.
+   - **Multi-GPU build:** ChASE can be configured to take advantage of NVIDIA GPUs (CUDA) and AMD GPUs (ROCm/HIP) on heterogeneous computing clusters. Currently we support the use of one GPU per MPI rank. Multiple GPUs per computing node can be used when MPI rank number per node equals the GPU number per node.
+      - **NCCL/RCCL Backend:** ChASE uses **[NCCL](https://developer.nvidia.com/nccl)** on NVIDIA systems and RCCL on AMD/ROCm systems when GPU collectives are enabled.
+      - **GPU-aware MPI Backend**: alternatively, CUDA-aware or HIP-aware MPI can be used for communications.
 
 ## Supported Data types 
    
@@ -61,7 +61,7 @@ sudo port select --set mpi openmpi-mp-fortran #Set installed MPI as MPI compiler
 
 ```bash
 git clone https://github.com/ChASE-library/ChASE #cloning the ChASE repository
-git checkout v1.0.0 #it is recommended to check out the latest stable tag.
+git checkout v1.7.0 #it is recommended to check out the latest stable tag.
 ```
 
 ### Building and Installing the ChASE library
@@ -74,20 +74,28 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
 make install
 ```
 
-More details about the installation on both local machine and clusters, please refer to [User Documentation](https://chase-library.github.io/ChASE/quick-start.html) (⚠️**To be updated**).
-
-<!-- a normal html comment 
+More details about installation on local machines and clusters are available in the [User Documentation](https://chase-library.github.io/ChASE/quick-start.html).
 
 ## Documentation
 
 The documentation of ChASE is available [online](https://chase-library.github.io/ChASE/index.html).
 
-Compiling the documentation in local requires  enable `-DBUILD_WITH_DOCS=ON` flag when compiling ChASE library:
+To build the documentation locally:
 
 ```bash
-cmake .. -DBUILD_WITH_DOCS=ON
+cd ChASE/
+mkdir build
+cd build/
+cmake .. -DCHASE_BUILD_WITH_DOCS=ON
+make
 ```
--->
+
+The generated HTML documentation is available under `build/sphinx/html`.
+You can also use:
+
+```bash
+./scripts/build_docs.sh
+```
 ## Examples
 
 Multiple examples are provided, which helps user get familiar with ChASE. 
@@ -189,13 +197,14 @@ All active development happens on GitLab, while GitHub serves as a mirror reposi
 
 ## How to Cite the Code
 
-The main reference of ChASE is [1] while [2] provides some early results on scalability and usage on sequences of eigenproblems generated by Materials Science applications. [3] and [4] provide the distributed-memory multi-GPU implementation and performance analysis. [5] describes the extension to pseudo-Hermitian eigenvalue problems.
+The main reference of ChASE is [1] while [2] provides some early results on scalability and usage on sequences of eigenproblems generated by Materials Science applications. [3] and [4] provide the distributed-memory multi-GPU implementation and performance analysis. [5] describes the extension to pseudo-Hermitian eigenvalue problems. [6] presents dynamic switching of QR methods based on a cheap condition-number estimate of filtered vectors.
 
 - [1] J. Winkelmann, P. Springer, and E. Di Napoli. *ChASE: a Chebyshev Accelerated Subspace iteration Eigensolver for sequences of Hermitian eigenvalue problems.* ACM Transaction on Mathematical Software, **45** Num.2, Art.21, (2019). [DOI:10.1145/3313828](https://doi.org/10.1145/3313828) , [[arXiv:1805.10121](https://arxiv.org/abs/1805.10121/) ]
 - [2] M. Berljafa, D. Wortmann, and E. Di Napoli. *An Optimized and Scalable Eigensolver for Sequences of Eigenvalue Problems.* Concurrency & Computation: Practice and Experience **27** (2015), pp. 905-922. [DOI:10.1002/cpe.3394](https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3394) , [[arXiv:1404.4161](https://arxiv.org/abs/1404.4161) ].
 - [3] X. Wu, D. Davidović, S. Achilles,E. Di Napoli. *ChASE: a distributed hybrid CPU-GPU eigensolver for large-scale hermitian eigenvalue problems.* Proceedings of the Platform for Advanced Scientific Computing Conference (PASC22). [DOI:10.1145/3539781.3539792](https://dl.acm.org/doi/10.1145/3539781.3539792) , [[arXiv:2205.02491](https://arxiv.org/pdf/2205.02491/) ].
 - [4] X. Wu, E. Di Napoli. *Advancing the distributed Multi-GPU ChASE library through algorithm optimization and NCCL library.*  Proceedings of the SC'23 Workshops of The International Conference on High Performance Computing, Network, Storage, and Analysis (pp. 1688-1696). [DOI:10.1145/3624062.3624249](https://dl.acm.org/doi/abs/10.1145/3624062.3624249), [[arXiv:2309.15595](https://arxiv.org/pdf/2309.15595)].
 - [5] E. Di Napoli, C. Richefort, and X. Wu. *Chebyshev Accelerated Subspace Eigensolver for Pseudo-hermitian Hamiltonians.* arXiv preprint arXiv:2601.10557 (2026). [[arXiv:2601.10557](https://arxiv.org/abs/2601.10557)]
+- [6] E. Di Napoli and X. Wu. *Estimating the condition number of Chebyshev filtered vectors with application to the ChASE library.* arXiv preprint arXiv:2603.10514 (2026). [[arXiv:2603.10514](https://arxiv.org/abs/2603.10514)]
 
 ## Copyright and License
 
