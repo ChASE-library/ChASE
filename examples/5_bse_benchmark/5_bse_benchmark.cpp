@@ -469,7 +469,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::scientific;
         std::cout << std::right;
 #ifndef NDEBUG
-        for (auto i = 0; i < n_ev_print; ++i)
+        for (auto i = 0; i < std::min(n_ev_print, std::size_t(20)); ++i)
 #else
         for (auto i = 0; i < std::min(n_ev_print, n_ev_print); ++i)
 #endif
@@ -628,6 +628,7 @@ int main(int argc, char** argv)
     if (conf.isdouble)
     {
         bse_solve<std::complex<double>>(conf);
+        //bse_solve<double>(conf);
     }
     else
     {

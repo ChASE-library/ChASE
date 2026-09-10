@@ -565,6 +565,13 @@ public:
         perf_.end_clock(ChasePerfData<T>::TimePtrs::InitVecs);
     }
 
+#ifdef CHASE_ENABLE_OZAKI
+    void initOzaki_II() override
+    {
+        chase_->initOzaki_II();
+    }
+#endif
+
     void Shift(T c, bool isunshift = false) override
     {
         // Filter timing is unified via FilterPhaseStart/FilterPhaseEnd for both
@@ -577,6 +584,14 @@ public:
         chase_->HEMM(nev, alpha, beta, offset_left, offset_right);
         perf_.add_filtered_vecs(nev - offset_right);
     }
+#ifdef CHASE_ENABLE_OZAKI
+    void HEMM_Ozaki(std::size_t nev, T alpha, T beta, std::size_t offset_left,
+                    std::size_t offset_right = 0) override
+    {
+        chase_->HEMM_Ozaki(nev, alpha, beta, offset_left, offset_right);
+        perf_.add_filtered_vecs(nev - offset_right);
+    }
+#endif
     void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
                  std::size_t offset_left, std::size_t offset_right = 0) override
     {

@@ -67,6 +67,10 @@ if(TARGET chase_scalapack_linalg)
   target_compile_definitions(pchase_gpu INTERFACE HAS_SCALAPACK=1)
 endif()
 
+if(TARGET gemmul8pp)
+  target_link_libraries(pchase_gpu INTERFACE gemmul8pp)
+endif()
+
 install(TARGETS pchase_gpu
   EXPORT chase_targets
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

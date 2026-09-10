@@ -77,6 +77,15 @@ public:
      */
     virtual void HEMM(std::size_t nev, T alpha, T beta,
                      std::size_t offset_left, std::size_t offset_right = 0) = 0;
+#ifdef CHASE_ENABLE_OZAKI
+    /**
+     * @brief Same contract as HEMM using Ozaki-II (GEMMul8) where implemented;
+     * CPU backends may forward to HEMM.
+     */
+    virtual void HEMM_Ozaki(std::size_t nev, T alpha, T beta,
+                              std::size_t offset_left,
+                              std::size_t offset_right = 0) = 0;
+#endif
     /**
      * @brief Performs one Chebyshev recurrence step for H²: Vec2 = alpha*H*(H*Vec1)
      * + beta*Vec2 + gamma*Vec1 (on given column range). Used by the H² filter.
@@ -274,6 +283,15 @@ public:
      * @param random Flag to determine whether to initialize vectors randomly.
      */
     virtual void initVecs(bool random) = 0;
+
+#ifdef CHASE_ENABLE_OZAKI
+    /**
+     * @brief Initializes Ozaki-II (GEMMul8) workspace.
+     *
+     * This method initializes the workspace for Ozaki-II (GEMMul8).
+     */
+    virtual void initOzaki_II() = 0;
+#endif
     /**
      * @brief Reinitialize selected columns of the subspace with random vectors.
      *

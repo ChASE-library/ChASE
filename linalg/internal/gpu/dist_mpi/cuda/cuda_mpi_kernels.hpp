@@ -44,6 +44,16 @@ struct cuda_mpi
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             result_multiVector);
 
+#ifdef CHASE_ENABLE_OZAKI
+    template <typename T, typename MatrixType, typename InputMultiVectorType>
+    static void MatrixMultiplyMultiVectorsWithOzakiII(
+        cublasHandle_t cublas_handle, T* alpha, MatrixType& blockMatrix,
+        InputMultiVectorType& input_multiVector, T* beta,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
+            result_multiVector,
+        std::size_t offset, std::size_t subSize, unsigned ozaki_num_moduli_, bool ozaki_fastmode_, int8_t* ozaki_workspace_blockmatrix, int8_t* ozaki_workspace_input_multiVector, int8_t* ozaki_workspace_result_multiVector);
+#endif
+
     // this operation do: W1<-1.0 * H * V1, while redistribute V2 to W2
     template <typename MatrixType, typename InputMultiVectorType>
     static void MatrixMultiplyMultiVectorsAndRedistribute(

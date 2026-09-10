@@ -124,6 +124,86 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
   message(STATUS "rocBLAS/rocSOLVER support enabled for HIP.")
 endif()
 
+# Optional Ozaki Scheme II backend (GEMMul8). NVIDIA CUDA only.
+if(CHASE_ENABLE_OZAKI)
+  if(NOT CUDAToolkit_FOUND)
+    message(FATAL_ERROR "CHASE_ENABLE_OZAKI=ON requires CUDAToolkit (CUDA).")
+  endif()
+  if(CHASE_ENABLE_HIP_EFFECTIVE AND NOT CUDAToolkit_FOUND)
+    message(FATAL_ERROR "CHASE_ENABLE_OZAKI is not supported on HIP-only builds.")
+  endif()
+
+  if(NOT DEFINED CUDAToolkit_NVCC_EXECUTABLE OR NOT EXISTS "${CUDAToolkit_NVCC_EXECUTABLE}")
+    message(FATAL_ERROR
+      "CHASE_ENABLE_OZAKI=ON requires NVCC (via CUDAToolkit). "
+      "CUDAToolkit_NVCC_EXECUTABLE='${CUDAToolkit_NVCC_EXECUTABLE}'")
+  endif()
+
+  if(NOT GEMMUL8_ROOT)
+    message(FATAL_ERROR "CHASE_ENABLE_OZAKI=ON requires -DGEMMUL8_ROOT=/path/to/GEMMul8 (must contain include/ and lib/).")
+  endif()
+
+  set(_GEMMUL8_INCLUDE_DIR "${GEMMUL8_ROOT}/include")
+  if(EXISTS "${GEMMUL8_ROOT}/GEMMul8/include")
+    set(_GEMMUL8_INCLUDE_DIR "${GEMMUL8_ROOT}/GEMMul8/include")
+  endif()
+
+  set(_GEMMUL8_LIB "")
+  foreach(_cand
+          "${GEMMUL8_ROOT}/lib/libgemmul8.so"
+          "${GEMMUL8_ROOT}/lib64/libgemmul8.so"
+          "${GEMMUL8_ROOT}/lib/libgemmul8.a"
+          "${GEMMUL8_ROOT}/lib64/libgemmul8.a"
+          "${GEMMUL8_ROOT}/GEMMul8/lib/libgemmul8.so"
+          "${GEMMUL8_ROOT}/GEMMul8/lib/libgemmul8.a")
+    if(EXISTS "${_cand}")
+      set(_GEMMUL8_LIB "${_cand}")
+      break()
+    endif()
+  endforeach()
+
+  if(NOT EXISTS "${_GEMMUL8_INCLUDE_DIR}/gemmul8.hpp")
+    message(FATAL_ERROR
+      "GEMMul8 header not found. Expected '${_GEMMUL8_INCLUDE_DIR}/gemmul8.hpp'. "
+      "Set GEMMUL8_ROOT to your GEMMul8 build/install prefix (or source root containing GEMMul8/include).")
+  endif()
+
+  if(NOT _GEMMUL8_LIB)
+    message(FATAL_ERROR
+      "libgemmul8 not found under GEMMUL8_ROOT='${GEMMUL8_ROOT}'. "
+      "Expected lib/libgemmul8.(so|a) (or GEMMul8/lib/...).")
+  endif()
+
+  if(NOT TARGET gemmul8::gemmul8)
+    add_library(gemmul8::gemmul8 UNKNOWN IMPORTED)
+    set_target_properties(gemmul8::gemmul8 PROPERTIES
+      IMPORTED_LOCATION "${_GEMMUL8_LIB}"
+      INTERFACE_INCLUDE_DIRECTORIES "${_GEMMUL8_INCLUDE_DIR}"
+    )
+    target_link_libraries(gemmul8::gemmul8 INTERFACE CUDA::cublas CUDA::cudart)
+  endif()
+
+  message(STATUS "Ozaki Scheme II backend enabled (GEMMul8): ${_GEMMUL8_LIB}")
+
+  target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1)
+
+  enable_language(CUDA)
+
+  add_library(gemmul8pp ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/gemmul8pp.cu)
+  set_target_properties(gemmul8pp PROPERTIES
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_SEPARABLE_COMPILATION ON)
+  target_compile_options(gemmul8pp PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-gencode=arch=compute_90,code=sm_90>)
+  target_include_directories(gemmul8pp PRIVATE "${_GEMMUL8_INCLUDE_DIR}")
+  target_include_directories(gemmul8pp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/external/gemmul8pp>
+  )
+  target_link_libraries(gemmul8pp PUBLIC gemmul8::gemmul8 CUDA::cublas CUDA::cudart)
+  target_compile_definitions(gemmul8pp PUBLIC CHASE_ENABLE_OZAKI=1)
+endif()
+
 install(TARGETS blaspp lapackpp chase_cpu_linalg
   EXPORT chase_targets
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -186,5 +266,21 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
   install(DIRECTORY amd_gpu/rocsolverpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/external/amd_gpu
     FILES_MATCHING
       PATTERN "*.hpp"
+  )
+endif()
+
+# Install Ozaki/GEMMul8 wrapper (library + headers).
+if(CHASE_ENABLE_OZAKI)
+  install(TARGETS gemmul8pp
+    EXPORT chase_targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+  install(DIRECTORY gemmul8pp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/external
+    FILES_MATCHING
+      PATTERN "*.hpp"
+      PATTERN "*.cu"
   )
 endif()

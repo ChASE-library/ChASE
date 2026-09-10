@@ -539,7 +539,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
     {
         auto j = index[k]; // walk through
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
         if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] &&
                                 resid[j] < 100.0 * tol))
 #else
@@ -547,7 +547,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 #endif
         {
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
             if (single->isSym() && resid[j] > tol && resid[j] >= residLast[j] &&
                 resid[j] < 100.0 * tol)
             {
@@ -602,7 +602,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
         
         bool is_neg = (Lritzv[j] < Base<T>(0));
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
         if ((resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] &&
                                 resid[j] <= 1000.0 * tol && iteration >= 4)) && ((is_neg && n_found_neg+locked_neg_this < nev) || !is_neg))
 #else
@@ -610,7 +610,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
 #endif
         {
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
             if (resid[j] > tol && resid[j] <= 1000.0 * tol &&
                 resid[j] >= residLast[k] && iteration >= 4)
             {
@@ -659,7 +659,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
         
         bool is_neg = (Lritzv[j] < Base<T>(0));
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
         if ((resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] &&
                                 resid[j] <= 1000.0 * tol && iteration >= 4)) && ((is_neg && n_found_neg+locked_neg_this < nev) || !is_neg))
 #else
@@ -667,7 +667,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
 #endif
         {
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
             if (resid[j] > tol && resid[j] <= 1000.0 * tol &&
                 resid[j] >= residLast[k] && iteration >= 4)
             {
@@ -748,7 +748,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
     {
         std::size_t j = index[k];
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
         if ((resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] &&
                                 resid[j] <= 1000.0 * tol && iteration >= 4)))
 #else
@@ -756,7 +756,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
 #endif
         {
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
             if (resid[j] > tol && resid[j] <= 1000.0 * tol &&
                 resid[j] >= residLast[k] && iteration >= 4)
             {
@@ -852,7 +852,7 @@ std::size_t Algorithm<T>::locking_pseudo(
         
         bool is_neg = (Lritzv[j] < Base<T>(0));
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
         if ((resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] &&
                                 resid[j] <= 1000.0 * tol && iteration >= 4)) && ((is_neg && n_found_neg+locked_neg_this < nev) || !is_neg))
 #else
@@ -860,7 +860,7 @@ std::size_t Algorithm<T>::locking_pseudo(
 #endif
         {
 
-#ifndef CHASE_SAVE_RESIDUALS
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
             if (resid[j] > tol && resid[j] <= 1000.0 * tol &&
                 resid[j] >= residLast[k] && iteration >= 4)
             {
@@ -965,7 +965,11 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
     T alpha = T(sigma_1 / e);
     T beta = T(0.0);
 
+#ifdef CHASE_ENABLE_OZAKI
+    single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
+#else
     single->HEMM(unprocessed, alpha, beta, offset / n);
+#endif
 
     Av += unprocessed;
     num_mult++;
@@ -987,7 +991,11 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
         alpha = T(2.0 * sigma_new / e);
         beta = T(-sigma * sigma_new);
 
+#ifdef CHASE_ENABLE_OZAKI
+         single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
+#else
         single->HEMM(unprocessed, alpha, beta, offset / n);
+#endif
 
         sigma = sigma_new;
         Av += unprocessed;
@@ -1394,6 +1402,10 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     Base<T>* ritzv_ = single->GetRitzv();
 
     const double tol = config.GetTol();
+    
+#ifdef CHASE_ENABLE_OZAKI
+    single->initOzaki_II();
+#endif
 
     const std::size_t nevex = nev + nex;
     std::size_t unconverged = nev + nex;

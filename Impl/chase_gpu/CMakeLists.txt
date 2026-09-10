@@ -7,6 +7,10 @@ target_link_libraries(chase_gpu
     linalg_internal_cpu
 )
 
+if(TARGET gemmul8pp)
+  target_link_libraries(chase_gpu INTERFACE gemmul8pp)
+endif()
+
 if(TARGET linalg_internal_cuda)
   target_link_libraries(chase_gpu
     INTERFACE

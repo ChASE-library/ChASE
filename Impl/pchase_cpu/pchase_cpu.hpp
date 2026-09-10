@@ -308,6 +308,10 @@ public:
         next_ = NextOp::bAc;
     }
 
+#ifdef CHASE_ENABLE_OZAKI
+    void initOzaki_II() override {}
+#endif
+
     void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
                       std::size_t n_indices) override
     {
@@ -493,6 +497,14 @@ public:
             }
         }
     }
+
+#ifdef CHASE_ENABLE_OZAKI
+    void HEMM_Ozaki(std::size_t block, T alpha, T beta, std::size_t offset_left,
+                    std::size_t offset_right = 0) override
+    {
+        HEMM(block, alpha, beta, offset_left, offset_right);
+    }
+#endif
 
     void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
                  std::size_t offset_left,
