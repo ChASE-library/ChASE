@@ -401,12 +401,9 @@ public:
         if (d_H2_tmp_)
             runtime_type::device_free(d_H2_tmp_);
 #ifdef CHASE_ENABLE_OZAKI
-        if (ozaki_workspace_Hmat_)
-            runtime_type::device_free(ozaki_workspace_Hmat_);
-        if (ozaki_workspace_Vec1_)
-            runtime_type::device_free(ozaki_workspace_Vec1_);
-        if (ozaki_workspace_Vec2_)
-            runtime_type::device_free(ozaki_workspace_Vec2_);
+        chase::linalg::gemmul8pp::clear_config(blasH_);
+        if (ozaki_workspace_)
+            runtime_type::device_free(ozaki_workspace_);
 #endif
     }
 
@@ -517,6 +514,13 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
+    unsigned GetOzakiNumModuli() const override { return ozaki_num_moduli_; }
+    void SetOzakiNumModuli(unsigned num_moduli) override
+    {
+        ozaki_num_moduli_ = num_moduli;
+        ozaki_skip_scaling_activated_ = false;
+    }
+
     void initOzaki_II() override
     {
         SCOPED_NVTX_RANGE();
@@ -539,30 +543,50 @@ public:
         if (env != nullptr)
             ozaki_skip_scaling_ = static_cast<bool>(std::atoi(env));
 
-        ozaki_workspace_Hmat_size_ = 0;
-        ozaki_workspace_Vec1_size_ = 0;
-        ozaki_workspace_Vec2_size_ = 0;
+        env = std::getenv("CHASE_OZAKI_SAVE_MEMORY");
+        if (env != nullptr)
+            ozaki_save_memory_ = static_cast<bool>(std::atoi(env));
 
-        const size_t worksize = chase::linalg::gemmul8pp::workSize<T>(
-            Hmat_->rows(), Vec1_.cols(), Hmat_->cols(), ozaki_num_moduli_,
-            true, true, &ozaki_workspace_Hmat_size_, &ozaki_workspace_Vec1_size_);
-         ozaki_workspace_Vec2_size_ = worksize - ozaki_workspace_Hmat_size_ - ozaki_workspace_Vec1_size_;
-        
-        void *ozaki_workspace_Hmat_tmp = nullptr;
-        void *ozaki_workspace_Vec1_tmp = nullptr;
-        void *ozaki_workspace_Vec2_tmp = nullptr;
+        if (ozaki_save_memory_ &&
+            !chase::linalg::gemmul8pp::has_memory_saving())
+        {
+            ozaki_save_memory_ = false;
+#ifdef CHASE_OUTPUT
+            chase::GetLogger().Log(
+                chase::LogLevel::Warn, "linalg",
+                "CHASE_OZAKI_SAVE_MEMORY ignored: linked GEMMul8 has no memory-saving API",
+                0);
+#endif
+        }
+
+        chase::linalg::gemmul8pp::set_memory_saving(blasH_, ozaki_save_memory_);
+        chase::linalg::gemmul8pp::set_max_worksize(blasH_, ozaki_max_worksize_);
+
+        ozaki_workspace_size_ = 0;
+
+        size_t worksize = 0;
+        if (ozaki_save_memory_)
+        {
+            ozaki_workspace_size_ = ozaki_max_worksize_;
+            worksize = ozaki_workspace_size_;
+        }
+        else
+        {
+            worksize = chase::linalg::gemmul8pp::workSize<T>(
+                Hmat_->rows(), Vec1_.cols(), Hmat_->cols(), ozaki_num_moduli_,
+                true, true);
+            ozaki_workspace_size_ = worksize;
+        }
+
+        void *ozaki_workspace_tmp = nullptr;
 
         size_t free_bytes = 0, total_bytes = 0;
         CHECK_CUDA_ERROR(cudaMemGetInfo(&free_bytes, &total_bytes));
 
         if(worksize < free_bytes)
         {
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Hmat_tmp, ozaki_workspace_Hmat_size_));
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Vec1_tmp, ozaki_workspace_Vec1_size_));
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Vec2_tmp, ozaki_workspace_Vec2_size_));
-            ozaki_workspace_Hmat_ = reinterpret_cast<int8_t *>(ozaki_workspace_Hmat_tmp);
-            ozaki_workspace_Vec1_ = reinterpret_cast<int8_t *>(ozaki_workspace_Vec1_tmp);
-            ozaki_workspace_Vec2_ = reinterpret_cast<int8_t *>(ozaki_workspace_Vec2_tmp);
+            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_tmp, ozaki_workspace_size_));
+            ozaki_workspace_ = reinterpret_cast<int8_t *>(ozaki_workspace_tmp);
             #ifdef CHASE_OUTPUT
             {
                 std::ostringstream oss;
@@ -570,6 +594,7 @@ public:
                 oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
                 oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
                 oss << "ozaki_skip_scaling_ = " << ozaki_skip_scaling_ << ", ";
+                oss << "ozaki_save_memory_ = " << ozaki_save_memory_ << ", ";
                 oss << "ozaki_workspace = " << worksize / (1024.0*1024.0*1024.0) << " GB < free workspace = " << free_bytes / (1024.0*1024.0*1024.0) << " GB" << std::endl;
                 chase::GetLogger().Log(chase::LogLevel::Info, "linalg",oss.str(), 0);
             }
@@ -584,6 +609,7 @@ public:
                 oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
                 oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
                 oss << "ozaki_skip_scaling_ = " << ozaki_skip_scaling_ << ", ";
+                oss << "ozaki_save_memory_ = " << ozaki_save_memory_ << ", ";
                 oss << "ozaki_fp_hemm_fallback = " << ozaki_fp_hemm_fallback << ", ";
                 oss << "ozaki_workspace = " << worksize / (1024.0*1024.0*1024.0) << " GB > free workspace = " << free_bytes / (1024.0*1024.0*1024.0) << " GB" << std::endl;
                 chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",oss.str(), 0);
@@ -768,14 +794,15 @@ public:
             Vec2_.ld(),
             ozaki_num_moduli_,
             ozaki_fastmode_,
-            static_cast<void *>(ozaki_workspace_Vec2_),
-            static_cast<void *>(ozaki_workspace_Hmat_),
-            static_cast<void *>(ozaki_workspace_Vec1_),
-            true,
-            true,
-            ozaki_skip_scaling_activated_ && ozaki_skip_scaling_,
+            static_cast<void *>(ozaki_workspace_),
+            nullptr,
+            nullptr,
+            !ozaki_save_memory_,
+            !ozaki_save_memory_,
+            !ozaki_save_memory_ && ozaki_skip_scaling_activated_ && ozaki_skip_scaling_,
             false));
-        ozaki_skip_scaling_activated_ = true;
+        if (!ozaki_save_memory_)
+            ozaki_skip_scaling_activated_ = true;
 
         Vec1_.swapDataPointer(Vec2_);
     }
@@ -1187,14 +1214,12 @@ private:
     int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
 #ifdef CHASE_ENABLE_OZAKI
-    size_t ozaki_workspace_Hmat_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Hmat. */
-    size_t ozaki_workspace_Vec1_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Vec1. */
-    size_t ozaki_workspace_Vec2_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Vec2. */
-    int8_t* ozaki_workspace_Hmat_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Hmat. */
-    int8_t* ozaki_workspace_Vec1_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Vec1. */
-    int8_t* ozaki_workspace_Vec2_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Vec2. */
+    size_t ozaki_workspace_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8). */
+    int8_t* ozaki_workspace_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8). */
+    size_t ozaki_max_worksize_ = size_t(12) << 30; /**< Max GEMMul8 workspace in bytes. */
     unsigned ozaki_num_moduli_ = 8; /**< Number of moduli for Ozaki-II (GEMMul8). */
     bool ozaki_skip_scaling_      = false; /**< Flag to skip scaling Hmat in Ozaki-II (GEMMul8). */
+    bool ozaki_save_memory_     = false; /**< Flag to cap Ozaki-II workspace with GEMMul8 memory saving. */
     bool ozaki_fastmode_        = false; /**< Flag to use fastmode in Ozaki-II (GEMMul8). */
     bool ozaki_fp_hemm_fallback = false; /**< Flag to use FP32/64 fallback in Ozaki-II (GEMMul8). */
     bool ozaki_skip_scaling_activated_ = false; /**< Flag to activate skip scaling Hmat in Ozaki-II (GEMMul8). */

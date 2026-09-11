@@ -124,6 +124,11 @@ cublasStatus_t gemmul8Tgemm(
     bool skip_scalA = false,
     bool skip_scalB = false);
 
+void set_memory_saving(cublasHandle_t handle, bool enable);
+void set_max_worksize(cublasHandle_t handle, std::size_t bytes);
+void clear_config(cublasHandle_t handle);
+bool has_memory_saving();
+
 } // namespace gemmul8pp
 } // namespace linalg
 } // namespace chase

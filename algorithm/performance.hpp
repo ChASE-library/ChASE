@@ -570,6 +570,14 @@ public:
     {
         chase_->initOzaki_II();
     }
+    unsigned GetOzakiNumModuli() const override
+    {
+        return chase_->GetOzakiNumModuli();
+    }
+    void SetOzakiNumModuli(unsigned num_moduli) override
+    {
+        chase_->SetOzakiNumModuli(num_moduli);
+    }
 #endif
 
     void Shift(T c, bool isunshift = false) override

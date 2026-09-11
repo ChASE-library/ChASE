@@ -310,6 +310,8 @@ public:
 
 #ifdef CHASE_ENABLE_OZAKI
     void initOzaki_II() override {}
+    unsigned GetOzakiNumModuli() const override { return 0; }
+    void SetOzakiNumModuli(unsigned) override {}
 #endif
 
     void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,

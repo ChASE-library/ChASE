@@ -291,6 +291,8 @@ public:
      * This method initializes the workspace for Ozaki-II (GEMMul8).
      */
     virtual void initOzaki_II() = 0;
+    virtual unsigned GetOzakiNumModuli() const = 0;
+    virtual void SetOzakiNumModuli(unsigned num_moduli) = 0;
 #endif
     /**
      * @brief Reinitialize selected columns of the subspace with random vectors.

@@ -72,9 +72,7 @@ struct cuda_nccl
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             result_multiVector,
         std::size_t offset, std::size_t subSize, unsigned ozaki_num_moduli_,
-        bool ozaki_fastmode_, int8_t* ozaki_workspace_blockmatrix,
-        int8_t* ozaki_workspace_input_multiVector,
-        int8_t* ozaki_workspace_result_multiVector);
+        bool ozaki_fastmode_, int8_t* ozaki_workspace);
 #endif
 
     // Hierarchical HEMM matvec (uses hierarchical NCCL reduction)

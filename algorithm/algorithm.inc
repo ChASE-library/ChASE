@@ -1520,6 +1520,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
           one iteration does not provide convergence for at least one
           eigenvector.*/
 
+#ifdef CHASE_ENABLE_OZAKI
+          if (iteration == 1)
+          {
+              //single->SetOzakiNumModuli(15);
+              //Ozaki-II num moduli can be tuned dynamically for each iteration
+          }
+#endif
+
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
@@ -1528,6 +1536,9 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 << std::setprecision(6) << lambda << "\t"
                 << std::setprecision(6) << lowerb << "\t"
                 << std::setprecision(6) << upperb << "\t" << unconverged
+#ifdef CHASE_ENABLE_OZAKI
+                << std::setprecision(6) << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t"
+#endif
                 << std::endl;
 
             single->Output(LogLevel::Info, oss.str(), "algorithm");
