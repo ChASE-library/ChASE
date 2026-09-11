@@ -732,23 +732,23 @@ public:
         if (env != nullptr)
             ozaki_fastmode_ = static_cast<bool>(std::atoi(env));
 
+        ozaki_save_memory_ = chase::linalg::gemmul8pp::has_memory_saving();
+
         env = std::getenv("CHASE_OZAKI_SAVE_MEMORY");
         if (env != nullptr)
-            ozaki_save_memory_ = static_cast<bool>(std::atoi(env));
+        {
+            ozaki_save_memory_ = ozaki_save_memory_ && (std::atoi(env) != 0);
+        }
 
-        if (ozaki_save_memory_ &&
-            !chase::linalg::gemmul8pp::has_memory_saving())
+        env = std::getenv("CHASE_OZAKI_SKIP_SCALING");
+        if (env != nullptr)
+        {
+            ozaki_skip_scaling_ = static_cast<bool>(std::atoi(env));
+        }
+
+        if (ozaki_skip_scaling_)
         {
             ozaki_save_memory_ = false;
-#ifdef CHASE_OUTPUT
-            if (my_rank_ == 0)
-            {
-                chase::GetLogger().Log(
-                    chase::LogLevel::Warn, "linalg",
-                    "CHASE_OZAKI_SAVE_MEMORY ignored: linked GEMMul8 has no memory-saving API",
-                    0);
-            }
-#endif
         }
 
         chase::linalg::gemmul8pp::set_memory_saving(blasH_, ozaki_save_memory_);
@@ -780,45 +780,47 @@ public:
         {
             runtime_type::device_malloc(&ozaki_workspace_tmp, ozaki_workspace_size_);
             ozaki_workspace_ = reinterpret_cast<int8_t *>(ozaki_workspace_tmp);
-#ifdef CHASE_OUTPUT
-            if (my_rank_ == 0)
-            {
-                std::ostringstream oss;
-                oss << "OZAKI-II scheme enabled : ";
-                oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
-                oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
-                oss << "ozaki_save_memory_ = " << ozaki_save_memory_ << ", ";
-                oss << "ozaki_workspace = " << ozaki_workspace_size_ / (1024.0 * 1024.0 * 1024.0)
-                    << " GB < free workspace = "
-                    << free_bytes / (1024.0 * 1024.0 * 1024.0) << " GB"
-                    << std::endl;
-                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-                                       oss.str(), 0);
-            }
-#endif
         }
         else
         {
             ozaki_fp_hemm_fallback = true;
-#ifdef CHASE_OUTPUT
-            if (my_rank_ == 0)
-            {
-                std::ostringstream oss;
-                oss << "OZAKI-II scheme disabled : ";
-                oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
-                oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
-                oss << "ozaki_save_memory_ = " << ozaki_save_memory_ << ", ";
-                oss << "ozaki_fp_hemm_fallback = " << ozaki_fp_hemm_fallback
-                    << ", ";
-                oss << "ozaki_workspace = " << ozaki_workspace_size_ / (1024.0 * 1024.0 * 1024.0)
-                    << " GB > free workspace = "
-                    << free_bytes / (1024.0 * 1024.0 * 1024.0) << " GB"
-                    << std::endl;
-                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
-                                       oss.str(), 0);
-            }
-#endif
         }
+#ifdef CHASE_OUTPUT
+        if (my_rank_ == 0)
+        {
+            std::ostringstream oss;
+            oss << "Ozaki-II GEMMul8\n";
+            oss << std::left;
+            oss << "  " << std::setw(14) << "status" << ": "
+                << (ozaki_fp_hemm_fallback ? "disabled (FP HEMM fallback)" : "enabled")
+                << "\n";
+            oss << "  " << std::setw(14) << "num_moduli" << ": " << ozaki_num_moduli_ << "\n";
+            oss << "  " << std::setw(14) << "fastmode" << ": "
+                << (ozaki_fastmode_ ? "on" : "off") << "\n";
+            oss << "  " << std::setw(14) << "skip_scaling" << ": "
+                << (ozaki_skip_scaling_ ? "on" : "off") << "\n";
+            oss << "  " << std::setw(14) << "save_memory" << ": ";
+            if (!chase::linalg::gemmul8pp::has_memory_saving())
+            {
+                oss << "off (save memory mode not available in GEMMul8)\n";
+            }
+            else
+            {
+                oss << (ozaki_save_memory_ ? "on" : "off") << "\n";
+            }
+            oss << std::fixed << std::setprecision(2);
+            oss << "  " << std::setw(14) << "workspace" << ": "
+                << ozaki_workspace_size_ / (1024.0 * 1024.0 * 1024.0) << " GiB\n";
+            oss << "  " << std::setw(14) << "gpu_free" << ": "
+                << free_bytes / (1024.0 * 1024.0 * 1024.0) << " GiB\n";
+            oss << "  " << std::setw(14) << "path" << ": "
+                << chase::linalg::gemmul8pp::gemmul8_root() << "\n";
+            oss << std::endl;
+            chase::GetLogger().Log(
+                ozaki_fp_hemm_fallback ? chase::LogLevel::Warn : chase::LogLevel::Info,
+                "linalg", oss.str(), 0);
+        }
+#endif
     }
 #endif
 
@@ -2064,8 +2066,8 @@ private:
     int8_t* ozaki_workspace_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8). */
     size_t ozaki_max_worksize_ = size_t(12) << 30; /**< Max GEMMul8 workspace in bytes. */
     unsigned ozaki_num_moduli_ = 8; /**< Number of moduli for Ozaki-II (GEMMul8). */
-    bool ozaki_skip_scale_Hmat_      = false; /**< Flag to skip scale Hmat in Ozaki-II (GEMMul8). */
-    bool ozaki_save_memory_     = false; /**< Flag to cap Ozaki-II workspace with GEMMul8 memory saving. */
+    bool ozaki_skip_scaling_      = false; /**< Flag to skip scaling Hmat in Ozaki-II (GEMMul8). */
+    bool ozaki_save_memory_     = false; /**< Cap Ozaki-II workspace (on by default if GEMMul8 supports it). */
     bool ozaki_fastmode_        = false; /**< Flag to use fastmode in Ozaki-II (GEMMul8). */
     bool ozaki_fp_hemm_fallback = false; /**< Flag to use FP32/64 fallback in Ozaki-II (GEMMul8). */
 #endif

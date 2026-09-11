@@ -128,6 +128,7 @@ void set_memory_saving(cublasHandle_t handle, bool enable);
 void set_max_worksize(cublasHandle_t handle, std::size_t bytes);
 void clear_config(cublasHandle_t handle);
 bool has_memory_saving();
+const char* gemmul8_root();
 
 } // namespace gemmul8pp
 } // namespace linalg

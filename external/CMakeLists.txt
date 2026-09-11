@@ -185,9 +185,9 @@ if(CHASE_ENABLE_OZAKI)
 
   message(STATUS "Ozaki Scheme II backend enabled (GEMMul8): ${_GEMMUL8_LIB}")
   if(EXISTS "${_GEMMUL8_INCLUDE_DIR}/version.hpp")
-    message(STATUS "GEMMul8 memory-saving API detected (version.hpp)")
+    message(STATUS "GEMMul8 memory-saving API detected (version.hpp); enabled by default, set CHASE_OZAKI_SAVE_MEMORY=0 to disable")
   else()
-    message(STATUS "GEMMul8 memory-saving API not present; CHASE_OZAKI_SAVE_MEMORY will be ignored")
+    message(STATUS "GEMMul8 memory-saving API not present; save-memory stays off (old GEMMul8)")
   endif()
 
   target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1)
@@ -207,6 +207,7 @@ if(CHASE_ENABLE_OZAKI)
   )
   target_link_libraries(gemmul8pp PUBLIC gemmul8::gemmul8 CUDA::cublas CUDA::cudart)
   target_compile_definitions(gemmul8pp PUBLIC CHASE_ENABLE_OZAKI=1)
+  target_compile_definitions(gemmul8pp PRIVATE "CHASE_GEMMUL8_ROOT=\"${GEMMUL8_ROOT}\"")
 endif()
 
 install(TARGETS blaspp lapackpp chase_cpu_linalg

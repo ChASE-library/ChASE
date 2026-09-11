@@ -214,6 +214,13 @@ bool has_memory_saving() {
   return false;
 #endif
 }
+const char* gemmul8_root() {
+#if defined(CHASE_GEMMUL8_ROOT)
+  return CHASE_GEMMUL8_ROOT;
+#else
+  return "";
+#endif
+}
 
 } // namespace gemmul8pp
 } // namespace linalg
