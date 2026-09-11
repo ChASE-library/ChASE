@@ -236,6 +236,30 @@ cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
     return cublasDznrm2(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
                         incx, result);
 }
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n, const float* x,
+                           std::size_t incx, float* result)
+{
+    return cublasSasum(handle, n, x, incx, result);
+}
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const double* x, std::size_t incx, double* result)
+{
+    return cublasDasum(handle, n, x, incx, result);
+}
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const std::complex<float>* x, std::size_t incx,
+                           float* result)
+{
+    return cublasScasum(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
+                        result);
+}
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const std::complex<double>* x, std::size_t incx,
+                           double* result)
+{
+    return cublasDzasum(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
+                        incx, result);
+}
 /**
  * @ingroup cuBlasFunctions
  * @brief Computes the dot product of two vectors.
@@ -1057,6 +1081,186 @@ cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
                         lda, B, CUDA_C_64F, ldb, beta, C, CUDA_C_64F, ldc,
                         ComputeType, CUBLAS_GEMM_DEFAULT);
 }
+
+#ifdef CHASE_ENABLE_OZAKI
+
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n, const float* x,
+                            std::size_t incx, int* result)
+{
+    return cublasIsamax(handle, n, x, incx, result);
+}
+
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const double* x, std::size_t incx, int* result)
+{
+    return cublasIdamax(handle, n, x, incx, result);
+}
+
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const std::complex<float>* x, std::size_t incx,
+                            int* result)
+{
+    return cublasIcamax(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
+                        result);
+}
+
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const std::complex<double>* x, std::size_t incx,
+                            int* result)
+{
+    return cublasIzamax(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
+                        incx, result);
+}
+
+template <typename T>
+cublasStatus_t cublasTmaxAbs(cublasHandle_t handle, std::size_t n, const T* x,
+                             std::size_t incx, Base<T>* result)
+{
+    if (n == 0)
+    {
+        *result = Base<T>(0);
+        return CUBLAS_STATUS_SUCCESS;
+    }
+
+    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
+    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    int idx = 0;
+    status = cublasTiamax(handle, n, x, incx, &idx);
+    cublasSetPointerMode(handle, mode);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    T val{};
+    cudaError_t const err = cudaMemcpy(
+        &val, x + (static_cast<std::size_t>(idx) - 1) * incx, sizeof(T),
+        cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        return CUBLAS_STATUS_EXECUTION_FAILED;
+    }
+
+    *result = std::abs(val);
+    return CUBLAS_STATUS_SUCCESS;
+}
+
+template <typename T>
+cublasStatus_t cublasTmatrixMaxAbs(cublasHandle_t handle, std::size_t rows,
+                                   std::size_t cols, const T* A, std::size_t lda,
+                                   Base<T>* result)
+{
+    if (rows == 0 || cols == 0)
+    {
+        *result = Base<T>(0);
+        return CUBLAS_STATUS_SUCCESS;
+    }
+
+    return cublasTmaxAbs(handle, lda * cols, A, 1, result);
+}
+
+template <typename T>
+cublasStatus_t cublasTmatrixInfNorm(cublasHandle_t handle, std::size_t rows,
+                                    std::size_t cols, const T* A, std::size_t lda,
+                                    Base<T>* result)
+{
+    if (rows == 0 || cols == 0)
+    {
+        *result = Base<T>(0);
+        return CUBLAS_STATUS_SUCCESS;
+    }
+
+    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
+    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    Base<T> inf = Base<T>(0);
+    for (std::size_t i = 0; i < rows; ++i)
+    {
+        Base<T> row_sum = Base<T>(0);
+        status = cublasTasum(handle, cols, A + i, lda, &row_sum);
+        if (status != CUBLAS_STATUS_SUCCESS)
+        {
+            cublasSetPointerMode(handle, mode);
+            return status;
+        }
+        if (row_sum > inf)
+        {
+            inf = row_sum;
+        }
+    }
+
+    cublasSetPointerMode(handle, mode);
+    *result = inf;
+    return CUBLAS_STATUS_SUCCESS;
+}
+
+template <typename T>
+cublasStatus_t cublasTmatrixOneNorm(cublasHandle_t handle, std::size_t rows,
+                                    std::size_t cols, const T* A, std::size_t lda,
+                                    Base<T>* result)
+{
+    if (rows == 0 || cols == 0)
+    {
+        *result = Base<T>(0);
+        return CUBLAS_STATUS_SUCCESS;
+    }
+
+    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
+    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    if (status != CUBLAS_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    Base<T> one = Base<T>(0);
+    for (std::size_t j = 0; j < cols; ++j)
+    {
+        Base<T> col_sum = Base<T>(0);
+        status = cublasTasum(handle, rows, A + j * lda, 1, &col_sum);
+        if (status != CUBLAS_STATUS_SUCCESS)
+        {
+            cublasSetPointerMode(handle, mode);
+            return status;
+        }
+        if (col_sum > one)
+        {
+            one = col_sum;
+        }
+    }
+
+    cublasSetPointerMode(handle, mode);
+    *result = one;
+    return CUBLAS_STATUS_SUCCESS;
+}
+
+#endif // CHASE_ENABLE_OZAKI
 
 } // namespace cublaspp
 } // namespace linalg

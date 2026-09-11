@@ -627,8 +627,8 @@ int main(int argc, char** argv)
 
     if (conf.isdouble)
     {
-        bse_solve<std::complex<double>>(conf);
-        //bse_solve<double>(conf);
+        //bse_solve<std::complex<double>>(conf);
+        bse_solve<double>(conf);
     }
     else
     {

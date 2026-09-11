@@ -1402,10 +1402,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     Base<T>* ritzv_ = single->GetRitzv();
 
     const double tol = config.GetTol();
-    
-#ifdef CHASE_ENABLE_OZAKI
-    single->initOzaki_II();
-#endif
 
     const std::size_t nevex = nev + nex;
     std::size_t unconverged = nev + nex;
@@ -1443,6 +1439,10 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     {
         single->QR(1.0);
     }
+    
+#ifdef CHASE_ENABLE_OZAKI
+    single->initOzaki_II();
+#endif
     // --------------------------------- LANCZOS
     // ---------------------------------
 

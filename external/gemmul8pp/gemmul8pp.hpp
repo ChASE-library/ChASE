@@ -9,6 +9,8 @@
 
 #ifdef CHASE_ENABLE_OZAKI
 
+#include "table.hpp"
+
 namespace chase {
 namespace linalg {
 namespace gemmul8pp {
