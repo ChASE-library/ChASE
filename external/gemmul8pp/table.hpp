@@ -10,7 +10,9 @@
 #include <cmath>
 #include <complex>
 #include <cstdint>
+#include <limits>
 #include <type_traits>
+#include <vector>
 
 #ifdef CHASE_ENABLE_OZAKI
 
@@ -139,8 +141,7 @@ inline constexpr double r64(unsigned num_moduli)
 }
 
 template <typename T>
-inline constexpr bool is_fp32_v =
-    std::is_same_v<T, float> || std::is_same_v<T, std::complex<float>>;
+inline constexpr bool is_fp32_v = std::is_same_v<T, float> || std::is_same_v<T, std::complex<float>>;
 
 template <typename T>
 inline constexpr double r_b(unsigned num_moduli)
@@ -156,17 +157,8 @@ inline constexpr double r_b(unsigned num_moduli)
 }
 
 template <typename T>
-inline constexpr unsigned max_num_moduli()
-{
-    if constexpr (is_fp32_v<T>)
-    {
-        return kMaxNumModuliFp32;
-    }
-    else
-    {
-        return kMaxNumModuliFp64;
-    }
-}
+inline constexpr unsigned kMaxNumModuli =
+    is_fp32_v<T> ? kMaxNumModuliFp32 : kMaxNumModuliFp64;
 
 inline double two_pow_floor_log2(double max_abs)
 {
@@ -177,39 +169,107 @@ inline double two_pow_floor_log2(double max_abs)
     return std::exp2(std::floor(std::log2(max_abs)));
 }
 
-// Cheap paper-(26) bound.
-//   max 2^{alpha'} <= 2^{floor(log2 M_A)} * 2^6 sqrt(k)
-// (same for beta'). k is the GEMM inner dimension.
+// Cheap ozaki-ii paper bound on the GEMM residual:
+//   ||E|| <= t ( ||A||_inf * max 2^{beta'}
+//              + max 2^{alpha'} * ||B||_1
+//              + (k + r) t * max 2^{alpha'} * max 2^{beta'} )
+// with max 2^{alpha'} <= 2^{floor(log2 M_A)} * 2^6 sqrt(k)
+// where M_A = max |A_ij| (same for M_B). k is the GEMM inner dimension.
+// Check Lemma 5 in : https://arxiv.org/pdf/2602.02549
 template <typename T>
 inline double local_gemm_error_bound(double max_abs_A, double max_abs_B,
                                      double inf_norm_A, double one_norm_B,
                                      std::size_t k, unsigned num_moduli)
 {
-    if (k == 0)
+    // s: number of moduli
+    unsigned s = num_moduli;
+    if (s < kMinNumModuli)
+    {
+        s = kMinNumModuli;
+    }
+    if (s > kMaxNumModuli<T>)
+    {
+        s = kMaxNumModuli<T>;
+    }
+
+    // t = 1 / sqrt(32 (P - 1))
+    double const t_n = t(s);
+
+    // r_32 (FP32) or r_64 (FP64):
+    // r_32 = (1 + u_32)(N + 2) u_64 rho P + (1/2) u_32 P
+    // r_64 = (1 + 3 u_64) 2^{1 + ceil(log2 rho)} (N + 2) u_64^2 rho P + (3/2) u_64 P
+    double const r = r_b<T>(s); 
+
+    // k: GEMM inner dimension
+    double const k_d = static_cast<double>(k);
+
+    // 2^6 sqrt(k): INT8 slice width
+    double const slice = 64.0 * std::sqrt(k_d);
+
+    // max 2^{alpha'}, max 2^{beta'}: UFP of max |A|, |B| times the slice
+    double const alpha_prime = two_pow_floor_log2(max_abs_A) * slice;
+    double const beta_prime = two_pow_floor_log2(max_abs_B) * slice;
+
+    // t * ( ||A||_inf * beta' + alpha' * ||B||_1 + (k + r) t alpha' beta' )
+    return t_n * (inf_norm_A * beta_prime + alpha_prime * one_norm_B +
+                  (k_d + r) * t_n * alpha_prime * beta_prime);
+}
+
+// U2-model sum. If ||E_j^f|| <= ||E_0^f|| for all j, then
+//   ||E_{i+1}^p|| <= ||E_0^f|| * u2_model_sum(degree, lambda_1, lower, upper)
+// with i = degree - 1,
+//   sum_j w_j |eta_j U_{i-j}((lambda_1 - c) / e) / eta_{i+1}|,
+//   w_0 = 1, w_j = 2 for j >= 1,
+//   c = (upper + lower) / 2, e = (upper - lower) / 2,
+//   eta_0 = 1, eta_t = eta_{t-1} / sigma_t, sigma_1 = e / (lambda_1 - c).
+inline double u2_model_sum(std::size_t degree, double lambda_1, double lower,
+                           double upper)
+{
+    if (degree == 0)
     {
         return 0.0;
     }
 
-    unsigned n = num_moduli;
-    if (n < kMinNumModuli)
+    double const c = 0.5 * (upper + lower);
+    double const e = 0.5 * (upper - lower);
+    double const x = (lambda_1 - c) / e;
+    double const sigma_1 = e / (lambda_1 - c);
+
+    std::vector<double> nu(degree, 0.0);
+    std::vector<double> eta(degree + 1, 0.0);
+    std::vector<double> sigma(degree + 1, 0.0);
+
+    eta[0] = 1.0;
+    sigma[1] = sigma_1;
+    eta[1] = eta[0] / sigma[1];
+
+    for (std::size_t t = 2; t <= degree; ++t)
     {
-        n = kMinNumModuli;
-    }
-    unsigned const n_max = max_num_moduli<T>();
-    if (n > n_max)
-    {
-        n = n_max;
+        sigma[t] = 1.0 / (2.0 / sigma_1 - sigma[t - 1]);
+        eta[t] = eta[t - 1] / sigma[t];
     }
 
-    double const t_n = t(n);
-    double const r = r_b<T>(n);
-    double const k_d = static_cast<double>(k);
-    double const slice = 64.0 * std::sqrt(k_d);
-    double const alpha_prime = two_pow_floor_log2(max_abs_A) * slice;
-    double const beta_prime = two_pow_floor_log2(max_abs_B) * slice;
+    double const eta_ip1 = eta[degree];
 
-    return t_n * (inf_norm_A * beta_prime + alpha_prime * one_norm_B +
-                  (k_d + r) * t_n * alpha_prime * beta_prime);
+    nu[0] = 1.0;
+    if (degree >= 2)
+    {
+        nu[1] = 2.0 * x;
+        for (std::size_t k = 2; k <= degree - 1; ++k)
+        {
+            nu[k] = 2.0 * x * nu[k - 1] - nu[k - 2];
+        }
+    }
+
+    std::size_t const i = degree - 1;
+    double sum = 0.0;
+    for (std::size_t j = 0; j <= i; ++j)
+    {
+        double const w = (j == 0) ? 1.0 : 2.0;
+        sum += w * std::abs(eta[j] * nu[i - j] / eta_ip1);
+    }
+    
+    return sum;
 }
 
 } // namespace gemmul8pp

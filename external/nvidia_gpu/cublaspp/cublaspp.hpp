@@ -236,16 +236,46 @@ cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
     return cublasDznrm2(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
                         incx, result);
 }
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n, const float* x,
                            std::size_t incx, float* result)
 {
     return cublasSasum(handle, n, x, incx, result);
 }
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
                            const double* x, std::size_t incx, double* result)
 {
     return cublasDasum(handle, n, x, incx, result);
 }
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
                            const std::complex<float>* x, std::size_t incx,
                            float* result)
@@ -253,6 +283,16 @@ cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
     return cublasScasum(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
                         result);
 }
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
                            const std::complex<double>* x, std::size_t incx,
                            double* result)
@@ -1084,18 +1124,48 @@ cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
 
 #ifdef CHASE_ENABLE_OZAKI
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n, const float* x,
                             std::size_t incx, int* result)
 {
     return cublasIsamax(handle, n, x, incx, result);
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
                             const double* x, std::size_t incx, int* result)
 {
     return cublasIdamax(handle, n, x, incx, result);
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
                             const std::complex<float>* x, std::size_t incx,
                             int* result)
@@ -1104,6 +1174,16 @@ cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
                         result);
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
                             const std::complex<double>* x, std::size_t incx,
                             int* result)
@@ -1112,87 +1192,53 @@ cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
                         incx, result);
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the largest absolute value of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result maximum absolute value.
+ * @return Status of the operation.
+ */
 template <typename T>
 cublasStatus_t cublasTmaxAbs(cublasHandle_t handle, std::size_t n, const T* x,
                              std::size_t incx, Base<T>* result)
 {
-    if (n == 0)
-    {
-        *result = Base<T>(0);
-        return CUBLAS_STATUS_SUCCESS;
-    }
-
-    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
-    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
-
-    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
-
     int idx = 0;
+    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
     status = cublasTiamax(handle, n, x, incx, &idx);
-    cublasSetPointerMode(handle, mode);
-    if (status != CUBLAS_STATUS_SUCCESS)
+
+    if (status == CUBLAS_STATUS_SUCCESS)
     {
-        return status;
+        T val{};
+        cudaError_t const err = cudaMemcpy(
+            &val, x + (static_cast<std::size_t>(idx) - 1) * incx, sizeof(T),
+            cudaMemcpyDeviceToHost);
+        *result = std::abs(val);
     }
 
-    T val{};
-    cudaError_t const err = cudaMemcpy(
-        &val, x + (static_cast<std::size_t>(idx) - 1) * incx, sizeof(T),
-        cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess)
-    {
-        return CUBLAS_STATUS_EXECUTION_FAILED;
-    }
-
-    *result = std::abs(val);
-    return CUBLAS_STATUS_SUCCESS;
+    return status;
 }
 
-template <typename T>
-cublasStatus_t cublasTmatrixMaxAbs(cublasHandle_t handle, std::size_t rows,
-                                   std::size_t cols, const T* A, std::size_t lda,
-                                   Base<T>* result)
-{
-    if (rows == 0 || cols == 0)
-    {
-        *result = Base<T>(0);
-        return CUBLAS_STATUS_SUCCESS;
-    }
-
-    return cublasTmaxAbs(handle, lda * cols, A, 1, result);
-}
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the infinity-norm of a matrix (maximum absolute row sum).
+ * @param handle cuBLAS handle.
+ * @param rows Number of rows of matrix A.
+ * @param cols Number of columns of matrix A.
+ * @param A Pointer to input matrix A.
+ * @param lda Leading dimension of A.
+ * @param result Pointer to the result infinity-norm.
+ * @return Status of the operation.
+ */
 template <typename T>
 cublasStatus_t cublasTmatrixInfNorm(cublasHandle_t handle, std::size_t rows,
                                     std::size_t cols, const T* A, std::size_t lda,
                                     Base<T>* result)
 {
-    if (rows == 0 || cols == 0)
-    {
-        *result = Base<T>(0);
-        return CUBLAS_STATUS_SUCCESS;
-    }
-
-    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
-    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
-
-    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
+    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
 
     Base<T> inf = Base<T>(0);
     for (std::size_t i = 0; i < rows; ++i)
@@ -1201,7 +1247,6 @@ cublasStatus_t cublasTmatrixInfNorm(cublasHandle_t handle, std::size_t rows,
         status = cublasTasum(handle, cols, A + i, lda, &row_sum);
         if (status != CUBLAS_STATUS_SUCCESS)
         {
-            cublasSetPointerMode(handle, mode);
             return status;
         }
         if (row_sum > inf)
@@ -1210,34 +1255,27 @@ cublasStatus_t cublasTmatrixInfNorm(cublasHandle_t handle, std::size_t rows,
         }
     }
 
-    cublasSetPointerMode(handle, mode);
     *result = inf;
-    return CUBLAS_STATUS_SUCCESS;
+    return status;
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the 1-norm of a matrix (maximum absolute column sum).
+ * @param handle cuBLAS handle.
+ * @param rows Number of rows of matrix A.
+ * @param cols Number of columns of matrix A.
+ * @param A Pointer to input matrix A.
+ * @param lda Leading dimension of A.
+ * @param result Pointer to the result 1-norm.
+ * @return Status of the operation.
+ */
 template <typename T>
 cublasStatus_t cublasTmatrixOneNorm(cublasHandle_t handle, std::size_t rows,
                                     std::size_t cols, const T* A, std::size_t lda,
                                     Base<T>* result)
 {
-    if (rows == 0 || cols == 0)
-    {
-        *result = Base<T>(0);
-        return CUBLAS_STATUS_SUCCESS;
-    }
-
-    cublasPointerMode_t mode = CUBLAS_POINTER_MODE_HOST;
-    cublasStatus_t status = cublasGetPointerMode(handle, &mode);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
-
-    status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
-    if (status != CUBLAS_STATUS_SUCCESS)
-    {
-        return status;
-    }
+    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
 
     Base<T> one = Base<T>(0);
     for (std::size_t j = 0; j < cols; ++j)
@@ -1246,7 +1284,6 @@ cublasStatus_t cublasTmatrixOneNorm(cublasHandle_t handle, std::size_t rows,
         status = cublasTasum(handle, rows, A + j * lda, 1, &col_sum);
         if (status != CUBLAS_STATUS_SUCCESS)
         {
-            cublasSetPointerMode(handle, mode);
             return status;
         }
         if (col_sum > one)
@@ -1255,9 +1292,8 @@ cublasStatus_t cublasTmatrixOneNorm(cublasHandle_t handle, std::size_t rows,
         }
     }
 
-    cublasSetPointerMode(handle, mode);
     *result = one;
-    return CUBLAS_STATUS_SUCCESS;
+    return status;
 }
 
 #endif // CHASE_ENABLE_OZAKI

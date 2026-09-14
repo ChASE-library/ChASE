@@ -521,7 +521,8 @@ public:
         ozaki_skip_scaling_activated_ = false;
     }
 
-    void initOzaki_II() override
+    void initOzaki_II(std::size_t degree, chase::Base<T> lambda_1,
+                     chase::Base<T> lower, chase::Base<T> upper) override
     {
         SCOPED_NVTX_RANGE();
 
@@ -532,7 +533,7 @@ public:
         }else
         {
             double tol = GetConfig().GetTol();
-            ozaki_num_moduli_ = static_cast<unsigned>(std::min(15, 4+static_cast<int>(std::ceil(-std::log10(tol))))); // e.g. tol = 10^{-3} -> num_moduli = 7;
+            ozaki_num_moduli_ = static_cast<unsigned>(std::min(static_cast<int>(chase::linalg::gemmul8pp::kMaxNumModuli<T>), 4+static_cast<int>(std::ceil(-std::log10(tol))))); // e.g. tol = 10^{-3} -> num_moduli = 7;
         }
 
         env = std::getenv("CHASE_OZAKI_FASTMODE");
@@ -598,23 +599,41 @@ public:
         chase::Base<T> one_norm_V = chase::Base<T>(0);
         std::size_t const k = Hmat_->cols();
         
-        double ozaki_bounds[9] = {};
+        double ozaki_bounds[chase::linalg::gemmul8pp::kMaxNumModuliFp64 - 6] = {};
+        double ozaki_ep_bounds[chase::linalg::gemmul8pp::kMaxNumModuliFp64 - 6] = {};
         double fp64_bound = 0.0;
+        double fp64_ep_bound = 0.0;
+        double const u2 = chase::linalg::gemmul8pp::u2_model_sum(degree, static_cast<double>(lambda_1), static_cast<double>(lower),static_cast<double>(upper));
 
         if (!ozaki_fp_hemm_fallback)
         {
+            chase::Base<T> const c = (upper + lower) / chase::Base<T>(2);
+            chase::Base<T> const e = (upper - lower) / chase::Base<T>(2);
+
             Hmat_->H2D();
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixMaxAbs(blasH_, Hmat_->rows(), Hmat_->cols(), Hmat_->data(), Hmat_->ld(), &max_abs_H));
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixMaxAbs(blasH_, Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(),&max_abs_V));
+            // Diagonal kernel only: Shift() also toggles mixed precision and Ozaki skip-scaling.
+            kernel_dispatch::shift_diagonal(Hmat_->data(), std::min(Hmat_->rows(), Hmat_->cols()), Hmat_->ld(), -c);
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmaxAbs(blasH_, Hmat_->ld() * Hmat_->cols(), Hmat_->data(), 1, &max_abs_H));
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixInfNorm(blasH_, Hmat_->rows(), Hmat_->cols(), Hmat_->data(), Hmat_->ld(), &inf_norm_H));
+            kernel_dispatch::shift_diagonal(Hmat_->data(), std::min(Hmat_->rows(), Hmat_->cols()),Hmat_->ld(), c);
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmaxAbs(blasH_, Vec1_.ld() * Vec1_.cols(), Vec1_.data(), 1, &max_abs_V));
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixOneNorm(blasH_, Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(), &one_norm_V));
-            for (unsigned n = 15; n >= 7; --n)
+
+            double const abs_e = std::abs(static_cast<double>(e));
+            double const mH = static_cast<double>(max_abs_H) / abs_e;
+            double const mV = static_cast<double>(max_abs_V);
+            double const nH = static_cast<double>(inf_norm_H) / abs_e;
+            double const nV = static_cast<double>(one_norm_V);
+            for (unsigned n = chase::linalg::gemmul8pp::kMaxNumModuli<T>; n >= 7; --n)
             {
-                ozaki_bounds[n - 7] = chase::linalg::gemmul8pp::local_gemm_error_bound<T>(static_cast<double>(max_abs_H),static_cast<double>(max_abs_V), static_cast<double>(inf_norm_H), static_cast<double>(one_norm_V), k, n);
+                ozaki_bounds[n - 7] = chase::linalg::gemmul8pp::local_gemm_error_bound<T>(mH, mV, nH, nV, k, n);
+                ozaki_ep_bounds[n - 7] = ozaki_bounds[n - 7] * u2;
             }
             double const kd = static_cast<double>(k);
             double const u64 = chase::linalg::gemmul8pp::kU64;
-            fp64_bound = (kd * u64 / (1.0 - kd * u64)) * static_cast<double>(inf_norm_H) * static_cast<double>(max_abs_V);
+            fp64_bound = (kd * u64 / (1.0 - kd * u64)) * nH * mV;
+            fp64_ep_bound = fp64_bound * u2;
         }
 #ifdef CHASE_OUTPUT
         {
@@ -632,13 +651,17 @@ public:
             if (!ozaki_fp_hemm_fallback)
             {
                 oss << "  " << std::left << std::setw(12) << "num_moduli";
-                for (unsigned n = 7; n <= 15; ++n)
+                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
                     oss << std::right << std::setw(11) << n;
                 oss << std::right << std::setw(11) << "FP64" << "\n  "
                     << std::left << std::setw(12) << "||E^f|| <" << std::scientific << std::setprecision(2);
-                for (int i = 0; i < 9; ++i)
-                    oss << std::right << std::setw(11) << ozaki_bounds[i];
-                oss << std::right << std::setw(11) << fp64_bound << "\n";
+                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
+                    oss << std::right << std::setw(11) << ozaki_bounds[n - 7];
+                oss << std::right << std::setw(11) << fp64_bound << "\n  "
+                    << std::left << std::setw(12) << "||E^p|| <";
+                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
+                    oss << std::right << std::setw(11) << ozaki_ep_bounds[n - 7];
+                oss << std::right << std::setw(11) << fp64_ep_bound << "\n";
             }
             double const gib = 1024.0 * 1024.0 * 1024.0;
             oss << std::left << std::fixed << std::setprecision(2);

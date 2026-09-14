@@ -1440,9 +1440,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         single->QR(1.0);
     }
     
-#ifdef CHASE_ENABLE_OZAKI
-    single->initOzaki_II();
-#endif
     // --------------------------------- LANCZOS
     // ---------------------------------
 
@@ -1466,6 +1463,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
     Base<T> lambda_temp, lowerb_temp;
     lowerb = lowerb * config.GetDecayingRate();
+
+#ifdef CHASE_ENABLE_OZAKI
+    single->QR(1.0);
+    single->initOzaki_II(deg, lambda, lowerb, upperb);
+#endif
 
     std::size_t new_converged;
 

@@ -566,9 +566,10 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
-    void initOzaki_II() override
+    void initOzaki_II(std::size_t degree, Base<T> lambda_1, Base<T> lower,
+                     Base<T> upper) override
     {
-        chase_->initOzaki_II();
+        chase_->initOzaki_II(degree, lambda_1, lower, upper);
     }
     unsigned GetOzakiNumModuli() const override
     {

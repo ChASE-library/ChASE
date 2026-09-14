@@ -327,7 +327,8 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
-    void initOzaki_II() override {}
+    void initOzaki_II(std::size_t, chase::Base<T>, chase::Base<T>,
+                     chase::Base<T>) override {}
     unsigned GetOzakiNumModuli() const override { return 0; }
     void SetOzakiNumModuli(unsigned) override {}
 #endif
