@@ -313,6 +313,8 @@ public:
                      chase::Base<T>) override {}
     unsigned GetOzakiNumModuli() const override { return 0; }
     void SetOzakiNumModuli(unsigned) override {}
+    void Activate_HighPrecision_Fallback() override {}
+    bool IsOzakiFpHemmFallback() const override { return false; }
 #endif
 
     void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,

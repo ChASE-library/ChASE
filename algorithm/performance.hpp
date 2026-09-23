@@ -579,6 +579,14 @@ public:
     {
         chase_->SetOzakiNumModuli(num_moduli);
     }
+    void Activate_HighPrecision_Fallback() override
+    {
+        chase_->Activate_HighPrecision_Fallback();
+    }
+    bool IsOzakiFpHemmFallback() const override
+    {
+        return chase_->IsOzakiFpHemmFallback();
+    }
 #endif
 
     void Shift(T c, bool isunshift = false) override

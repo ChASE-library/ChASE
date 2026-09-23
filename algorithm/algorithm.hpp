@@ -206,6 +206,12 @@ public:
                                std::vector<Base<T>>* early_locked_residuals,
                                std::size_t* degrees, std::size_t locked);
 
+    static std::size_t locking_with_early_locking(
+        ChaseBase<T>* kernel, std::size_t N, std::size_t unconverged,
+        Base<T> tol, Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
+        std::vector<Base<T>>* early_locked_residuals, std::size_t* degrees,
+        std::size_t locked);
+
     /**
      * @brief Specialized locking for pseudo-hermitian matrices.
      *

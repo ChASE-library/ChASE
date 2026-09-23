@@ -294,6 +294,8 @@ public:
                              Base<T> upper) = 0;
     virtual unsigned GetOzakiNumModuli() const = 0;
     virtual void SetOzakiNumModuli(unsigned num_moduli) = 0;
+    virtual void Activate_HighPrecision_Fallback() = 0;
+    virtual bool IsOzakiFpHemmFallback() const = 0;
 #endif
     /**
      * @brief Reinitialize selected columns of the subspace with random vectors.

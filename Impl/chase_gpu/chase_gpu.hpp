@@ -21,6 +21,7 @@
 #include <memory>
 #include <random>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
@@ -514,11 +515,28 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
+
     unsigned GetOzakiNumModuli() const override { return ozaki_num_moduli_; }
+
     void SetOzakiNumModuli(unsigned num_moduli) override
     {
         ozaki_num_moduli_ = num_moduli;
         ozaki_skip_scaling_activated_ = false;
+    }
+
+    void Activate_HighPrecision_Fallback() override
+    {
+        if (ozaki_fp_hemm_fallback)
+            return;
+        if (ozaki_fallback_num_moduli_ < 0)
+            ozaki_fp_hemm_fallback = true;
+        else
+            SetOzakiNumModuli(static_cast<unsigned>(ozaki_fallback_num_moduli_));
+    }
+
+    bool IsOzakiFpHemmFallback() const override
+    {
+        return ozaki_fp_hemm_fallback;
     }
 
     void initOzaki_II(std::size_t degree, chase::Base<T> lambda_1,
@@ -630,45 +648,128 @@ public:
                 ozaki_bounds[n - 7] = chase::linalg::gemmul8pp::local_gemm_error_bound<T>(mH, mV, nH, nV, k, n);
                 ozaki_ep_bounds[n - 7] = ozaki_bounds[n - 7] * u2;
             }
+            if (std::getenv("CHASE_OZAKI_NUM_MODULI") == nullptr)
+            {
+                double const tol_d = static_cast<double>(GetConfig().GetTol());
+                ozaki_num_moduli_ = chase::linalg::gemmul8pp::kMaxNumModuli<T>;
+                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
+                {
+                    if (ozaki_ep_bounds[n - 7] < tol_d /*/ (2*upper*std::sqrt(k))*/)
+                    {
+                        ozaki_num_moduli_ = n;
+                        break;
+                    }
+                }
+            }
             double const kd = static_cast<double>(k);
             double const u64 = chase::linalg::gemmul8pp::kU64;
             fp64_bound = (kd * u64 / (1.0 - kd * u64)) * nH * mV;
             fp64_ep_bound = fp64_bound * u2;
+
+            ozaki_fallback_num_moduli_ = -1;
+            for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>;
+                 ++n)
+            {
+                if (ozaki_ep_bounds[n - 7] < fp64_ep_bound)
+                {
+                    ozaki_fallback_num_moduli_ = static_cast<int>(n);
+                    break;
+                }
+            }
         }
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
-            oss << std::left << "Ozaki-II GEMMul8\n";
-            oss << "  " << std::setw(14) << "status" << ": " << (ozaki_fp_hemm_fallback ? "disabled (FP HEMM fallback)" : "enabled") << "\n";
-            oss << "  " << std::setw(14) << "num_moduli" << ": " << ozaki_num_moduli_ << "\n";
-            oss << "  " << std::setw(14) << "fastmode" << ": " << (ozaki_fastmode_ ? "on" : "off") << "\n";
-            oss << "  " << std::setw(14) << "skip_scaling" << ": " << (ozaki_skip_scaling_ ? "on" : "off") << "\n";
-            oss << "  " << std::setw(14) << "save_memory" << ": ";
-            if (!chase::linalg::gemmul8pp::has_memory_saving())
-                oss << "off (save memory mode not available in GEMMul8)\n";
-            else
-                oss << (ozaki_save_memory_ ? "on" : "off") << "\n";
+            double const gib = 1024.0 * 1024.0 * 1024.0;
+            std::string const status =
+                ozaki_fp_hemm_fallback ? "disabled (FP HEMM fallback)"
+                                       : "enabled";
+            std::string const fallback =
+                ozaki_fallback_num_moduli_ < 0
+                    ? "FP-GEMM"
+                    : std::to_string(ozaki_fallback_num_moduli_);
+            std::string const save_memory =
+                !chase::linalg::gemmul8pp::has_memory_saving()
+                    ? "off (not available in GEMMul8)"
+                    : (ozaki_save_memory_ ? "on" : "off");
+            std::ostringstream workspace_ss;
+            workspace_ss << std::fixed << std::setprecision(2)
+                         << ozaki_workspace_size_ / gib << " GiB";
+            std::ostringstream free_ss;
+            free_ss << std::fixed << std::setprecision(2) << free_bytes / gib
+                    << " GiB";
+            std::string const path = chase::linalg::gemmul8pp::gemmul8_root();
+
+            std::size_t const key_w = 15;
+            std::size_t val_w = status.size();
+            val_w = std::max(val_w, fallback.size());
+            val_w = std::max(val_w, save_memory.size());
+            val_w = std::max(val_w, workspace_ss.str().size());
+            val_w = std::max(val_w, free_ss.str().size());
+            val_w = std::max(val_w, path.size());
+            val_w = std::max(val_w, std::size_t(8));
+
+            auto const settings_hline = [&]() {
+                oss << "  +" << std::string(key_w + 2, '-') << "+"
+                    << std::string(val_w + 2, '-') << "+\n";
+            };
+            auto const settings_row = [&](char const* key,
+                                          std::string const& val) {
+                oss << "  | " << std::left << std::setw(static_cast<int>(key_w))
+                    << key << " | " << std::left
+                    << std::setw(static_cast<int>(val_w)) << val << " |\n";
+            };
+
+            oss << "Ozaki-II GEMMul8\n";
+            settings_hline();
+            settings_row("status", status);
+            settings_row("num_moduli", std::to_string(ozaki_num_moduli_));
+            settings_row("fallback_moduli", fallback);
+            settings_row("fastmode", ozaki_fastmode_ ? "on" : "off");
+            settings_row("skip_scaling", ozaki_skip_scaling_ ? "on" : "off");
+            settings_row("save_memory", save_memory);
+            settings_row("workspace", workspace_ss.str());
+            settings_row("gpu_free", free_ss.str());
+            settings_row("path", path);
+            settings_hline();
+
             if (!ozaki_fp_hemm_fallback)
             {
-                oss << "  " << std::left << std::setw(12) << "num_moduli";
-                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
-                    oss << std::right << std::setw(11) << n;
-                oss << std::right << std::setw(11) << "FP64" << "\n  "
-                    << std::left << std::setw(12) << "||E^f|| <" << std::scientific << std::setprecision(2);
-                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
-                    oss << std::right << std::setw(11) << ozaki_bounds[n - 7];
-                oss << std::right << std::setw(11) << fp64_bound << "\n  "
-                    << std::left << std::setw(12) << "||E^p|| <";
-                for (unsigned n = 7; n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
-                    oss << std::right << std::setw(11) << ozaki_ep_bounds[n - 7];
-                oss << std::right << std::setw(11) << fp64_ep_bound << "\n";
+                unsigned const nmax =
+                    chase::linalg::gemmul8pp::kMaxNumModuli<T>;
+                auto const hline = [&]() {
+                    oss << "  +------------+";
+                    for (unsigned n = 7; n <= nmax; ++n)
+                        oss << "----------+";
+                    oss << "----------+\n";
+                };
+                hline();
+                oss << "  | " << std::left << std::setw(10) << "num_moduli"
+                    << " |";
+                for (unsigned n = 7; n <= nmax; ++n)
+                    oss << std::right << std::setw(9) << n << " |";
+                oss << std::right << std::setw(9) << "FP64" << " |\n";
+                hline();
+                oss << std::scientific << std::setprecision(2);
+                oss << "  | " << std::left << std::setw(10) << "||E^f|| <"
+                    << " |";
+                for (unsigned n = 7; n <= nmax; ++n)
+                    oss << std::right << std::setw(9) << ozaki_bounds[n - 7]
+                        << " |";
+                oss << std::right << std::setw(9) << fp64_bound << " |\n";
+                oss << "  | " << std::left << std::setw(10) << "||E^p|| <"
+                    << " |";
+                for (unsigned n = 7; n <= nmax; ++n)
+                    oss << std::right << std::setw(9)
+                        << ozaki_ep_bounds[n - 7] << " |";
+                oss << std::right << std::setw(9) << fp64_ep_bound << " |\n";
+                hline();
             }
-            double const gib = 1024.0 * 1024.0 * 1024.0;
-            oss << std::left << std::fixed << std::setprecision(2);
-            oss << "  " << std::setw(14) << "workspace" << ": " << ozaki_workspace_size_ / gib << " GiB\n";
-            oss << "  " << std::setw(14) << "gpu_free" << ": " << free_bytes / gib << " GiB\n";
-            oss << "  " << std::setw(14) << "path" << ": " << chase::linalg::gemmul8pp::gemmul8_root() << "\n" << std::endl;
-            chase::GetLogger().Log(ozaki_fp_hemm_fallback ? chase::LogLevel::Warn : chase::LogLevel::Info, "linalg", oss.str(), 0);
+            oss << std::endl;
+            chase::GetLogger().Log(ozaki_fp_hemm_fallback
+                                       ? chase::LogLevel::Warn
+                                       : chase::LogLevel::Info,
+                                   "linalg", oss.str(), 0);
         }
 #endif
     }
@@ -1274,6 +1375,8 @@ private:
     int8_t* ozaki_workspace_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8). */
     size_t ozaki_max_worksize_ = size_t(12) << 30; /**< Max GEMMul8 workspace in bytes. */
     unsigned ozaki_num_moduli_ = 8; /**< Number of moduli for Ozaki-II (GEMMul8). */
+    int ozaki_fallback_num_moduli_ =
+        -1; /**< Smallest moduli beating FP64 Ep; -1 => FP-GEMM on stagnation. */
     bool ozaki_skip_scaling_      = false; /**< Flag to skip scaling Hmat in Ozaki-II (GEMMul8). */
     bool ozaki_save_memory_     = false; /**< Cap Ozaki-II workspace (on by default if GEMMul8 supports it). */
     bool ozaki_fastmode_        = false; /**< Flag to use fastmode in Ozaki-II (GEMMul8). */

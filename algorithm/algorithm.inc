@@ -525,33 +525,75 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 {
     SCOPED_NVTX_RANGE();
 
-    // we build the permutation
     std::vector<int> index(unconverged, 0);
     for (int i = 0; i != index.size(); i++)
-    {
         index[i] = i;
-    }
+
     sort(index.begin(), index.end(),
          [&](const int& a, const int& b) { return (Lritzv[a] < Lritzv[b]); });
-    std::size_t converged = 0;
 
+    std::size_t converged = 0;
     for (auto k = 0; k < unconverged; k++)
     {
-        auto j = index[k]; // walk through
+        auto j = index[k];
 
-#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
-        if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] &&
-                                resid[j] < 100.0 * tol))
-#else
         if (resid[j] <= tol)
-#endif
+        {
+            if (j != converged)
+            {
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, residLast);
+                swap_kj(j, converged, Lritzv);
+                single->Swap(j + locked, converged + locked);
+            }
+            converged++;
+        }
+#ifdef CHASE_ENABLE_OZAKI
+        else if (resid[j] >= residLast[j])
         {
 
-#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
-            if (single->isSym() && resid[j] > tol && resid[j] >= residLast[j] &&
-                resid[j] < 100.0 * tol)
-            {
+#ifdef CHASE_OUTPUT
+            std::ostringstream oss;
+            oss << "convergence stalling detected:" << resid[j]
+                << " was:" << residLast[j] << " tolerance is: " << tol
+                << " val: " << Lritzv[j] << "\n";
+            single->Output(LogLevel::Warn, oss.str(), "algorithm");
+#endif
+            single->Activate_HighPrecision_Fallback();
+        }
+#endif
+    }
+    return converged;
+}
 
+template <class T>
+std::size_t Algorithm<T>::locking_with_early_locking(
+    ChaseBase<T>* single, std::size_t N, std::size_t unconverged, Base<T> tol,
+    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+    std::vector<Base<T>>* early_locked_residuals, std::size_t* degrees,
+    std::size_t locked)
+{
+    SCOPED_NVTX_RANGE();
+
+    std::vector<int> index(unconverged, 0);
+    for (int i = 0; i != index.size(); i++)
+        index[i] = i;
+
+    sort(index.begin(), index.end(),
+         [&](const int& a, const int& b) { return (Lritzv[a] < Lritzv[b]); });
+
+    std::size_t converged = 0;
+    for (auto k = 0; k < unconverged; k++)
+    {
+        auto j = index[k];
+
+        const bool early = single->isSym() && resid[j] >= residLast[j] &&
+                           resid[j] < 100.0 * tol;
+
+        if (resid[j] <= tol || early)
+        {
+            if (early && resid[j] > tol)
+            {
 #ifdef CHASE_OUTPUT
                 std::ostringstream oss;
                 oss << "locking unconverged pair is:" << resid[j]
@@ -561,19 +603,30 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
-#endif
+
             if (j != converged)
             {
-                swap_kj(j, converged, resid);     // if we filter again
-                swap_kj(j, converged, residLast); // if we filter again
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, residLast);
                 swap_kj(j, converged, Lritzv);
                 single->Swap(j + locked, converged + locked);
             }
-
             converged++;
         }
+#ifdef CHASE_ENABLE_OZAKI
+        else if (resid[j] >= residLast[j])
+        {
+#ifdef CHASE_OUTPUT
+            std::ostringstream oss;
+            oss << "convergence stalling detected:" << resid[j]
+                << " was:" << residLast[j] << " tolerance is: " << tol
+                << " val: " << Lritzv[j] << "\n";
+            single->Output(LogLevel::Warn, oss.str(), "algorithm");
+#endif
+            single->Activate_HighPrecision_Fallback();
+        }
+#endif
     }
-
     return converged;
 }
 
@@ -992,7 +1045,7 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
         beta = T(-sigma * sigma_new);
 
 #ifdef CHASE_ENABLE_OZAKI
-         single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
+        single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
 #else
         single->HEMM(unprocessed, alpha, beta, offset / n);
 #endif
@@ -1522,14 +1575,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
           one iteration does not provide convergence for at least one
           eigenvector.*/
 
-#ifdef CHASE_ENABLE_OZAKI
-          if (iteration == 1)
-          {
-              //single->SetOzakiNumModuli(15);
-              //Ozaki-II num moduli can be tuned dynamically for each iteration
-          }
-#endif
-
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
@@ -1537,12 +1582,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             oss << std::scientific << "iteration: " << iteration << "\t"
                 << std::setprecision(6) << lambda << "\t"
                 << std::setprecision(6) << lowerb << "\t"
-                << std::setprecision(6) << upperb << "\t" << unconverged
+                << std::setprecision(6) << upperb << "\t" << unconverged;
 #ifdef CHASE_ENABLE_OZAKI
-                << std::setprecision(6) << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t"
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t";
 #endif
-                << std::endl;
-
+            oss << std::endl;
             single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
@@ -1555,15 +1600,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         if (single->isSym())
         {
             for (auto i = 0; i < unconverged; ++i)
-                residLast[i] = std::min(residLast[i], resid[i]);
+                residLast[i] = resid[i]; //std::min(residLast[i], resid[i]);
         }
 
         //-------------------------------- DEGREES
         //--------------------------------
         if (config.DoOptimization() && iteration != 0)
         {
-            deg =
-                calc_degrees(single, N, unconverged, nex, upperb, lowerb,
+            deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb,
                                 tol, ritzv, resid, residLast, degrees, locked);            
         }
 
@@ -1714,9 +1758,15 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
         if (single->isSym())
         {
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
+            new_converged = locking_with_early_locking(
+                single, N, unconverged - single->isSym() * nex, tol, ritzv,
+                resid, residLast, &early_locked_residuals, degrees, locked);
+#else
             new_converged = locking(
                 single, N, unconverged - single->isSym() * nex, tol, ritzv,
                 resid, residLast, &early_locked_residuals, degrees, locked);
+#endif
         }
         else
         {
