@@ -371,12 +371,11 @@ if(CMAKE_CUDA_COMPILER)
     set(CUDA_curand_LIBRARY CUDA::curand)    
   endif()
 
-  enable_language(CUDA)
+  # One architecture, before enable_language(CUDA), shared with a ChASE-built GEMMul8.
+  include(CudaArchitectures)
+  chase_require_single_cuda_architecture()
 
-  # If variable not defined, set it to default value in order to comply with CMake Policy CMP0104
-  if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      set (CMAKE_CUDA_ARCHITECTURES "80")
-  endif()
+  enable_language(CUDA)
 
   if (${CMAKE_VERSION} VERSION_LESS "3.18.0")
     message("CMAKE version less than 3.18. Using old CMAKE CUDA policy for defining CUDA code generation flags")

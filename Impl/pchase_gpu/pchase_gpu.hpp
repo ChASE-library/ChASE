@@ -736,7 +736,21 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        char* env = std::getenv("CHASE_OZAKI_NUM_MODULI");
+        char* env = std::getenv("CHASE_DISABLE_OZAKI");
+        if (env != nullptr && std::atoi(env) != 0)
+        {
+            ozaki_fp_hemm_fallback = true;
+            if (my_rank_ == 0)
+            {
+                chase::GetLogger().Log(
+                    chase::LogLevel::Info, "linalg",
+                    "Ozaki-II disabled by CHASE_DISABLE_OZAKI; GEMM uses cuBLAS\n",
+                    0);
+            }
+            return;
+        }
+
+        env = std::getenv("CHASE_OZAKI_NUM_MODULI");
         if (env != nullptr)
         {
             ozaki_num_moduli_ = static_cast<unsigned>(std::atoi(env));
@@ -755,10 +769,10 @@ public:
 
         ozaki_save_memory_ = chase::linalg::gemmul8pp::has_memory_saving();
 
-        env = std::getenv("CHASE_OZAKI_SAVE_MEMORY");
-        if (env != nullptr)
+        env = std::getenv("CHASE_OZAKI_DISABLE_SAVE_MEMORY");
+        if (env != nullptr && std::atoi(env) != 0)
         {
-            ozaki_save_memory_ = ozaki_save_memory_ && (std::atoi(env) != 0);
+            ozaki_save_memory_ = false;
         }
 
         env = std::getenv("CHASE_OZAKI_SKIP_SCALING");

@@ -90,7 +90,11 @@ option(CHASE_PANEL_HIPREC "Enable Split-Sync-Fix and high-precision panel protec
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
 # Ozaki Scheme II (GEMMul8) integration (GPU-only backend, optional)
 option(CHASE_ENABLE_OZAKI "Enable Ozaki Scheme II GEMM backend (requires GEMMul8)" OFF)
-set(GEMMUL8_ROOT "" CACHE PATH "Path to GEMMul8 build/install prefix (must contain include/ and lib/)")
+set(GEMMUL8_ROOT "" CACHE PATH "GEMMul8 prefix with include/ and lib/. Empty: ChASE downloads and builds GEMM-only INT8.")
+option(CHASE_FETCH_GEMMUL8 "When GEMMUL8_ROOT is empty, download and build GEMMul8 (GEMM, INT8)" ON)
+set(CHASE_GEMMUL8_GIT_REPOSITORY "https://github.com/RIKEN-RCCS/GEMMul8.git" CACHE STRING "Git repository used when ChASE builds GEMMul8")
+set(CHASE_GEMMUL8_GIT_TAG "v3.4.4" CACHE STRING "Git tag or commit used when ChASE builds GEMMul8")
+set(CHASE_GEMMUL8_GPU_ARCH "" CACHE STRING "Must match CMAKE_CUDA_ARCHITECTURES when set. Empty uses that one architecture.")
 # Optional NCCL warm-up in pChASEGPU constructor (cholQR1 + Lanczos); skews startup timing.
 option(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
   "Enable NCCL warm-up in pChASEGPU constructor (benchmarks only; extra startup cost)" OFF)
