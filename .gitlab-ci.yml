@@ -67,7 +67,7 @@ build_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
@@ -95,7 +95,7 @@ test_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     - export CUDA_VISIBLE_DEVICES=0,1,2,3
     - cd build_gpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
@@ -121,7 +121,7 @@ coverage_generate:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     
     # Install gcovr and update PATH
     - |
