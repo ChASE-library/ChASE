@@ -559,6 +559,8 @@ public:
 
 #ifdef CHASE_OUTPUT
         auto const ozaki_init_t0 = std::chrono::steady_clock::now();
+        double ozaki_scaling_ms = -1.0;
+        double ozaki_inf_norm_ms = -1.0;
 #endif
 
         env = std::getenv("CHASE_OZAKI_NUM_MODULI");
@@ -663,15 +665,35 @@ public:
             double nrm2_a = 0.0;
             double max2_b = 0.0;
 
+#ifdef CHASE_OUTPUT
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            auto const sft_t0 = std::chrono::steady_clock::now();
+#endif
             chase::linalg::gemmul8pp::ozaki_compute_scaling_factors_error_bound(
                 blasH_, Hmat_->data(), Hmat_->ld(), m, k, Vec1_.data(),
                 Vec1_.ld(), n_vecs, ozaki_workspace_, ozaki_workspace_size_,
                 &nrm2_a, &max2_b, inv_e);
+#ifdef CHASE_OUTPUT
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            ozaki_scaling_ms = std::chrono::duration<double, std::milli>(
+                                   std::chrono::steady_clock::now() - sft_t0)
+                                   .count();
+#endif
 
             // ||Ā||_∞ via ||H−cI||_∞ / |e| (Ā = (H−cI)/e).
             chase::Base<T> inf_norm_H = chase::Base<T>(0);
+#ifdef CHASE_OUTPUT
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            auto const inf_t0 = std::chrono::steady_clock::now();
+#endif
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixInfNorm(
                 blasH_, m, k, Hmat_->data(), Hmat_->ld(), &inf_norm_H));
+#ifdef CHASE_OUTPUT
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            ozaki_inf_norm_ms = std::chrono::duration<double, std::milli>(
+                                    std::chrono::steady_clock::now() - inf_t0)
+                                    .count();
+#endif
 
             kernel_dispatch::shift_diagonal(Hmat_->data(), std::min(m, k),Hmat_->ld(), c);
 
@@ -747,6 +769,14 @@ public:
             std::ostringstream init_ss;
             init_ss << std::fixed << std::setprecision(2) << ozaki_init_ms << " ms";
 
+            std::ostringstream scaling_ss;
+            if (ozaki_scaling_ms >= 0.0)
+                scaling_ss << std::fixed << std::setprecision(2) << ozaki_scaling_ms << " ms";
+
+            std::ostringstream inf_norm_ss;
+            if (ozaki_inf_norm_ms >= 0.0)
+                inf_norm_ss << std::fixed << std::setprecision(2) << ozaki_inf_norm_ms << " ms";
+
             std::string const path = chase::linalg::gemmul8pp::gemmul8_root();
 
             std::size_t const key_w = 15;
@@ -756,6 +786,8 @@ public:
             val_w = std::max(val_w, workspace_ss.str().size());
             val_w = std::max(val_w, free_ss.str().size());
             val_w = std::max(val_w, init_ss.str().size());
+            val_w = std::max(val_w, scaling_ss.str().size());
+            val_w = std::max(val_w, inf_norm_ss.str().size());
             val_w = std::max(val_w, path.size());
             val_w = std::max(val_w, std::size_t(8));
 
@@ -777,6 +809,10 @@ public:
             settings_row("workspace", workspace_ss.str());
             settings_row("gpu_free", free_ss.str());
             settings_row("init", init_ss.str());
+            if (ozaki_scaling_ms >= 0.0)
+                settings_row("scaling", scaling_ss.str());
+            if (ozaki_inf_norm_ms >= 0.0)
+                settings_row("inf_norm", inf_norm_ss.str());
             settings_row("path", path);
             settings_hline();
 
