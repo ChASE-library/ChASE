@@ -10,6 +10,7 @@
 
 #include "algorithm/types.hpp"
 #include <complex>
+#include <cstdint>
 #include <cuComplex.h>
 #include <cublas_v2.h>
 #include <cuda.h>
@@ -1123,6 +1124,27 @@ cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
 }
 
 #ifdef CHASE_ENABLE_OZAKI
+
+/**
+ * @brief Template specialization for int8_t → int32_t (Ozaki C'' probe).
+ * For A_lo from pack_A_lo (transposed layout), use transa = CUBLAS_OP_T.
+ */
+template <cublasComputeType_t ComputeType = CUBLAS_COMPUTE_32I>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
+                             cublasOperation_t transb, std::size_t m,
+                             std::size_t n, std::size_t k,
+                             const std::int32_t* alpha, const std::int8_t* A,
+                             std::size_t lda, const std::int8_t* B,
+                             std::size_t ldb, const std::int32_t* beta,
+                             std::int32_t* C, std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, static_cast<int>(m),
+                        static_cast<int>(n), static_cast<int>(k), alpha, A,
+                        CUDA_R_8I, static_cast<int>(lda), B, CUDA_R_8I,
+                        static_cast<int>(ldb), beta, C, CUDA_R_32I,
+                        static_cast<int>(ldc), ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
 
 /**
  * @ingroup cuBlasFunctions

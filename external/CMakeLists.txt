@@ -132,7 +132,9 @@ if(CHASE_ENABLE_OZAKI)
 
   enable_language(CUDA)
 
-  add_library(gemmul8pp ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/gemmul8pp.cu)
+  add_library(gemmul8pp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/gemmul8pp.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/utilities.cu)
   set_target_properties(gemmul8pp PROPERTIES
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
     CUDA_SEPARABLE_COMPILATION ON

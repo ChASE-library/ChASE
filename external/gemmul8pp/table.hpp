@@ -170,19 +170,31 @@ inline double two_pow_floor_log2(double max_abs)
     return std::exp2(std::floor(std::log2(max_abs)));
 }
 
-// Cheap ozaki-ii paper bound on the GEMM residual:
-//   ||E|| <= t ( ||A||_inf * max 2^{beta'}
-//              + max 2^{alpha'} * ||B||_1
-//              + (k + r) t * max 2^{alpha'} * max 2^{beta'} )
-// with max 2^{alpha'} <= 2^{floor(log2 M_A)} * 2^6 sqrt(k)
-// where M_A = max |A_ij| (same for M_B). k is the GEMM inner dimension.
-// Check Lemma 5 in : https://arxiv.org/pdf/2602.02549
-template <typename T>
-inline double local_gemm_error_bound(double max_abs_A, double max_abs_B,
-                                     double inf_norm_A, double one_norm_B,
-                                     std::size_t k, unsigned num_moduli)
+// γ̃_n = (n u) / (1 - n u).
+inline double gamma_n(std::size_t n, double u)
 {
-    // s: number of moduli
+    double const nu = static_cast<double>(n) * u;
+    return nu / (1.0 - nu);
+}
+
+// IEEE GEMM residual in the (1,2)-norm, unit columns of V (FP64):
+//   ||E^f||_{1,2} <= γ_n ||Ā||_∞  (caller may pass ρ(Ā) or ||Ā||_∞).
+inline double ieee_gemm_error_bound_12(double rho_A, std::size_t n)
+{
+    return gamma_n(n, kU64) * rho_A;
+}
+
+// Ozaki-II GEMM residual in the (1,2)-norm (unit columns of V):
+//   ||E||_{1,2} <= t √n ||Ā||_∞ max 2^{β'}
+//                + t √n ||2^{α'}||_2
+//                + t² (n + r) ||2^{α'}||_2 max 2^{β'}
+// Primes from ozaki_compute_scaling_factors_error_bound.
+// rho_A: spectral radius or infinity-norm surrogate for Ā.
+template <typename T>
+inline double ozaki_gemm_error_bound(double rho_A, double nrm2_two_pow_a,
+                                     double max_two_pow_b, std::size_t n,
+                                     unsigned num_moduli)
+{
     unsigned s = num_moduli;
     if (s < kMinNumModuli)
     {
@@ -193,27 +205,42 @@ inline double local_gemm_error_bound(double max_abs_A, double max_abs_B,
         s = kMaxNumModuli<T>;
     }
 
-    // t = 1 / sqrt(32 (P - 1))
-    double const t_n = t(s);
+    double const t_n    = t(s);
+    double const r      = r_b<T>(s);
+    double const n_d    = static_cast<double>(n);
+    double const sqrt_n = std::sqrt(n_d);
+    double const a      = nrm2_two_pow_a;
+    double const b      = max_two_pow_b;
 
-    // r_32 (FP32) or r_64 (FP64):
-    // r_32 = (1 + u_32)(N + 2) u_64 rho P + (1/2) u_32 P
-    // r_64 = (1 + 3 u_64) 2^{1 + ceil(log2 rho)} (N + 2) u_64^2 rho P + (3/2) u_64 P
-    double const r = r_b<T>(s); 
+    return t_n * sqrt_n * rho_A * b + t_n * sqrt_n * a +
+           t_n * t_n * (n_d + r) * a * b;
+}
 
-    // k: GEMM inner dimension
-    double const k_d = static_cast<double>(k);
+// Legacy max-norm cheap surrogate (Lemma 5); kept for pchase / comparison.
+// https://arxiv.org/pdf/2602.02549
+template <typename T>
+inline double local_gemm_error_bound(double max_abs_A, double max_abs_B,
+                                     double inf_norm_A, double one_norm_B,
+                                     std::size_t k, unsigned num_moduli)
+{
+    unsigned s = num_moduli;
+    if (s < kMinNumModuli)
+    {
+        s = kMinNumModuli;
+    }
+    if (s > kMaxNumModuli<T>)
+    {
+        s = kMaxNumModuli<T>;
+    }
 
-    // 2^6 sqrt(k): INT8 slice width
+    double const t_n   = t(s);
+    double const r     = r_b<T>(s);
+    double const k_d   = static_cast<double>(k);
     double const slice = 64.0 * std::sqrt(k_d);
+    double const a     = two_pow_floor_log2(max_abs_A) * slice;
+    double const b     = two_pow_floor_log2(max_abs_B) * slice;
 
-    // max 2^{alpha'}, max 2^{beta'}: UFP of max |A|, |B| times the slice
-    double const alpha_prime = two_pow_floor_log2(max_abs_A) * slice;
-    double const beta_prime = two_pow_floor_log2(max_abs_B) * slice;
-
-    // t * ( ||A||_inf * beta' + alpha' * ||B||_1 + (k + r) t alpha' beta' )
-    return t_n * (inf_norm_A * beta_prime + alpha_prime * one_norm_B +
-                  (k_d + r) * t_n * alpha_prime * beta_prime);
+    return t_n * (inf_norm_A * b + a * one_norm_B + (k_d + r) * t_n * a * b);
 }
 
 // U2-model sum. If ||E_j^f|| <= ||E_0^f|| for all j, then

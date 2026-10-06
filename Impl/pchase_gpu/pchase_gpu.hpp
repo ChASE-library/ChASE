@@ -869,7 +869,7 @@ public:
                 for (unsigned n = 7;
                      n <= chase::linalg::gemmul8pp::kMaxNumModuli<T>; ++n)
                 {
-                    if (ozaki_ep_bounds[n - 7] < tol_d)
+                    if (ozaki_bounds[n - 7] < tol_d)
                     {
                         ozaki_num_moduli_ = n;
                         break;
