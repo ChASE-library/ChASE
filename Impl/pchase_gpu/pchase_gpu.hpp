@@ -843,7 +843,16 @@ public:
             kernelNamespace::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs,
                                            diag_cnt, -c);
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmaxAbs(blasH_, Hmat_->l_ld() * Hmat_->l_cols(), Hmat_->l_data(), 1, &max_abs_H));
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixInfNorm(blasH_, Hmat_->l_rows(), Hmat_->l_cols(), Hmat_->l_data(), Hmat_->l_ld(), &inf_norm_H));
+            chase::Base<T>* d_inf_norm_H = nullptr;
+            runtime_type::device_malloc(reinterpret_cast<void**>(&d_inf_norm_H),
+                                        sizeof(chase::Base<T>));
+            kernel_dispatch::matrix_inf_norm(Hmat_->l_data(), Hmat_->l_rows(),
+                                             Hmat_->l_cols(), Hmat_->l_ld(),
+                                             d_inf_norm_H, stream_);
+            runtime_type::memcpy_d2h_async(&inf_norm_H, d_inf_norm_H,
+                                           sizeof(chase::Base<T>), stream_);
+            runtime_type::stream_synchronize(stream_);
+            runtime_type::device_free(d_inf_norm_H);
             kernelNamespace::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs,
                                            diag_cnt, c);
 

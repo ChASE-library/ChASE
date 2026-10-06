@@ -28,6 +28,7 @@
 #include "linalg/internal/gpu/kernels/cuda/launchers/flip_sign.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/force_hermitian.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/lacpy.cuh"
+#include "linalg/internal/gpu/kernels/cuda/launchers/matrix_inf_norm.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/precision_conversion.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/random_normal_distribution.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/residuals.cuh"
@@ -376,6 +377,17 @@ struct kernels<gpu_backend::cuda_backend>
     {
         chase::linalg::internal::cuda::absTrace_gpu(matrix, d_trace, n, ld,
                                                     stream);
+    }
+
+    template <typename T>
+    static void matrix_inf_norm(const T* matrix, std::size_t rows,
+                                std::size_t cols, std::size_t ld,
+                                chase::Base<T>* d_norm,
+                                stream_type stream =
+                                    runtime_type::default_stream())
+    {
+        chase::linalg::internal::cuda::matrixInfNorm_gpu(matrix, rows, cols,
+                                                         ld, d_norm, stream);
     }
 
     template <typename T>

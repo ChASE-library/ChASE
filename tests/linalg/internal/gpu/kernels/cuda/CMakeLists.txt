@@ -1,0 +1,1 @@
+setup_test_serial(matrixInfNormGPUTest matrixInfNorm.cpp LIBRARIES chase_cuda_kernels)

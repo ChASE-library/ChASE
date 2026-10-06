@@ -682,12 +682,19 @@ public:
 
             // ||Ā||_∞ via ||H−cI||_∞ / |e| (Ā = (H−cI)/e).
             chase::Base<T> inf_norm_H = chase::Base<T>(0);
+            chase::Base<T>* d_inf_norm_H = nullptr;
+            runtime_type::device_malloc(reinterpret_cast<void**>(&d_inf_norm_H),
+                                        sizeof(chase::Base<T>));
 #ifdef CHASE_OUTPUT
             CHECK_CUDA_ERROR(cudaDeviceSynchronize());
             auto const inf_t0 = std::chrono::steady_clock::now();
 #endif
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTmatrixInfNorm(
-                blasH_, m, k, Hmat_->data(), Hmat_->ld(), &inf_norm_H));
+            kernel_dispatch::matrix_inf_norm(Hmat_->data(), m, k, Hmat_->ld(),
+                                             d_inf_norm_H, stream_);
+            runtime_type::memcpy_d2h_async(&inf_norm_H, d_inf_norm_H,
+                                           sizeof(chase::Base<T>), stream_);
+            runtime_type::stream_synchronize(stream_);
+            runtime_type::device_free(d_inf_norm_H);
 #ifdef CHASE_OUTPUT
             CHECK_CUDA_ERROR(cudaDeviceSynchronize());
             ozaki_inf_norm_ms = std::chrono::duration<double, std::milli>(

@@ -40,6 +40,11 @@
 #define CHASE_GPU_MEMSET_ASYNC cudaMemsetAsync
 #define CHASE_GPU_MALLOC cudaMalloc
 #define CHASE_GPU_FREE cudaFree
+#define CHASE_GPU_MALLOC_ASYNC cudaMallocAsync
+#define CHASE_GPU_FREE_ASYNC cudaFreeAsync
+#define CHASE_GPU_GET_DEVICE cudaGetDevice
+#define CHASE_GPU_MULTIPROCESSOR_COUNT(count, device)                          \
+    cudaDeviceGetAttribute(count, cudaDevAttrMultiProcessorCount, device)
 #define CHASE_GPU_MEMCPY_ASYNC cudaMemcpyAsync
 #define CHASE_GPU_MEMCPY_DEVICE_TO_HOST cudaMemcpyDeviceToHost
 #define CHASE_GPU_MEMCPY_HOST_TO_DEVICE cudaMemcpyHostToDevice
@@ -85,6 +90,11 @@
 #define CHASE_GPU_MEMSET_ASYNC hipMemsetAsync
 #define CHASE_GPU_MALLOC hipMalloc
 #define CHASE_GPU_FREE hipFree
+#define CHASE_GPU_MALLOC_ASYNC hipMallocAsync
+#define CHASE_GPU_FREE_ASYNC hipFreeAsync
+#define CHASE_GPU_GET_DEVICE hipGetDevice
+#define CHASE_GPU_MULTIPROCESSOR_COUNT(count, device)                          \
+    hipDeviceGetAttribute(count, hipDeviceAttributeMultiprocessorCount, device)
 #define CHASE_GPU_MEMCPY_ASYNC hipMemcpyAsync
 #define CHASE_GPU_MEMCPY_DEVICE_TO_HOST hipMemcpyDeviceToHost
 #define CHASE_GPU_MEMCPY_HOST_TO_DEVICE hipMemcpyHostToDevice

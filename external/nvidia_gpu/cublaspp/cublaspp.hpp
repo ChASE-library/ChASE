@@ -1246,43 +1246,6 @@ cublasStatus_t cublasTmaxAbs(cublasHandle_t handle, std::size_t n, const T* x,
 
 /**
  * @ingroup cuBlasFunctions
- * @brief Computes the infinity-norm of a matrix (maximum absolute row sum).
- * @param handle cuBLAS handle.
- * @param rows Number of rows of matrix A.
- * @param cols Number of columns of matrix A.
- * @param A Pointer to input matrix A.
- * @param lda Leading dimension of A.
- * @param result Pointer to the result infinity-norm.
- * @return Status of the operation.
- */
-template <typename T>
-cublasStatus_t cublasTmatrixInfNorm(cublasHandle_t handle, std::size_t rows,
-                                    std::size_t cols, const T* A, std::size_t lda,
-                                    Base<T>* result)
-{
-    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
-
-    Base<T> inf = Base<T>(0);
-    for (std::size_t i = 0; i < rows; ++i)
-    {
-        Base<T> row_sum = Base<T>(0);
-        status = cublasTasum(handle, cols, A + i, lda, &row_sum);
-        if (status != CUBLAS_STATUS_SUCCESS)
-        {
-            return status;
-        }
-        if (row_sum > inf)
-        {
-            inf = row_sum;
-        }
-    }
-
-    *result = inf;
-    return status;
-}
-
-/**
- * @ingroup cuBlasFunctions
  * @brief Computes the 1-norm of a matrix (maximum absolute column sum).
  * @param handle cuBLAS handle.
  * @param rows Number of rows of matrix A.

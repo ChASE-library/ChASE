@@ -409,6 +409,7 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/flip_sign.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/conjugate.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/abs_trace.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/matrix_inf_norm.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/random_normal_distribution.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/residuals.cu
