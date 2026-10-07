@@ -644,9 +644,8 @@ public:
         double fp64_bound = 0.0;
         double fp64_ep_bound = 0.0;
 
-        // Safe Res := ||E^p||_{1,2} * 2 λ_max(A); λ_max = max(|λ_1|, |upper|).
-        double const lambda_max_A = std::max(std::abs(static_cast<double>(lambda_1)), std::abs(static_cast<double>(upper)));
-        double const safe_scale = 2.0 * lambda_max_A;
+        // Safe Res := ||E^p||_{1,2} * |λ_n − λ_1|.
+        double const safe_scale = std::abs(static_cast<double>(upper) - static_cast<double>(lambda_1));
         double const u2 = chase::linalg::gemmul8pp::u2_model_sum(degree, static_cast<double>(lambda_1), static_cast<double>(lower),static_cast<double>(upper));
 
         if (!ozaki_fp_hemm_fallback)

@@ -742,18 +742,95 @@ double nrm2_two_pow_ozaki_prime(cublasHandle_t handle, std::int16_t const* sft,
 
 namespace {
 
+// cuBLAS INT8 GEMM requires m, n, k and the leading dimensions to be
+// multiples of 4, and the matrix pointers to be 16-byte aligned.
+constexpr std::size_t kInt8Align = 16;
+
+std::size_t align_up(std::size_t value, std::size_t alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+std::size_t pad_to_multiple_of_4(std::size_t n)
+{
+    return (n + 3) & ~std::size_t{3};
+}
+
+struct Int8ProbeLayout
+{
+    std::size_t m_pad;
+    std::size_t n_pad;
+    std::size_t k_pad;
+    std::size_t sft_a;
+    std::size_t sft_b;
+    std::size_t a_lo;
+    std::size_t a_lo_bytes;
+    std::size_t b_lo;
+    std::size_t b_lo_bytes;
+    std::size_t c;
+    std::size_t c_bytes;
+    std::size_t amax_row;
+    std::size_t amax_col;
+    std::size_t two_pow;
+    std::size_t bytes;
+};
+
+Int8ProbeLayout int8_probe_layout(std::size_t m, std::size_t n, std::size_t k,
+                                  bool is_complex)
+{
+    Int8ProbeLayout layout{};
+    layout.m_pad = pad_to_multiple_of_4(m);
+    layout.n_pad = pad_to_multiple_of_4(n);
+    layout.k_pad = pad_to_multiple_of_4(k);
+
+    std::size_t const planes = is_complex ? 2 : 1;
+    std::size_t off          = 0;
+
+    layout.sft_a = off;
+    off = align_up(off + m * sizeof(std::int16_t), kInt8Align);
+
+    layout.sft_b = off;
+    off = align_up(off + n * sizeof(std::int16_t), kInt8Align);
+
+    layout.a_lo       = off;
+    layout.a_lo_bytes = layout.m_pad * layout.k_pad;
+    off = align_up(off + planes * layout.a_lo_bytes, kInt8Align);
+
+    layout.b_lo       = off;
+    layout.b_lo_bytes = layout.k_pad * layout.n_pad;
+    off = align_up(off + planes * layout.b_lo_bytes, kInt8Align);
+
+    layout.c       = off;
+    layout.c_bytes = layout.m_pad * layout.n_pad * sizeof(std::int32_t);
+    off = align_up(off + planes * layout.c_bytes, kInt8Align);
+
+    layout.amax_row = off;
+    off = align_up(off + m * sizeof(std::int32_t), kInt8Align);
+
+    layout.amax_col = off;
+    off = align_up(off + n * sizeof(std::int32_t), kInt8Align);
+
+    layout.two_pow = off;
+    std::size_t const tmax = m > n ? m : n;
+    off += tmax * sizeof(double);
+
+    layout.bytes = off;
+    return layout;
+}
+
+void zero_device(void* ptr, std::size_t bytes)
+{
+    if (bytes == 0)
+    {
+        return;
+    }
+    assert(cudaMemset(ptr, 0, bytes) == cudaSuccess);
+}
+
 std::size_t probe_work_bytes(std::size_t m, std::size_t n, std::size_t k,
                              bool is_complex)
 {
-    std::size_t const planes = is_complex ? 2 : 1;
-    std::size_t const tmax   = m > n ? m : n;
-
-    return m * sizeof(std::int16_t) + n * sizeof(std::int16_t) +
-           planes * m * k * sizeof(std::int8_t) +
-           planes * k * n * sizeof(std::int8_t) +
-           planes * m * n * sizeof(std::int32_t) +
-           m * sizeof(std::int32_t) + n * sizeof(std::int32_t) +
-           tmax * sizeof(double);
+    return int8_probe_layout(m, n, k, is_complex).bytes;
 }
 
 void gemm_i8_tn(cublasHandle_t handle, std::size_t m, std::size_t n,
@@ -776,44 +853,30 @@ void ozaki_compute_scaling_factors_error_bound_real(
     std::size_t k, T const* B, std::size_t ldb, std::size_t n, void* work,
     std::size_t work_bytes, double* h_nrm2_a, double* h_max2_b, double inv_e)
 {
+    Int8ProbeLayout const layout = int8_probe_layout(m, n, k, false);
+    assert(layout.bytes <= work_bytes);
+
     char* const base = static_cast<char*>(work);
-    std::size_t off  = 0;
-
-    auto* sftA = reinterpret_cast<std::int16_t*>(base + off);
-    off += m * sizeof(std::int16_t);
-
-    auto* sftB = reinterpret_cast<std::int16_t*>(base + off);
-    off += n * sizeof(std::int16_t);
-
-    auto* A_lo = reinterpret_cast<std::int8_t*>(base + off);
-    off += m * k * sizeof(std::int8_t);
-
-    auto* B_lo = reinterpret_cast<std::int8_t*>(base + off);
-    off += k * n * sizeof(std::int8_t);
-
-    auto* C = reinterpret_cast<std::int32_t*>(base + off);
-    off += m * n * sizeof(std::int32_t);
-
-    auto* amax_row = reinterpret_cast<std::int32_t*>(base + off);
-    off += m * sizeof(std::int32_t);
-
-    auto* amax_col = reinterpret_cast<std::int32_t*>(base + off);
-    off += n * sizeof(std::int32_t);
-
-    auto* d_two_pow = reinterpret_cast<double*>(base + off);
-    off += (m > n ? m : n) * sizeof(double);
-
-    assert(off <= work_bytes);
+    auto* sftA       = reinterpret_cast<std::int16_t*>(base + layout.sft_a);
+    auto* sftB       = reinterpret_cast<std::int16_t*>(base + layout.sft_b);
+    auto* A_lo       = reinterpret_cast<std::int8_t*>(base + layout.a_lo);
+    auto* B_lo       = reinterpret_cast<std::int8_t*>(base + layout.b_lo);
+    auto* C          = reinterpret_cast<std::int32_t*>(base + layout.c);
+    auto* amax_row   = reinterpret_cast<std::int32_t*>(base + layout.amax_row);
+    auto* amax_col   = reinterpret_cast<std::int32_t*>(base + layout.amax_col);
+    auto* d_two_pow  = reinterpret_cast<double*>(base + layout.two_pow);
 
     compute_row_sft(A, lda, m, k, sftA, inv_e);
     compute_col_sft(B, ldb, k, n, sftB);
-    pack_A_lo(A, lda, m, k, sftA, A_lo, k, inv_e);
-    pack_B_lo(B, ldb, k, n, sftB, B_lo, k);
+    zero_device(A_lo, layout.a_lo_bytes);
+    zero_device(B_lo, layout.b_lo_bytes);
+    pack_A_lo(A, lda, m, k, sftA, A_lo, layout.k_pad, inv_e);
+    pack_B_lo(B, ldb, k, n, sftB, B_lo, layout.k_pad);
 
-    gemm_i8_tn(handle, m, n, k, A_lo, B_lo, C);
+    gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo, B_lo, C);
 
-    compute_row_max_C(C, m, m, n, amax_row);
-    compute_col_max_C(C, m, m, n, amax_col);
+    compute_row_max_C(C, layout.m_pad, m, n, amax_row);
+    compute_col_max_C(C, layout.m_pad, m, n, amax_col);
 
     *h_nrm2_a = nrm2_two_pow_ozaki_prime(handle, sftA, amax_row, m, d_two_pow);
     *h_max2_b = max_two_pow_ozaki_prime(handle, sftB, amax_col, n, d_two_pow);
@@ -825,54 +888,34 @@ void ozaki_compute_scaling_factors_error_bound_cplx(
     std::size_t k, T const* B, std::size_t ldb, std::size_t n, void* work,
     std::size_t work_bytes, double* h_nrm2_a, double* h_max2_b, double inv_e)
 {
+    Int8ProbeLayout const layout = int8_probe_layout(m, n, k, true);
+    assert(layout.bytes <= work_bytes);
+
     char* const base = static_cast<char*>(work);
-    std::size_t off  = 0;
-
-    auto* sftA = reinterpret_cast<std::int16_t*>(base + off);
-    off += m * sizeof(std::int16_t);
-
-    auto* sftB = reinterpret_cast<std::int16_t*>(base + off);
-    off += n * sizeof(std::int16_t);
-
-    auto* A_lo_re = reinterpret_cast<std::int8_t*>(base + off);
-    off += m * k * sizeof(std::int8_t);
-
-    auto* A_lo_im = reinterpret_cast<std::int8_t*>(base + off);
-    off += m * k * sizeof(std::int8_t);
-
-    auto* B_lo_re = reinterpret_cast<std::int8_t*>(base + off);
-    off += k * n * sizeof(std::int8_t);
-
-    auto* B_lo_im = reinterpret_cast<std::int8_t*>(base + off);
-    off += k * n * sizeof(std::int8_t);
-
-    auto* C1 = reinterpret_cast<std::int32_t*>(base + off);
-    off += m * n * sizeof(std::int32_t);
-
-    auto* C2 = reinterpret_cast<std::int32_t*>(base + off);
-    off += m * n * sizeof(std::int32_t);
-
-    auto* amax_row = reinterpret_cast<std::int32_t*>(base + off);
-    off += m * sizeof(std::int32_t);
-
-    auto* amax_col = reinterpret_cast<std::int32_t*>(base + off);
-    off += n * sizeof(std::int32_t);
-
-    auto* d_two_pow = reinterpret_cast<double*>(base + off);
-    off += (m > n ? m : n) * sizeof(double);
-
-    assert(off <= work_bytes);
+    auto* sftA       = reinterpret_cast<std::int16_t*>(base + layout.sft_a);
+    auto* sftB       = reinterpret_cast<std::int16_t*>(base + layout.sft_b);
+    auto* A_lo_re    = reinterpret_cast<std::int8_t*>(base + layout.a_lo);
+    auto* A_lo_im    = A_lo_re + layout.a_lo_bytes;
+    auto* B_lo_re    = reinterpret_cast<std::int8_t*>(base + layout.b_lo);
+    auto* B_lo_im    = B_lo_re + layout.b_lo_bytes;
+    auto* C1         = reinterpret_cast<std::int32_t*>(base + layout.c);
+    auto* C2         = C1 + (layout.c_bytes / sizeof(std::int32_t));
+    auto* amax_row   = reinterpret_cast<std::int32_t*>(base + layout.amax_row);
+    auto* amax_col   = reinterpret_cast<std::int32_t*>(base + layout.amax_col);
+    auto* d_two_pow  = reinterpret_cast<double*>(base + layout.two_pow);
 
     compute_row_sft(A, lda, m, k, sftA, inv_e);
     compute_col_sft(B, ldb, k, n, sftB);
-    pack_A_lo(A, lda, m, k, sftA, A_lo_re, A_lo_im, k, inv_e);
-    pack_B_lo(B, ldb, k, n, sftB, B_lo_re, B_lo_im, k);
+    zero_device(A_lo_re, 2 * layout.a_lo_bytes);
+    zero_device(B_lo_re, 2 * layout.b_lo_bytes);
+    pack_A_lo(A, lda, m, k, sftA, A_lo_re, A_lo_im, layout.k_pad, inv_e);
+    pack_B_lo(B, ldb, k, n, sftB, B_lo_re, B_lo_im, layout.k_pad);
 
-    gemm_i8_tn(handle, m, n, k, A_lo_re, B_lo_re, C1);
-    gemm_i8_tn(handle, m, n, k, A_lo_im, B_lo_im, C2);
+    gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo_re, B_lo_re, C1);
+    gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo_im, B_lo_im, C2);
 
-    compute_row_max_C(C1, C2, m, m, n, amax_row);
-    compute_col_max_C(C1, C2, m, m, n, amax_col);
+    compute_row_max_C(C1, C2, layout.m_pad, m, n, amax_row);
+    compute_col_max_C(C1, C2, layout.m_pad, m, n, amax_col);
 
     *h_nrm2_a = nrm2_two_pow_ozaki_prime(handle, sftA, amax_row, m, d_two_pow);
     *h_max2_b = max_two_pow_ozaki_prime(handle, sftB, amax_col, n, d_two_pow);
