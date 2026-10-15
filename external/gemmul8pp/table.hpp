@@ -1,7 +1,7 @@
 #pragma once
 
-// Ozaki-II INT8 constants for num_moduli in [2, 17] (FP64) or [2, 13] (FP32).
-// Tabulated GEMMul8 data below extends to N = 20; ChASE caps FP64 at 17.
+// Ozaki-II INT8 constants. GEMMul8 tables extend to N = 20.
+// ChASE production range: FP64 [7, 16], FP32 [4, 12].
 //
 // Moduli and the double-double of P = prod p_i are taken from GEMMul8
 // (GEMMul8/src/table.hpp). GEMMul8 stores -P; the table here stores +P.
@@ -21,9 +21,11 @@ namespace chase {
 namespace linalg {
 namespace gemmul8pp {
 
-inline constexpr unsigned kMinNumModuli     = 2;
-inline constexpr unsigned kMaxNumModuliFp32 = 13;
-inline constexpr unsigned kMaxNumModuliFp64 = 17;
+inline constexpr unsigned kMinNumModuli          = 2;
+inline constexpr unsigned kMinNumModuliChaseFp32 = 4;
+inline constexpr unsigned kMinNumModuliChaseFp64 = 7;
+inline constexpr unsigned kMaxNumModuliFp32      = 12;
+inline constexpr unsigned kMaxNumModuliFp64      = 16;
 
 inline constexpr double kU32 = 0x1p-24; // 2^{-24}
 inline constexpr double kU64 = 0x1p-53; // 2^{-53}
@@ -160,6 +162,10 @@ inline constexpr double r_b(unsigned num_moduli)
 template <typename T>
 inline constexpr unsigned kMaxNumModuli =
     is_fp32_v<T> ? kMaxNumModuliFp32 : kMaxNumModuliFp64;
+
+template <typename T>
+inline constexpr unsigned kMinNumModuliChase =
+    is_fp32_v<T> ? kMinNumModuliChaseFp32 : kMinNumModuliChaseFp64;
 
 inline double two_pow_floor_log2(double max_abs)
 {

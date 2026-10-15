@@ -1756,6 +1756,10 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #endif
 
+#if defined(CHASE_ENABLE_OZAKI) && defined(CHASE_OUTPUT)
+        unsigned const ozaki_s = single->GetOzakiNumModuli();
+        bool const ozaki_fp = single->IsOzakiFpHemmFallback();
+#endif
         if (single->isSym())
         {
 #if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
@@ -1774,6 +1778,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 single, N, unconverged, nex, tol, index.data(), ritzv, resid,
                 residLast, &early_locked_residuals, degrees, locked, iteration);
         }
+#if defined(CHASE_ENABLE_OZAKI) && defined(CHASE_OUTPUT)
+        if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||
+                          single->GetOzakiNumModuli() != ozaki_s))
+            single->Output(LogLevel::Info,
+                           "ozaki fallback at iteration: " +
+                               std::to_string(iteration) + "\n",
+                           "algorithm");
+#endif
 
         // ---------------------------- Update pointers
         // ---------------------------- Since we double buffer we need the
