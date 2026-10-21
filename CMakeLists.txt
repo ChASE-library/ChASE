@@ -126,21 +126,15 @@ if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
 # Find OpenMP package if the option is enabled
-# Find OpenMP package if the option is enabled
-if(ENABLE_OPENMP)
+if(CHASE_ENABLE_OPENMP)
     find_package(OpenMP REQUIRED)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found, enabling OpenMP support")
-        
-        # Add OpenMP compiler flags globally
-        add_compile_options(${OpenMP_CXX_FLAGS})
-        
-        # Link OpenMP libraries globally
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    else()
-        message(WARNING "OpenMP not found, building without OpenMP support")
-    endif()
+    message(STATUS "OpenMP found, enabling OpenMP support")
+
+    # C++ sources and host links only: nvcc forwards unknown options to its
+    # host compiler, which may not accept the C++ compiler's OpenMP flag
+    # (e.g. NVHPC -mp with gcc as CUDA host compiler).
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:${OpenMP_CXX_FLAGS}>")
+    add_link_options("$<HOST_LINK:${OpenMP_CXX_FLAGS}>")
 endif()
 
 # Add the flag to the preprocessor if the option is enabled
@@ -281,6 +275,23 @@ endif()
 
 set(CHASE_LINK_LIBRARIES "")
 
+# Convert concrete CMake library lists to linker flags without traversing the
+# target graph. Absolute libraries and existing flags are preserved; plain
+# library names receive the conventional -l prefix.
+macro(_chase_pc_append_link_items)
+    foreach(_chase_pc_item ${ARGN})
+        if(NOT _chase_pc_item STREQUAL "")
+            if(IS_ABSOLUTE "${_chase_pc_item}" OR
+               _chase_pc_item MATCHES "^-" OR
+               _chase_pc_item MATCHES " ")
+                string(APPEND CHASE_LINK_LIBRARIES " ${_chase_pc_item}")
+            else()
+                string(APPEND CHASE_LINK_LIBRARIES " -l${_chase_pc_item}")
+            endif()
+        endif()
+    endforeach()
+endmacro()
+
 set(IS_ENABLE_MPI OFF)
 set(IS_ENABLE_SCALAPACK OFF)
 set(IS_ENABLE_NCCL OFF)
@@ -320,6 +331,124 @@ endif()
 if(HIP_AWARE_MPI_SUPPORTED)
     set(HAS_HIP_AWARE_MPI ON)
 endif()
+
+# pkg-config does not understand CMake targets, so describe each compiled
+# backend explicitly and use the concrete libraries found by CMake.
+if(TARGET chase_cuda_kernels)
+    if(CUDA_cudart_LIBRARY)
+        get_filename_component(_chase_cuda_libdir "${CUDA_cudart_LIBRARY}" DIRECTORY)
+        string(APPEND CHASE_LINK_LIBRARIES " -L${_chase_cuda_libdir}")
+    endif()
+    string(APPEND CHASE_LINK_LIBRARIES
+           " -lchase_cuda_kernels -lcudart -lcublas -lcusolver -lcurand")
+
+    if(IS_ENABLE_NCCL)
+        if(NCCL_LIBRARIES)
+            list(GET NCCL_LIBRARIES 0 _chase_nccl_library)
+            get_filename_component(_chase_nccl_libdir "${_chase_nccl_library}" DIRECTORY)
+            string(APPEND CHASE_LINK_LIBRARIES " -L${_chase_nccl_libdir}")
+        endif()
+        string(APPEND CHASE_LINK_LIBRARIES " -lnccl")
+    endif()
+endif()
+
+if(TARGET chase_hip_kernels)
+    if(CMAKE_HIP_COMPILER_ROCM_ROOT)
+        set(_chase_rocm_root "${CMAKE_HIP_COMPILER_ROCM_ROOT}")
+    elseif(DEFINED ENV{ROCM_PATH})
+        set(_chase_rocm_root "$ENV{ROCM_PATH}")
+    elseif(CMAKE_HIP_COMPILER)
+        get_filename_component(_chase_rocm_bindir "${CMAKE_HIP_COMPILER}" DIRECTORY)
+        get_filename_component(_chase_rocm_root "${_chase_rocm_bindir}" DIRECTORY)
+    endif()
+
+    if(EXISTS "${_chase_rocm_root}/lib")
+        string(APPEND CHASE_LINK_LIBRARIES " -L${_chase_rocm_root}/lib")
+    elseif(EXISTS "${_chase_rocm_root}/lib64")
+        string(APPEND CHASE_LINK_LIBRARIES " -L${_chase_rocm_root}/lib64")
+    endif()
+    string(APPEND CHASE_LINK_LIBRARIES
+           " -lchase_hip_kernels -lamdhip64 -lhiprand -lrocsolver -lrocblas")
+
+    if(IS_ENABLE_RCCL)
+        if(RCCL_LIBRARIES)
+            list(GET RCCL_LIBRARIES 0 _chase_rccl_library)
+            get_filename_component(_chase_rccl_libdir "${_chase_rccl_library}" DIRECTORY)
+            string(APPEND CHASE_LINK_LIBRARIES " -L${_chase_rccl_libdir}")
+        endif()
+        string(APPEND CHASE_LINK_LIBRARIES " -lrccl")
+    endif()
+endif()
+
+# CPU and distributed dependencies are required by both CPU-only and GPU
+# interfaces because chase_c also contains the parallel entry points.
+if(IS_ENABLE_SCALAPACK)
+    _chase_pc_append_link_items(${CHASE_PC_SCALAPACK_LIBRARIES})
+endif()
+_chase_pc_append_link_items(${CHASE_PC_LAPACK_LIBRARIES})
+_chase_pc_append_link_items(${CHASE_PC_BLAS_LIBRARIES})
+
+if(IS_ENABLE_MPI)
+    _chase_pc_append_link_items("${CHASE_PC_MPI_LINK_FLAGS}")
+    _chase_pc_append_link_items(${CHASE_PC_MPI_LIBRARIES})
+endif()
+
+if(CHASE_ENABLE_OPENMP)
+    # -fopenmp is enough for the compiler driver. OpenMP_CXX_LIBRARIES also
+    # pulls in system archives such as libpthread.a, which do not belong in
+    # the pkg-config closure.
+    _chase_pc_append_link_items("${OpenMP_CXX_FLAGS}")
+endif()
+
+if(CHASE_USE_NVTX)
+    string(APPEND CHASE_LINK_LIBRARIES " -lnvToolsExt")
+endif()
+
+# ChASE C interface is implemented in C++, while common consumers link with
+# a Fortran compiler driver. Take only the C++ standard library selected by
+# this compiler; the rest of CMAKE_CXX_IMPLICIT_LINK_LIBRARIES (libgcc, libc)
+# is already supplied by the compiler driver.
+set(_chase_pc_cxx_runtime "")
+foreach(_chase_pc_implib IN LISTS CMAKE_CXX_IMPLICIT_LINK_LIBRARIES)
+    if(_chase_pc_implib STREQUAL "c++" OR _chase_pc_implib STREQUAL "stdc++")
+        set(_chase_pc_cxx_runtime "-l${_chase_pc_implib}")
+        break()
+    endif()
+endforeach()
+if(_chase_pc_cxx_runtime STREQUAL "")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        set(_chase_pc_cxx_runtime "-lc++")
+    else()
+        set(_chase_pc_cxx_runtime "-lstdc++")
+    endif()
+endif()
+string(APPEND CHASE_LINK_LIBRARIES " ${_chase_pc_cxx_runtime}")
+
+# CMake dependency lists commonly repeat BLAS, LAPACK, and MPI through
+# ScaLAPACK. Join -Wl,-rpath with its path before deduplicating so a repeated
+# -Wl,-rpath flag cannot be removed from in front of a different directory.
+separate_arguments(_chase_pc_link_items UNIX_COMMAND "${CHASE_LINK_LIBRARIES}")
+set(_chase_pc_grouped "")
+set(_chase_pc_rpath_pending OFF)
+foreach(_chase_pc_item IN LISTS _chase_pc_link_items)
+    if(_chase_pc_rpath_pending)
+        if(_chase_pc_item MATCHES "^-Wl,(.+)")
+            list(APPEND _chase_pc_grouped "-Wl,-rpath,${CMAKE_MATCH_1}")
+        else()
+            list(APPEND _chase_pc_grouped "-Wl,-rpath,${_chase_pc_item}")
+        endif()
+        set(_chase_pc_rpath_pending OFF)
+    elseif(_chase_pc_item STREQUAL "-Wl,-rpath")
+        set(_chase_pc_rpath_pending ON)
+    else()
+        list(APPEND _chase_pc_grouped "${_chase_pc_item}")
+    endif()
+endforeach()
+if(_chase_pc_rpath_pending)
+    list(APPEND _chase_pc_grouped "-Wl,-rpath")
+endif()
+list(REMOVE_DUPLICATES _chase_pc_grouped)
+list(JOIN _chase_pc_grouped " " CHASE_LINK_LIBRARIES)
 
 # Now generate configuration header with correct feature detection
 configure_file(

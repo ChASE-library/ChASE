@@ -14,8 +14,11 @@ URL: https://github.com/ChASE-library/ChASE
 # Include directories
 Cflags: -I${includedir}@CHASE_COMPILE_DEFINITIONS@
 
-# Libraries (for non-header-only components like CUDA kernels)
-Libs: -L${libdir}@CHASE_LINK_LIBRARIES@
+# Public C and Fortran interface libraries provided by ChASE.
+Libs: -L${libdir} -lchase_f -lchase_c
+
+# Backend and toolchain dependencies required when linking ChASE statically.
+Libs.private: @CHASE_LINK_LIBRARIES@
 
 # Configuration information for users
 chase_has_mpi=@IS_ENABLE_MPI@

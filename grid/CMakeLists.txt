@@ -1,6 +1,8 @@
 find_package(MPI)
 
 if(MPI_FOUND)
+    set(CHASE_PC_MPI_LIBRARIES "${MPI_CXX_LIBRARIES}" PARENT_SCOPE)
+    set(CHASE_PC_MPI_LINK_FLAGS "${MPI_CXX_LINK_FLAGS}" PARENT_SCOPE)
     add_library(mpi_grid INTERFACE)
     target_link_libraries(mpi_grid INTERFACE MPI::MPI_CXX)
     
