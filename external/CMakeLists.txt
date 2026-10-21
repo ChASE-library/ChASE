@@ -1,6 +1,10 @@
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
+# Export the concrete CPU libraries to the top-level pkg-config generator.
+set(CHASE_PC_BLAS_LIBRARIES "${BLAS_LIBRARIES}" PARENT_SCOPE)
+set(CHASE_PC_LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" PARENT_SCOPE)
+
 #enable_language( Fortran )
 include( FortranCInterface )
 FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
@@ -43,6 +47,7 @@ target_link_libraries(chase_cpu_linalg INTERFACE blaspp lapackpp)
 
 find_package(SCALAPACK)
 if(SCALAPACK_FOUND)
+  set(CHASE_PC_SCALAPACK_LIBRARIES "${SCALAPACK_LIBRARIES}" PARENT_SCOPE)
   add_library(scalapackpp INTERFACE)
   target_include_directories(scalapackpp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/scalapack/scalapackpp>
