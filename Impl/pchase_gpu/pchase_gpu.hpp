@@ -1235,6 +1235,7 @@ public:
         }
 
         int info = 1;
+        bool cholqr_events_recorded = false;
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
@@ -1379,10 +1380,12 @@ public:
                 }
                 else
                 {
-                    call_houseqr_formq(
-                        *V1_d,
-                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d));
+                    measure_cuda(time_hh_core_ms, [&]() {
+                        call_houseqr_formq(
+                            *V1_d,
+                            reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d));
+                    });
                 }
                 measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
             }
@@ -1653,6 +1656,7 @@ public:
             }
 
             runtime_type::event_record(qr_cholqr_end);
+            cholqr_events_recorded = true;
 
             if (info != 0)
             {
@@ -1827,7 +1831,11 @@ public:
         // Calculate and print detailed timings
         float time_flip_sign = 0.0f, time_cholqr = 0.0f, time_lacpy = 0.0f, time_total = 0.0f;
         runtime_type::event_elapsed_time(&time_flip_sign, qr_start, qr_flip_sign);
-        runtime_type::event_elapsed_time(&time_cholqr, qr_cholqr_start, qr_cholqr_end);
+        if (cholqr_events_recorded)
+        {
+            runtime_type::event_elapsed_time(&time_cholqr, qr_cholqr_start,
+                                             qr_cholqr_end);
+        }
         runtime_type::event_elapsed_time(&time_lacpy, qr_lacpy_start, qr_end);
         runtime_type::event_elapsed_time(&time_total, qr_start, qr_end);
 #ifdef CHASE_OUTPUT
