@@ -1,6 +1,6 @@
 variables:
   SCHEDULER_PARAMETERS: '-Aslai -N1'
-  CUSTOM_CI_BUILDS_DIR: /p/scratch/cslai
+  CUSTOM_CI_BUILDS_DIR: /e/scratch/cslai
 
 stages:
   - build
@@ -57,7 +57,7 @@ test_cpu:
 build_gpu:
   stage: build
   tags:
-    - juwels_booster
+    - jupiter
     - jacamar
     - login
     - shell
@@ -67,11 +67,11 @@ build_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_TESTS=ON -DCMAKE_CUDA_ARCHITECTURES=90 -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:
@@ -85,7 +85,7 @@ test_gpu:
   dependencies:
     - build_gpu
   tags:
-    - juwels_booster
+    - jupiter
     - jacamar
     - compute
     - slurm
@@ -95,7 +95,7 @@ test_gpu:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     - export CUDA_VISIBLE_DEVICES=0,1,2,3
     - cd build_gpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
@@ -111,7 +111,7 @@ coverage_generate:
   dependencies:
     - test_gpu
   tags:
-    - juwels_booster
+    - jupiter
     - jacamar
     - login
     - shell
@@ -121,7 +121,7 @@ coverage_generate:
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
-    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA
+    - module load Stages/2026 GCC/14.3.0 OpenMPI FlexiBLAS/3.4.5 CMake CUDA ScaLAPACK/2.2.2-fb
     
     # Install gcovr and update PATH
     - |
@@ -188,7 +188,7 @@ coverage_upload:
   dependencies:
     - coverage_generate
   tags:
-    - juwels_booster
+    - jupiter
     - jacamar
     - login
     - shell
