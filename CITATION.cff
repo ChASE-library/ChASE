@@ -1,0 +1,89 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: ChASE library
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Edoardo
+    family-names: Di Napoli
+    email: e.di.napoli@fz-juelich.de
+    affiliation: Forschungszentrum Jülich
+    orcid: 'https://orcid.org/0000-0001-5821-5897'
+  - given-names: Xinzhe
+    family-names: Wu
+    email: xin.wu@fz-juelich.de
+    affiliation: Forschungszentrum Jülich
+    orcid: 'https://orcid.org/0000-0001-5716-3116'
+  - given-names: Clement
+    family-names: Richefort
+    email: c.richefort@fz-jülich.de
+    affiliation: Forschungszentrum Jülich
+  - given-names: Davor
+    family-names: Davidovic
+    email: davor.davidovic@irb.hr
+    orcid: 'https://orcid.org/0000-0003-2649-9236'
+    affiliation: Institut Ruđer Bošković
+  - given-names: Jan
+    family-names: Winkelmann
+    orcid: 'https://orcid.org/0000-0002-1130-681X'
+    affiliation: 'Osthus GmbH: Aachen'
+  - given-names: Nenad
+    family-names: Mijic
+    orcid: 'https://orcid.org/0000-0001-7738-5007'
+    affiliation: Institut Ruđer Bošković
+    email: nenad.mijic03@gmail.com
+identifiers:
+  - type: doi
+    value: 10.1145/3313828
+    description: Main paper introducing the ChASE library on ACM TOMS
+  - type: doi
+    value: 10.1145/3624062.3624249
+    description: Performance paper presented at SC23
+repository-code: 'https://github.com/ChASE-library/ChASE'
+url: 'https://chase-library.github.io/ChASE/latest/index.html'
+repository-artifact: 'https://github.com/ChASE-library/Benchmarks'
+abstract: >-
+  The Chebyshev Accelerated Subspace Eigensolver (ChASE) is
+  a modern and scalable library based on subspace iteration
+  with polynomial acceleration to solve dense Hermitian
+  (Symmetric) and pseudo-Hermitian algebraic eigenvalue
+  problems, especially solving dense eigenproblems arranged
+  in a sequence. Novel to ChASE is the computation of the
+  spectral estimates that enter in the filter and an
+  optimization of the polynomial degree that further reduces
+  the necessary floating-point operations.
+
+
+  ChASE is written in C++ using the modern software
+  engineering concepts that favor a simple integration in
+  application codes and a straightforward portability over
+  heterogeneous platforms. When solving sequences of
+  eigenproblems for a portion of their extremal spectrum,
+  ChASE greatly benefits from the sequence's spectral
+  properties and outperforms direct solvers in many
+  scenarios. The library ships with multiple parallelization
+  schemes and supports GPU acceleration on both NVIDIA
+  (CUDA, cuBLAS, cuSOLVER, NCCL) and AMD/ROCm systems (HIP
+  with RCCL/MPI collectives). ChASE is easily extensible to
+  other parallel computing architectures.
+keywords:
+  - Real and complex problems
+  - Hermitian and pseudo-Hermitian
+  - Partial spectrum
+  - Standard eigenproblem
+  - Sequence of eigenproblems
+  - Vectors input available
+  - Chebyshev degree optimization
+  - 'Double, single and emulated precision'
+  - Shared memory build
+  - MPI+Threads build
+  - Multi-GPU build
+license: BSD-3-Clause
+commit: >-
+  https://github.com/ChASE-library/ChASE/commit/ca188d51c86c26368006190109aa06eb22a86ac2
+version: v1.7.4
+date-released: '2026-10-26'
