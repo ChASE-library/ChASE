@@ -51,6 +51,26 @@ void matrixInfNorm_gpu(const std::complex<float>* d_matrix, std::size_t rows,
 void matrixInfNorm_gpu(const std::complex<double>* d_matrix, std::size_t rows,
                        std::size_t cols, std::size_t ld, double* d_norm,
                        cudaStream_t stream_);
+
+/** Local abs row-sums (length `rows`); input for distributed ||A||_∞. */
+void matrixRowAbsSums_gpu(const float* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, float* d_row_sums,
+                          cudaStream_t stream_);
+void matrixRowAbsSums_gpu(const double* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, double* d_row_sums,
+                          cudaStream_t stream_);
+void matrixRowAbsSums_gpu(const std::complex<float>* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, float* d_row_sums,
+                          cudaStream_t stream_);
+void matrixRowAbsSums_gpu(const std::complex<double>* d_matrix,
+                          std::size_t rows, std::size_t cols, std::size_t ld,
+                          double* d_row_sums, cudaStream_t stream_);
+
+/** Max of a device row-sum vector → scalar infinity-norm contribution. */
+void matrixRowSumsMax_gpu(const float* d_row_sums, std::size_t rows,
+                          float* d_result, cudaStream_t stream_);
+void matrixRowSumsMax_gpu(const double* d_row_sums, std::size_t rows,
+                          double* d_result, cudaStream_t stream_);
 } // namespace cuda
 } // namespace internal
 } // namespace linalg

@@ -9,4 +9,5 @@ setup_test(PseudoHermitianLanczosGPUNCCLDistTest pseudo_hermitian_lanczos.cpp LI
 setup_test(LanczosGPUNCCLDistTest lanczos.cpp LIBRARIES pchase_gpu)
 setup_test(shiftDiagonalGPUNCCLDistTest shiftDiagonal.cpp LIBRARIES pchase_gpu)
 setup_test(flipSignGPUNCCLDistTest flipSign.cpp LIBRARIES pchase_gpu)
+setup_test(matrixInfNormGPUNCCLDistTest matrixInfNorm.cpp LIBRARIES pchase_gpu)
 setup_test(symOrHermGPUDistTest symOrHerm.cpp LIBRARIES pchase_gpu)

@@ -98,6 +98,8 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
 
   add_library(chase_hip_kernels
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/shift_diagonal.hip
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_inf_norm.hip
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_one_norm.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_diag.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/flip_sign.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/lacpy.hip
@@ -410,6 +412,7 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/conjugate.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/abs_trace.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/matrix_inf_norm.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/matrix_one_norm.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/random_normal_distribution.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/residuals.cu

@@ -551,14 +551,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 #ifdef CHASE_ENABLE_OZAKI
         else if (resid[j] >= residLast[j])
         {
-
-#ifdef CHASE_OUTPUT
-            std::ostringstream oss;
-            oss << "convergence stalling detected:" << resid[j]
-                << " was:" << residLast[j] << " tolerance is: " << tol
-                << " val: " << Lritzv[j] << "\n";
-            single->Output(LogLevel::Warn, oss.str(), "algorithm");
-#endif
+            //Residual stagnation detected. Activate fallback to FP64-GEMM or Max Ozaki coprime moduli number.
             single->Activate_HighPrecision_Fallback();
         }
 #endif
@@ -616,13 +609,7 @@ std::size_t Algorithm<T>::locking_with_early_locking(
 #ifdef CHASE_ENABLE_OZAKI
         else if (resid[j] >= residLast[j])
         {
-#ifdef CHASE_OUTPUT
-            std::ostringstream oss;
-            oss << "convergence stalling detected:" << resid[j]
-                << " was:" << residLast[j] << " tolerance is: " << tol
-                << " val: " << Lritzv[j] << "\n";
-            single->Output(LogLevel::Warn, oss.str(), "algorithm");
-#endif
+            //Residual stagnation detected. Activate fallback to FP64-GEMM or Max Ozaki coprime moduli number.
             single->Activate_HighPrecision_Fallback();
         }
 #endif

@@ -72,7 +72,7 @@ struct cuda_nccl
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             result_multiVector,
         std::size_t offset, std::size_t subSize, unsigned ozaki_num_moduli_,
-        bool ozaki_fastmode_, int8_t* ozaki_workspace);
+        int8_t* ozaki_workspace);
 #endif
 
     // Hierarchical HEMM matvec (uses hierarchical NCCL reduction)
@@ -411,6 +411,14 @@ struct cuda_nccl
                   std::size_t offsize,
                   chase::Base<typename MatrixType::value_type> shift);
 
+    /** Global ||H||_∞ via local row-sums + NCCL SUM(row) + max + MAX(col). */
+    template <typename MatrixType>
+    static void matrixInfNorm(
+        MatrixType& H,
+        chase::Base<typename MatrixType::value_type>* d_row_sums,
+        chase::Base<typename MatrixType::value_type>* d_result,
+        cudaStream_t stream);
+
     template <typename T>
     static void flipLowerHalfMatrixSign(
         chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H);
@@ -452,4 +460,5 @@ struct cuda_nccl
 #include "linalg/internal/gpu/dist_xccl/nccl/rayleighRitz.hpp"
 #include "linalg/internal/gpu/dist_xccl/nccl/residuals.hpp"
 #include "linalg/internal/gpu/dist_xccl/nccl/shiftDiagonal.hpp"
+#include "linalg/internal/gpu/dist_xccl/nccl/matrix_inf_norm.hpp"
 #include "linalg/internal/gpu/dist_xccl/nccl/symOrHerm.hpp"

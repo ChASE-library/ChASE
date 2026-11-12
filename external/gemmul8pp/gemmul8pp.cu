@@ -61,7 +61,6 @@ cublasStatus_t gemmul8Tgemm(
     float* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -72,7 +71,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<float, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha, A, lda, B, ldb, beta, C, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -93,7 +92,6 @@ cublasStatus_t gemmul8Tgemm(
     double* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -104,7 +102,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<double, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha, A, lda, B, ldb, beta, C, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -125,7 +123,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<float>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -141,7 +138,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<cuComplex, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha_c, A_c, lda, B_c, ldb, beta_c, C_c, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -162,7 +159,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<double>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -179,7 +175,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<cuDoubleComplex, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha_c, A_c, lda, B_c, ldb, beta_c, C_c, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }

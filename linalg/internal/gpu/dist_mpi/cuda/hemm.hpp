@@ -86,7 +86,7 @@ void cuda_mpi::MatrixMultiplyMultiVectorsWithOzakiII(
     typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
         result_multiVector,
     std::size_t offset, std::size_t subSize,
-    unsigned ozaki_num_moduli_, bool ozaki_fastmode_,
+    unsigned ozaki_num_moduli_,
     int8_t* ozaki_workspace)
 {
     static_assert(std::is_same<typename MatrixType::platform_type,
@@ -183,7 +183,7 @@ void cuda_mpi::MatrixMultiplyMultiVectorsWithOzakiII(
             input_multiVector.l_ld(), &beta_tmp,
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld(),
-            ozaki_num_moduli_, ozaki_fastmode_,
+            ozaki_num_moduli_,
             static_cast<void *>(ozaki_workspace),
             nullptr, nullptr, false, false, false, false));
         gpu_mpi::mpiAllreduceSum(
@@ -216,7 +216,7 @@ void cuda_mpi::MatrixMultiplyMultiVectorsWithOzakiII(
             input_multiVector.l_ld(), &beta_tmp,
             result_multiVector.l_data() + offset * result_multiVector.l_ld(),
             result_multiVector.l_ld(),
-            ozaki_num_moduli_, ozaki_fastmode_,
+            ozaki_num_moduli_,
             static_cast<void *>(ozaki_workspace),
             nullptr, nullptr, false, false, false, false));
         gpu_mpi::mpiAllreduceSum(

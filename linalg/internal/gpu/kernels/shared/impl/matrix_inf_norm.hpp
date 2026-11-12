@@ -153,6 +153,28 @@ __global__ void __launch_bounds__(kTileRows* kColLanes)
     }
 }
 
+// Sums the per-split partials of each row into `row_sums` (no max).
+template <typename R>
+__global__ void __launch_bounds__(kFinalizeThreads)
+    reduce_splits_sum_kernel(const R* __restrict__ partial, std::size_t rows,
+                             std::size_t splits, R* __restrict__ row_sums)
+{
+    const std::size_t stride =
+        static_cast<std::size_t>(gridDim.x) * kFinalizeThreads;
+    for (std::size_t row =
+             static_cast<std::size_t>(blockIdx.x) * kFinalizeThreads +
+             threadIdx.x;
+         row < rows; row += stride)
+    {
+        R row_sum = R(0);
+        for (std::size_t s = 0; s < splits; ++s)
+        {
+            row_sum += partial[s * rows + row];
+        }
+        row_sums[row] = row_sum;
+    }
+}
+
 // Sums the per-split partials of each row in a fixed order, then max-reduces.
 template <typename R>
 __global__ void __launch_bounds__(kFinalizeThreads)
@@ -265,6 +287,87 @@ void matrix_inf_norm_launch(const T* A, std::size_t rows, std::size_t cols,
     static_cast<void>(CHASE_GPU_FREE_ASYNC(partial, stream));
 }
 
+// Local abs row-sums only (vector of length `rows`). Used by distributed
+// ||A||_∞ (Allreduce SUM on row_sums, then max).
+template <typename T, typename R>
+void matrix_row_abs_sums_launch(const T* A, std::size_t rows, std::size_t cols,
+                                std::size_t lda, R* d_row_sums,
+                                CHASE_GPU_STREAM_T stream)
+{
+    if (rows == 0)
+    {
+        return;
+    }
+    static_cast<void>(
+        CHASE_GPU_MEMSET_ASYNC(d_row_sums, 0, rows * sizeof(R), stream));
+    if (cols == 0)
+    {
+        return;
+    }
+
+    const std::size_t sms = multiprocessor_count();
+    const std::size_t row_tiles = (rows + kTileRows - 1) / kTileRows;
+    const std::size_t target_blocks = sms * kTargetBlocksPerSM;
+
+    std::size_t splits = (target_blocks + row_tiles - 1) / row_tiles;
+    splits = std::min(splits, (cols + kMinColsPerSplit - 1) / kMinColsPerSplit);
+    splits = std::min(splits, kMaxSplits);
+    splits = std::max<std::size_t>(splits, 1);
+
+    const dim3 block(kTileRows, kColLanes);
+
+    if (splits == 1)
+    {
+        const dim3 grid(static_cast<unsigned>(row_tiles), 1);
+        row_abs_sum_kernel<false><<<grid, block, 0, stream>>>(
+            A, rows, cols, lda, cols, d_row_sums, static_cast<R*>(nullptr));
+        return;
+    }
+
+    R* partial = nullptr;
+    if (CHASE_GPU_MALLOC_ASYNC(reinterpret_cast<void**>(&partial),
+                               splits * rows * sizeof(R),
+                               stream) != CHASE_GPU_SUCCESS)
+    {
+        static_cast<void>(CHASE_GPU_GET_LAST_ERROR());
+        const dim3 grid(static_cast<unsigned>(row_tiles), 1);
+        row_abs_sum_kernel<false><<<grid, block, 0, stream>>>(
+            A, rows, cols, lda, cols, d_row_sums, static_cast<R*>(nullptr));
+        return;
+    }
+
+    const std::size_t cols_per_split = (cols + splits - 1) / splits;
+    const dim3 grid(static_cast<unsigned>(row_tiles),
+                    static_cast<unsigned>(splits));
+    row_abs_sum_kernel<false><<<grid, block, 0, stream>>>(
+        A, rows, cols, lda, cols_per_split, partial, static_cast<R*>(nullptr));
+
+    const std::size_t finalize_blocks =
+        std::min((rows + kFinalizeThreads - 1) / kFinalizeThreads, sms * 4);
+    reduce_splits_sum_kernel<<<static_cast<unsigned>(finalize_blocks),
+                              kFinalizeThreads, 0, stream>>>(
+        partial, rows, splits, d_row_sums);
+
+    static_cast<void>(CHASE_GPU_FREE_ASYNC(partial, stream));
+}
+
+template <typename R>
+void matrix_row_sums_max_launch(const R* d_row_sums, std::size_t rows,
+                                R* d_result, CHASE_GPU_STREAM_T stream)
+{
+    static_cast<void>(CHASE_GPU_MEMSET_ASYNC(d_result, 0, sizeof(R), stream));
+    if (rows == 0)
+    {
+        return;
+    }
+    const std::size_t sms = multiprocessor_count();
+    const std::size_t finalize_blocks =
+        std::min((rows + kFinalizeThreads - 1) / kFinalizeThreads, sms * 4);
+    reduce_splits_max_kernel<<<static_cast<unsigned>(finalize_blocks),
+                               kFinalizeThreads, 0, stream>>>(
+        d_row_sums, rows, /*splits=*/1, d_result);
+}
+
 } // namespace matrix_inf_norm_detail
 
 void matrixInfNorm_gpu(const float* d_matrix, std::size_t rows,
@@ -299,6 +402,54 @@ void matrixInfNorm_gpu(const std::complex<double>* d_matrix, std::size_t rows,
     matrix_inf_norm_detail::matrix_inf_norm_launch(
         reinterpret_cast<const CHASE_GPU_DOUBLE_COMPLEX*>(d_matrix), rows, cols,
         ld, d_norm, stream_);
+}
+
+void matrixRowAbsSums_gpu(const float* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, float* d_row_sums,
+                          CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_abs_sums_launch(
+        d_matrix, rows, cols, ld, d_row_sums, stream_);
+}
+
+void matrixRowAbsSums_gpu(const double* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, double* d_row_sums,
+                          CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_abs_sums_launch(
+        d_matrix, rows, cols, ld, d_row_sums, stream_);
+}
+
+void matrixRowAbsSums_gpu(const std::complex<float>* d_matrix, std::size_t rows,
+                          std::size_t cols, std::size_t ld, float* d_row_sums,
+                          CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_abs_sums_launch(
+        reinterpret_cast<const CHASE_GPU_FLOAT_COMPLEX*>(d_matrix), rows, cols,
+        ld, d_row_sums, stream_);
+}
+
+void matrixRowAbsSums_gpu(const std::complex<double>* d_matrix,
+                          std::size_t rows, std::size_t cols, std::size_t ld,
+                          double* d_row_sums, CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_abs_sums_launch(
+        reinterpret_cast<const CHASE_GPU_DOUBLE_COMPLEX*>(d_matrix), rows, cols,
+        ld, d_row_sums, stream_);
+}
+
+void matrixRowSumsMax_gpu(const float* d_row_sums, std::size_t rows,
+                          float* d_result, CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_sums_max_launch(d_row_sums, rows,
+                                                       d_result, stream_);
+}
+
+void matrixRowSumsMax_gpu(const double* d_row_sums, std::size_t rows,
+                          double* d_result, CHASE_GPU_STREAM_T stream_)
+{
+    matrix_inf_norm_detail::matrix_row_sums_max_launch(d_row_sums, rows,
+                                                       d_result, stream_);
 }
 
 } // namespace CHASE_GPU_DEVICE_NAMESPACE
