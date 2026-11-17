@@ -1400,6 +1400,16 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
+        SUBROUTINE chase_set_init_lower_scale(scale) bind( c, name = 'chase_set_init_lower_scale_' )
+        !> Scale the lower half of a random pseudo-Hermitian initial guess.
+        !> Zero clears that block. One leaves the random entries unchanged.
+        !> @param[in] scale lower-half scale (default: 0.001)
+            USE, INTRINSIC :: iso_c_binding
+            REAL(c_float), INTENT(IN) :: scale
+        END SUBROUTINE chase_set_init_lower_scale
+    END INTERFACE
+
+    INTERFACE
         SUBROUTINE chase_set_decaying_rate(decaying_rate) bind( c, name = 'chase_set_decaying_rate_' )
         !> Set the decaying rate for the polynomial lower bound.
         !> Works for all matrix types and precisions.

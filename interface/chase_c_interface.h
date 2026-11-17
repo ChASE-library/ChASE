@@ -226,6 +226,7 @@ extern "C"
     void chase_set_cholqr_(int* flag);
     void chase_enable_sym_check_(int* flag);
     void chase_set_decaying_rate_(float* decaying_rate);
+    void chase_set_init_lower_scale_(float* scale);
     void chase_set_cluster_aware_degrees_(int* flag);
     void chase_set_upperb_scale_rate_(float* upperb_scale_rate);
 

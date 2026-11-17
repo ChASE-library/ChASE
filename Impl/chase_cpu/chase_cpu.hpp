@@ -313,7 +313,7 @@ public:
                 const std::size_t m_lower = Vec1_.rows() - row_half;
                 if (m_lower > 0)
                 {
-                    const T scale = T(0.001);
+                    const T scale = T(GetConfig().GetInitLowerScale());
                     chase::linalg::internal::cpu::scaleLowerBlockRows(
                         Vec1_.data(), Vec1_.ld(), row_half, m_lower,
                         Vec1_.cols(), scale);

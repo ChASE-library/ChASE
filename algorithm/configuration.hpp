@@ -7,6 +7,9 @@
 #ifndef CHASE_ALGORITHM_CONFIGURATION_HPP
 #define CHASE_ALGORITHM_CONFIGURATION_HPP
 
+// Lower-half scale of a random pseudo-Hermitian initial guess is configurable.
+#define CHASE_HAS_INIT_LOWER_SCALE 1
+
 #include "logger.hpp"
 #include <complex>
 #include <cstring>
@@ -174,6 +177,7 @@ public:
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
           max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0),
+          init_lower_scale_(0.001f),
           upperb_scale_rate_(1.0), cluster_aware_degrees_(true),
           log_level_(chase::LogLevelFromEnv()),
           log_rank_(chase::LogRankFromEnv())
@@ -461,6 +465,17 @@ public:
      */
     void SetDecayingRate(float decayingRate) { decaying_rate_ = decayingRate; }
 
+    //! Scale applied to the lower half of a random pseudo-Hermitian initial guess.
+    /*!
+        Used only for random initialization of a pseudo-Hermitian problem.
+        Zero clears the lower block. One leaves the random entries unchanged.
+        The default is 0.001. This is independent of the Chebyshev decaying rate.
+     */
+    float GetInitLowerScale() const { return init_lower_scale_; }
+
+    //! Sets the lower-half scale of a random pseudo-Hermitian initial guess.
+    void SetInitLowerScale(float scale) { init_lower_scale_ = scale; }
+
     //! Returns whether cluster-aware degree optimization is enabled
     /*! When enabled, the algorithm detects clusters of eigenvalues and
      *  adjusts polynomial degrees accordingly to improve convergence for
@@ -640,6 +655,10 @@ private:
      */
     float decaying_rate_;
 
+    //! Lower-half scale of a random pseudo-Hermitian initial guess.
+    /*! Default 0.001. Independent of decaying_rate_. */
+    float init_lower_scale_;
+
     //! Optional parameter indicating if CholeksyQR is disabled
     bool cholqr_ = true;
 
@@ -697,6 +716,7 @@ std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs)
     pretty_print(oss, "# of Lanczos Iterations:", rhs.GetLanczosIter());
     pretty_print(oss, "# of Lanczos Vectors:", rhs.GetNumLanczos());
     pretty_print(oss, "Decaying Rate:", rhs.GetDecayingRate());
+    pretty_print(oss, "Initial lower-half scale:", rhs.GetInitLowerScale());
     pretty_print(oss, "Upperb Scale Rate:", rhs.GetUpperbScaleRate());
     pretty_print(oss, "Cluster-Aware Degrees:", rhs.UseClusterAwareDegrees());
     oss << "\n";

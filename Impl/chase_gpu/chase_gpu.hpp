@@ -502,7 +502,7 @@ public:
                 const std::size_t m_lower = Vec1_.rows() - row_half;
                 if (m_lower > 0)
                 {
-                    const T scale = T(0.001);
+                    const T scale = T(GetConfig().GetInitLowerScale());
                     kernel_dispatch::scale_lower_block_rows(
                         Vec1_.data(), Vec1_.ld(), row_half, m_lower,
                         Vec1_.cols(), scale);
