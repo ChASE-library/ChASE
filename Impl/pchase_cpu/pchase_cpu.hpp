@@ -291,7 +291,7 @@ public:
                 const std::size_t m_lower = V1_->l_rows() - half;
                 if (m_lower > 0)
                 {
-                    T scale = T(0.001);
+                    T scale = T(GetConfig().GetInitLowerScale());
                     for (auto j = 0; j < V1_->l_cols(); j++)
                     {
                         chase::linalg::blaspp::t_scal(

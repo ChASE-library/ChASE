@@ -454,7 +454,7 @@ public:
         }
 #endif
 
-#if defined(HAS_NCCL) && defined(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
+#if (defined(HAS_NCCL) || defined(HAS_RCCL)) && defined(CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP)
         // NCCL benchmark warm-up (optional; CMake: CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=ON,
         // not combined with Release/RelWithDebInfo). Adds measurable startup cost.
         if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
@@ -537,7 +537,7 @@ public:
             runtime_type::event_destroy(start);
             runtime_type::event_destroy(stop);
         }
-#endif // HAS_NCCL && CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
+#endif // (HAS_NCCL || HAS_RCCL) && CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
 
 #ifdef CHASE_ENABLE_OZAKI
             //initOzaki_II();
@@ -691,7 +691,7 @@ public:
                 const std::size_t m_lower = V1_->l_rows() - V1_->l_half();
                 if (m_lower > 0)
                 {
-                    const T scale = T(0.001);
+                    const T scale = T(GetConfig().GetInitLowerScale());
                     kernel_dispatch::scale_lower_block_rows(
                         V1_->l_data(), V1_->l_ld(), V1_->l_half(), m_lower,
                         V1_->l_cols(), scale);

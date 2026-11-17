@@ -4104,6 +4104,31 @@ extern "C"
         }
     }
 
+    void chase_set_init_lower_scale_(float* scale)
+    {
+        float scale_val = *scale;
+        if (auto* config = getActiveConfig<double>())
+        {
+            config->SetInitLowerScale(scale_val);
+            return;
+        }
+        if (auto* config = getActiveConfig<float>())
+        {
+            config->SetInitLowerScale(scale_val);
+            return;
+        }
+        if (auto* config = getActiveConfig<std::complex<double>>())
+        {
+            config->SetInitLowerScale(scale_val);
+            return;
+        }
+        if (auto* config = getActiveConfig<std::complex<float>>())
+        {
+            config->SetInitLowerScale(scale_val);
+            return;
+        }
+    }
+
     void chase_set_decaying_rate_(float* decaying_rate)
     {
         float rate_val = *decaying_rate;

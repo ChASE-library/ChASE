@@ -83,7 +83,5 @@ keywords:
   - MPI+Threads build
   - Multi-GPU build
 license: BSD-3-Clause
-commit: >-
-  https://github.com/ChASE-library/ChASE/commit/ca188d51c86c26368006190109aa06eb22a86ac2
-version: v1.7.4
-date-released: '2026-10-26'
+version: v1.7.5
+date-released: '2026-11-17'
