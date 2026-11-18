@@ -11,6 +11,10 @@
 #include "algorithm/types.hpp"
 #include <complex>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <sstream>
+#include <string>
 #include <cuComplex.h>
 #include <cublas_v2.h>
 #include <cuda.h>
@@ -94,6 +98,171 @@ namespace linalg
 {
 namespace cublaspp
 {
+#if defined(CHASE_OZAKI_CUBLAS)
+#if CUBLAS_VERSION < 131000
+#error CHASE_OZAKI_CUBLAS requires cuBLAS 13.1 (CUDA 13.5) for FP64 fixed-point emulation.
+#endif
+
+// Knobs for the filter GEMM handle. Same switches as the standalone Ozaki app.
+// The accuracy model that would pick mantissa_bits from tol is not connected.
+struct CublasOzakiEnv
+{
+    cublasEmulationStrategy_t strategy = CUBLAS_EMULATION_STRATEGY_EAGER;
+    cudaEmulationMantissaControl control = CUDA_EMULATION_MANTISSA_CONTROL_FIXED;
+    cudaEmulationSpecialValuesSupport special_values =
+        CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_DEFAULT;
+    int mantissa_bits = 32;
+    int mantissa_offset = 0;
+    std::size_t workspace_bytes = 64ull * 1024ull * 1024ull;
+    bool disable_fallback = false;
+    bool disabled = false;
+    std::string summary;
+};
+
+inline CublasOzakiEnv cublas_ozaki_env()
+{
+    CublasOzakiEnv env;
+    const char* disable = std::getenv("CHASE_DISABLE_OZAKI");
+    env.disabled = (disable != nullptr && disable[0] != '\0' && std::atoi(disable) != 0);
+
+    const char* strategy = std::getenv("CHASE_CUBLAS_EMULATION_STRATEGY");
+    const char* strategy_name = "eager";
+    if (strategy != nullptr && std::strcmp(strategy, "performant") == 0)
+    {
+        env.strategy = CUBLAS_EMULATION_STRATEGY_PERFORMANT;
+        strategy_name = "performant";
+    }
+    else if (strategy != nullptr && std::strcmp(strategy, "default") == 0)
+    {
+        env.strategy = CUBLAS_EMULATION_STRATEGY_DEFAULT;
+        strategy_name = "default";
+    }
+
+    const char* control = std::getenv("CHASE_CUBLAS_MANTISSA_CONTROL");
+    const char* control_name = "fixed";
+    if (control != nullptr && std::strcmp(control, "dynamic") == 0)
+    {
+        env.control = CUDA_EMULATION_MANTISSA_CONTROL_DYNAMIC;
+        control_name = "dynamic";
+    }
+
+    if (const char* bits = std::getenv("CHASE_CUBLAS_MANTISSA_BITS"))
+    {
+        env.mantissa_bits = std::atoi(bits);
+    }
+    if (const char* offset = std::getenv("CHASE_CUBLAS_MANTISSA_OFFSET"))
+    {
+        env.mantissa_offset = std::atoi(offset);
+    }
+    if (const char* mb = std::getenv("CHASE_CUBLAS_WORKSPACE_MB"))
+    {
+        env.workspace_bytes = static_cast<std::size_t>(std::atoi(mb)) * 1024ull * 1024ull;
+    }
+
+    const char* special = std::getenv("CHASE_CUBLAS_SPECIAL_VALUES");
+    const char* special_name = "default";
+    if (special != nullptr && std::strcmp(special, "none") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_NONE;
+        special_name = "none";
+    }
+    else if (special != nullptr && std::strcmp(special, "inf") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_INFINITY;
+        special_name = "inf";
+    }
+    else if (special != nullptr && std::strcmp(special, "nan") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_NAN;
+        special_name = "nan";
+    }
+
+    if (const char* no_fallback = std::getenv("CHASE_CUBLAS_DISABLE_FALLBACK"))
+    {
+        env.disable_fallback = (std::atoi(no_fallback) != 0);
+    }
+
+    std::ostringstream oss;
+    oss << "cuBLAS Ozaki filter GEMM: " << (env.disabled ? "disabled" : "enabled")
+        << " strategy=" << strategy_name << " control=" << control_name
+        << " bits=" << env.mantissa_bits << " offset=" << env.mantissa_offset
+        << " workspace_mb=" << (env.workspace_bytes / (1024ull * 1024ull))
+        << " special=" << special_name
+        << " fallback=" << (env.disable_fallback ? "off" : "fp64") << "\n";
+    env.summary = oss.str();
+    return env;
+}
+
+inline void cublas_ozaki_release(cublasHandle_t* handle, void** workspace, int** bits)
+{
+    if (handle != nullptr && *handle != nullptr)
+    {
+        cublasDestroy(*handle);
+        *handle = nullptr;
+    }
+    if (workspace != nullptr && *workspace != nullptr)
+    {
+        cudaFree(*workspace);
+        *workspace = nullptr;
+    }
+    if (bits != nullptr && *bits != nullptr)
+    {
+        cudaFree(*bits);
+        *bits = nullptr;
+    }
+}
+
+// Configures a handle that is used only by the filter matvec. `like` supplies the stream.
+// Returns false when the workspace cannot be allocated; the caller then uses native HEMM.
+inline bool cublas_ozaki_configure(cublasHandle_t like, cublasHandle_t* handle, void** workspace,
+                                   std::size_t* capacity, int** bits, CublasOzakiEnv const& env)
+{
+    if (*handle == nullptr)
+    {
+        if (cublasCreate(handle) != CUBLAS_STATUS_SUCCESS)
+        {
+            return false;
+        }
+    }
+
+    cudaStream_t stream = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(like, &stream));
+    CHECK_CUBLAS_ERROR(cublasSetStream(*handle, stream));
+    CHECK_CUBLAS_ERROR(cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST));
+    CHECK_CUBLAS_ERROR(cublasSetMathMode(*handle, CUBLAS_FP64_EMULATED_FIXEDPOINT_MATH));
+    CHECK_CUBLAS_ERROR(cublasSetEmulationStrategy(*handle, env.strategy));
+
+    if (*capacity != env.workspace_bytes)
+    {
+        if (*workspace != nullptr)
+        {
+            cudaFree(*workspace);
+            *workspace = nullptr;
+            *capacity = 0;
+        }
+        if (env.workspace_bytes > 0)
+        {
+            if (cudaMalloc(workspace, env.workspace_bytes) != cudaSuccess)
+            {
+                return false;
+            }
+            *capacity = env.workspace_bytes;
+        }
+    }
+    CHECK_CUBLAS_ERROR(cublasSetWorkspace(*handle, *workspace, *capacity));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaControl(*handle, env.control));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMaxMantissaBitCount(*handle, env.mantissa_bits));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaBitOffset(*handle, env.mantissa_offset));
+    if (*bits == nullptr && cudaMalloc(reinterpret_cast<void**>(bits), sizeof(int)) != cudaSuccess)
+    {
+        return false;
+    }
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaBitCountPointer(*handle, *bits));
+    CHECK_CUBLAS_ERROR(cublasSetEmulationSpecialValuesSupport(*handle, env.special_values));
+    return true;
+}
+#endif
+
 /**
  * @ingroup cuBlasFunctions
  * @brief Performs the AXPY operation: y = alpha * x + y.

@@ -51,7 +51,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 #include "external/gemmul8pp/gemmul8pp.hpp"
 #include "external/gemmul8pp/utilities.hpp"
 #include <cmath>
@@ -544,7 +544,7 @@ public:
         }
 #endif // HAS_NCCL && CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
         char const* ozaki_disable = std::getenv("CHASE_DISABLE_OZAKI");
         if (ozaki_disable == nullptr || std::atoi(ozaki_disable) == 0)
         {
@@ -610,7 +610,7 @@ public:
         }
 #endif
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     chase::linalg::gemmul8pp::clear_config(blasH_);
     if (ozaki_workspace_)
         runtime_type::device_free(ozaki_workspace_);
@@ -618,6 +618,10 @@ public:
         runtime_type::device_free(d_one_norm_H_);
     if (d_inf_norm_H_)
         runtime_type::device_free(d_inf_norm_H_);
+#endif
+#if defined(CHASE_OZAKI_CUBLAS)
+    chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                 &ozaki_bits_device_);
 #endif
     }
 
@@ -730,7 +734,7 @@ public:
         next_ = NextOp::bAc;
     }
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     unsigned GetOzakiNumModuli() const override { return ozaki_num_moduli_; }
     void SetOzakiNumModuli(unsigned num_moduli) override
     {
@@ -1042,6 +1046,68 @@ public:
 
 #endif
 
+#if defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override { return ozaki_mantissa_bits_; }
+
+    void SetOzakiMantissaBits(int mantissa_bits) override
+    {
+        ozaki_mantissa_bits_ = mantissa_bits;
+        if (ozaki_cublas_handle_ != nullptr)
+        {
+            CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMaxMantissaBitCount(
+                ozaki_cublas_handle_, ozaki_mantissa_bits_));
+        }
+    }
+
+    void Activate_HighPrecision_Fallback() override
+    {
+        if (ozaki_fp_hemm_fallback || ozaki_fallback_disabled_)
+        {
+            return;
+        }
+        ozaki_fp_hemm_fallback = true;
+    }
+
+    bool IsOzakiFpHemmFallback() const override { return ozaki_fp_hemm_fallback; }
+
+    // Independent of the GEMMul8 initOzaki_II. Reads the test environment
+    // variables. The mantissa-accuracy model will use degree and the bounds later.
+    void initOzaki_II(std::size_t degree, chase::Base<T> lambda_1, chase::Base<T> lower,
+                      chase::Base<T> upper) override
+    {
+        (void)degree;
+        (void)lambda_1;
+        (void)lower;
+        (void)upper;
+
+        chase::linalg::cublaspp::CublasOzakiEnv env = chase::linalg::cublaspp::cublas_ozaki_env();
+        ozaki_fallback_disabled_ = env.disable_fallback;
+        ozaki_mantissa_bits_ = env.mantissa_bits;
+        if (env.disabled)
+        {
+            ozaki_fp_hemm_fallback = true;
+            chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                         &ozaki_bits_device_);
+            ozaki_cublas_workspace_bytes_ = 0;
+        }
+        else
+        {
+            ozaki_fp_hemm_fallback = !chase::linalg::cublaspp::cublas_ozaki_configure(
+                blasH_, &ozaki_cublas_handle_, &ozaki_cublas_workspace_, &ozaki_cublas_workspace_bytes_,
+                &ozaki_bits_device_, env);
+            if (ozaki_fp_hemm_fallback)
+            {
+                chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                             &ozaki_bits_device_);
+                ozaki_cublas_workspace_bytes_ = 0;
+                env.summary = "cuBLAS Ozaki filter GEMM: workspace allocation failed, using native HEMM\n";
+            }
+        }
+        chase::GetLogger().Log(ozaki_fp_hemm_fallback ? chase::LogLevel::Warn : chase::LogLevel::Info, "linalg",
+                              env.summary, my_rank_);
+    }
+#endif
+
     void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
                       std::size_t n_indices) override
     {
@@ -1139,7 +1205,7 @@ public:
 
         kernelNamespace::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs,
                                        diag_cnt, std::real(c));
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
         ozaki_skip_scaling_activated_ = false;
 #endif
 
@@ -1261,7 +1327,7 @@ public:
         }
     }
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     void HEMM_Ozaki(std::size_t block, T alpha, T beta, std::size_t offset_left,
                     std::size_t offset_right = 0) override
     {
@@ -1353,6 +1419,84 @@ public:
             }
         }
 #endif
+    }
+#endif
+
+#if defined(CHASE_OZAKI_CUBLAS)
+    void HEMM_Ozaki(std::size_t block, T alpha, T beta, std::size_t offset_left,
+                    std::size_t offset_right = 0) override
+    {
+        if (ozaki_fp_hemm_fallback || ozaki_cublas_handle_ == nullptr)
+        {
+            HEMM(block, alpha, beta, offset_left, offset_right);
+            return;
+        }
+
+        std::size_t ncols = (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
+
+        cudaStream_t stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(blasH_, &stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(ozaki_cublas_handle_, stream));
+
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+            auto min = *std::min_element(resid_->cpu_data() + locked_, resid_->cpu_data() + nev_);
+            if (min > 1e-3)
+            {
+                auto Hmat_sp = Hmat_->getSinglePrecisionMatrix();
+                auto V1_sp = V1_->getSinglePrecisionMatrix();
+                auto W1_sp = W1_->getSinglePrecisionMatrix();
+                singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
+                singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);
+                if (next_ == NextOp::bAc)
+                {
+                    kernelNamespace::template MatrixMultiplyMultiVectors<singlePrecisionT>(
+                        blasH_, &alpha_sp, *Hmat_sp, *V1_sp, &beta_sp, *W1_sp, offset_left + locked_, ncols);
+                    next_ = NextOp::cAb;
+                }
+                else
+                {
+                    kernelNamespace::template MatrixMultiplyMultiVectors<singlePrecisionT>(
+                        blasH_, &alpha_sp, *Hmat_sp, *W1_sp, &beta_sp, *V1_sp, offset_left + locked_, ncols);
+                    next_ = NextOp::bAc;
+                }
+            }
+            else if (next_ == NextOp::bAc)
+            {
+                kernelNamespace::MatrixMultiplyMultiVectors(ozaki_cublas_handle_, &alpha, *Hmat_, *V1_, &beta, *W1_,
+                                                           offset_left + locked_, ncols);
+                next_ = NextOp::cAb;
+            }
+            else
+            {
+                kernelNamespace::MatrixMultiplyMultiVectors(ozaki_cublas_handle_, &alpha, *Hmat_, *W1_, &beta, *V1_,
+                                                           offset_left + locked_, ncols);
+                next_ = NextOp::bAc;
+            }
+        }
+        else
+#endif
+        {
+            if (next_ == NextOp::bAc)
+            {
+                kernelNamespace::MatrixMultiplyMultiVectors(ozaki_cublas_handle_, &alpha, *Hmat_, *V1_, &beta, *W1_,
+                                                           offset_left + locked_, ncols);
+                next_ = NextOp::cAb;
+            }
+            else
+            {
+                kernelNamespace::MatrixMultiplyMultiVectors(ozaki_cublas_handle_, &alpha, *Hmat_, *W1_, &beta, *V1_,
+                                                           offset_left + locked_, ncols);
+                next_ = NextOp::bAc;
+            }
+        }
     }
 #endif
 
@@ -2278,7 +2422,7 @@ private:
         config_; /**< Configuration settings for the Chase algorithm, including
                     problem parameters. */
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     size_t ozaki_workspace_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8). */
     int8_t* ozaki_workspace_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8). */
     chase::Base<T>* d_one_norm_H_ = nullptr; /**< Device scalar for ||H−cI||_1. */
@@ -2293,6 +2437,15 @@ private:
     bool ozaki_save_memory_     = false; /**< Cap Ozaki-II workspace (on by default if GEMMul8 supports it). */
     bool ozaki_fp_hemm_fallback = false; /**< Flag to use FP32/64 fallback in Ozaki-II (GEMMul8). */
     bool ozaki_skip_scaling_activated_ = false; /**< Flag to activate skip scaling Hmat in Ozaki-II (GEMMul8). */
+#endif
+#if defined(CHASE_OZAKI_CUBLAS)
+    cublasHandle_t ozaki_cublas_handle_ = nullptr; /**< Filter-only FP64 emulation handle. */
+    void* ozaki_cublas_workspace_ = nullptr;
+    std::size_t ozaki_cublas_workspace_bytes_ = 0;
+    int* ozaki_bits_device_ = nullptr;
+    int ozaki_mantissa_bits_ = 32;
+    bool ozaki_fallback_disabled_ = false;
+    bool ozaki_fp_hemm_fallback = false;
 #endif
 };
 

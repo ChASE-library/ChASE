@@ -311,8 +311,13 @@ public:
 #ifdef CHASE_ENABLE_OZAKI
     void initOzaki_II(std::size_t, chase::Base<T>, chase::Base<T>,
                      chase::Base<T>) override {}
+#if defined(CHASE_OZAKI_GEMMUL8)
     unsigned GetOzakiNumModuli() const override { return 0; }
     void SetOzakiNumModuli(unsigned) override {}
+#elif defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override { return 0; }
+    void SetOzakiMantissaBits(int) override {}
+#endif
     void Activate_HighPrecision_Fallback() override {}
     bool IsOzakiFpHemmFallback() const override { return false; }
 #endif

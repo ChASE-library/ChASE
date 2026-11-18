@@ -44,7 +44,7 @@ struct cuda_mpi
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             result_multiVector);
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     template <typename T, typename MatrixType, typename InputMultiVectorType>
     static void MatrixMultiplyMultiVectorsWithOzakiII(
         cublasHandle_t cublas_handle, T* alpha, MatrixType& blockMatrix,

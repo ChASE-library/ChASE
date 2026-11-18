@@ -11,7 +11,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/gpu/dist_xccl/impl/hemm_impl.hpp"
 #include "linalg/internal/gpu/dist_xccl/nccl/nccl_kernels.hpp"
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 #include "external/gemmul8pp/gemmul8pp.hpp"
 #endif
 
@@ -81,7 +81,7 @@ void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
         src_multiVector, target_multiVector, 0, input_multiVector.l_cols());
 }
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 template <typename T, typename MatrixType, typename InputMultiVectorType>
 void cuda_nccl::MatrixMultiplyMultiVectorsWithOzakiII(
     cublasHandle_t cublas_handle, T* alpha, MatrixType& blockMatrix,

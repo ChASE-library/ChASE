@@ -1570,9 +1570,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 << std::setprecision(6) << lambda << "\t"
                 << std::setprecision(6) << lowerb << "\t"
                 << std::setprecision(6) << upperb << "\t" << unconverged;
-#ifdef CHASE_ENABLE_OZAKI
+#if defined(CHASE_OZAKI_GEMMUL8)
             if (!single->IsOzakiFpHemmFallback())
                 oss << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t";
+#elif defined(CHASE_OZAKI_CUBLAS)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki mantissa bits: " << single->GetOzakiMantissaBits() << "\t";
 #endif
             oss << std::endl;
             single->Output(LogLevel::Info, oss.str(), "algorithm");
@@ -1743,8 +1746,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #endif
 
-#if defined(CHASE_ENABLE_OZAKI) && defined(CHASE_OUTPUT)
+#if defined(CHASE_OZAKI_GEMMUL8) && defined(CHASE_OUTPUT)
         unsigned const ozaki_s = single->GetOzakiNumModuli();
+        bool const ozaki_fp = single->IsOzakiFpHemmFallback();
+#elif defined(CHASE_OZAKI_CUBLAS) && defined(CHASE_OUTPUT)
+        int const ozaki_bits = single->GetOzakiMantissaBits();
         bool const ozaki_fp = single->IsOzakiFpHemmFallback();
 #endif
         if (single->isSym())
@@ -1765,9 +1771,16 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 single, N, unconverged, nex, tol, index.data(), ritzv, resid,
                 residLast, &early_locked_residuals, degrees, locked, iteration);
         }
-#if defined(CHASE_ENABLE_OZAKI) && defined(CHASE_OUTPUT)
+#if defined(CHASE_OZAKI_GEMMUL8) && defined(CHASE_OUTPUT)
         if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||
                           single->GetOzakiNumModuli() != ozaki_s))
+            single->Output(LogLevel::Info,
+                           "ozaki fallback at iteration: " +
+                               std::to_string(iteration) + "\n",
+                           "algorithm");
+#elif defined(CHASE_OZAKI_CUBLAS) && defined(CHASE_OUTPUT)
+        if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||
+                          single->GetOzakiMantissaBits() != ozaki_bits))
             single->Output(LogLevel::Info,
                            "ozaki fallback at iteration: " +
                                std::to_string(iteration) + "\n",

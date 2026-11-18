@@ -571,6 +571,7 @@ public:
     {
         chase_->initOzaki_II(degree, lambda_1, lower, upper);
     }
+#if defined(CHASE_OZAKI_GEMMUL8)
     unsigned GetOzakiNumModuli() const override
     {
         return chase_->GetOzakiNumModuli();
@@ -579,6 +580,16 @@ public:
     {
         chase_->SetOzakiNumModuli(num_moduli);
     }
+#elif defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override
+    {
+        return chase_->GetOzakiMantissaBits();
+    }
+    void SetOzakiMantissaBits(int mantissa_bits) override
+    {
+        chase_->SetOzakiMantissaBits(mantissa_bits);
+    }
+#endif
     void Activate_HighPrecision_Fallback() override
     {
         chase_->Activate_HighPrecision_Fallback();

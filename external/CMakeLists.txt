@@ -123,12 +123,28 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
   message(STATUS "rocBLAS/rocSOLVER support enabled for HIP.")
 endif()
 
-# Optional Ozaki Scheme II backend. Prefix lookup and the GEMMul8 build are in GEMMul8.cmake.
+# Optional Ozaki filter GEMM. GEMMUL8 builds GEMMul8. CUBLAS uses cuBLAS FP64
+# fixed-point emulation and does not compile GEMMul8.
 if(CHASE_ENABLE_OZAKI)
+  string(TOUPPER "${CHASE_OZAKI_BACKEND}" _CHASE_OZAKI_BACKEND)
+  if(_CHASE_OZAKI_BACKEND STREQUAL "CUBLAS")
+    if(NOT CUDAToolkit_FOUND)
+      message(FATAL_ERROR "CHASE_OZAKI_BACKEND=CUBLAS requires the CUDA toolkit.")
+    endif()
+    if(CUDAToolkit_VERSION VERSION_LESS 13.5)
+      message(FATAL_ERROR
+        "CHASE_OZAKI_BACKEND=CUBLAS requires CUDA >= 13.5 (found ${CUDAToolkit_VERSION}). "
+        "This toolkit has no CUBLAS_FP64_EMULATED_FIXEDPOINT_MATH. Use CHASE_OZAKI_BACKEND=GEMMUL8.")
+    endif()
+    target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1 CHASE_OZAKI_CUBLAS=1)
+    message(STATUS "Ozaki filter GEMM: cuBLAS FP64 fixed-point emulation (CUDA ${CUDAToolkit_VERSION})")
+  elseif(NOT _CHASE_OZAKI_BACKEND STREQUAL "GEMMUL8")
+    message(FATAL_ERROR "CHASE_OZAKI_BACKEND must be GEMMUL8 or CUBLAS, got '${CHASE_OZAKI_BACKEND}'.")
+  else()
   include(GEMMul8)
   chase_setup_gemmul8()
 
-  target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1)
+  target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1 CHASE_OZAKI_GEMMUL8=1)
 
   enable_language(CUDA)
 
@@ -163,6 +179,7 @@ if(CHASE_ENABLE_OZAKI)
     add_dependencies(gemmul8pp gemmul8_ep)
   endif()
   message(STATUS "gemmul8pp uses CUDA architecture ${CMAKE_CUDA_ARCHITECTURES}, the same one as the rest of ChASE")
+  endif()
 endif()
 
 install(TARGETS blaspp lapackpp chase_cpu_linalg
@@ -231,7 +248,7 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
 endif()
 
 # Install Ozaki/GEMMul8 wrapper (library + headers).
-if(CHASE_ENABLE_OZAKI)
+if(CHASE_ENABLE_OZAKI AND _CHASE_OZAKI_BACKEND STREQUAL "GEMMUL8")
   install(TARGETS gemmul8pp
     EXPORT chase_targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

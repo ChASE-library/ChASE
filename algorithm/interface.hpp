@@ -292,8 +292,13 @@ public:
      */
     virtual void initOzaki_II(std::size_t degree, Base<T> lambda_1, Base<T> lower,
                              Base<T> upper) = 0;
+#if defined(CHASE_OZAKI_GEMMUL8)
     virtual unsigned GetOzakiNumModuli() const = 0;
     virtual void SetOzakiNumModuli(unsigned num_moduli) = 0;
+#elif defined(CHASE_OZAKI_CUBLAS)
+    virtual int GetOzakiMantissaBits() const = 0;
+    virtual void SetOzakiMantissaBits(int mantissa_bits) = 0;
+#endif
     virtual void Activate_HighPrecision_Fallback() = 0;
     virtual bool IsOzakiFpHemmFallback() const = 0;
 #endif

@@ -9,7 +9,7 @@
 #include "linalg/internal/gpu/backend/types.hpp"
 #include "linalg/internal/gpu/dist_mpi/cuda/cuda_mpi_kernels.hpp"
 #include "linalg/internal/gpu/dist_mpi/impl/hemm_impl.hpp"
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 #include "external/gemmul8pp/gemmul8pp.hpp"
 #endif
 
@@ -78,7 +78,7 @@ void cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(
 }
 
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 template <typename T, typename MatrixType, typename InputMultiVectorType>
 void cuda_mpi::MatrixMultiplyMultiVectorsWithOzakiII(
     cublasHandle_t cublas_handle, T* alpha, MatrixType& blockMatrix,
