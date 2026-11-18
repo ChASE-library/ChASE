@@ -183,11 +183,14 @@ inline double gamma_n(std::size_t n, double u)
     return nu / (1.0 - nu);
 }
 
-// IEEE GEMM residual in the (1,2)-norm, unit columns of V (FP64):
+// IEEE GEMM residual in the (1,2)-norm, unit columns of V.
+// FP32 uses u = 2^{-24}; FP64 uses u = 2^{-53}.
 //   ||E^f||_{1,2} <= γ_n ||Ā||_∞  (caller may pass ρ(Ā) or ||Ā||_∞).
+template <typename T>
 inline double ieee_gemm_error_bound_12(double rho_A, std::size_t n)
 {
-    return gamma_n(n, kU64) * rho_A;
+    double const u = is_fp32_v<T> ? kU32 : kU64;
+    return gamma_n(n, u) * rho_A;
 }
 
 // Ozaki-II GEMM residual in the (1,2)-norm (unit columns of V):

@@ -1776,7 +1776,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                           single->GetOzakiNumModuli() != ozaki_s))
             single->Output(LogLevel::Info,
                            "ozaki fallback at iteration: " +
-                               std::to_string(iteration) + "\n",
+                               std::to_string(iteration + 1) + "\n",
                            "algorithm");
 #elif defined(CHASE_OZAKI_CUBLAS) && defined(CHASE_OUTPUT)
         if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||

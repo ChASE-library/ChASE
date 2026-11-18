@@ -181,7 +181,7 @@ function(chase_setup_gemmul8)
   endif()
 
   if(EXISTS "${_GEMMUL8_INCLUDE_DIR}/version.hpp")
-    message(STATUS "GEMMul8 memory-saving API detected (version.hpp); enabled by default, set CHASE_OZAKI_DISABLE_SAVE_MEMORY=1 to disable")
+    message(STATUS "GEMMul8 memory-saving API detected (version.hpp); save-memory is on unless CHASE_OZAKI_WORKSPACE_GB is set")
   elseif(_GEMMUL8_FROM_FETCH)
     message(STATUS "GEMMul8 memory-saving API follows version.hpp in the fetched tree")
   else()
