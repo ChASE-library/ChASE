@@ -2090,8 +2090,15 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             oss << std::scientific << "iteration: " << iteration << "\t"
                 << std::setprecision(6) << lambda_1 << "\t"
                 << std::setprecision(6) << lower << "\t"
-                << std::setprecision(6) << b_sup << "\t" << unconverged
-                << std::endl;
+                << std::setprecision(6) << b_sup << "\t" << unconverged;
+#if defined(CHASE_OZAKI_GEMMUL8)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t";
+#elif defined(CHASE_OZAKI_CUBLAS)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki mantissa bits: " << single->GetOzakiMantissaBits() << "\t";
+#endif
+            oss << std::endl;
             single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
