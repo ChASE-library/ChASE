@@ -322,34 +322,36 @@ __global__ void extract_B_lo_cplx_kernel(unsigned k, T const* B, std::size_t ldb
 
 template <typename T>
 void compute_row_sft_impl(T const* A, std::size_t lda, std::size_t m,
-                          std::size_t k, std::int16_t* sft, double inv_e)
+                          std::size_t k, std::int16_t* sft, double inv_e,
+                          cudaStream_t stream)
 {
     using R                = real_t<T>;
     dim3 const threads(kTileDim, kTileDim);
     unsigned const blocks = static_cast<unsigned>((m + kTileDim - 1) / kTileDim);
-    row_sft_kernel<T><<<blocks, threads>>>(static_cast<unsigned>(m),
-                                           static_cast<unsigned>(k), A, lda,
-                                           sft, static_cast<R>(inv_e));
+    row_sft_kernel<T><<<blocks, threads, 0, stream>>>(
+        static_cast<unsigned>(m), static_cast<unsigned>(k), A, lda, sft,
+        static_cast<R>(inv_e));
 }
 
 template <typename T>
 void compute_col_sft_impl(T const* V, std::size_t ldv, std::size_t k,
-                          std::size_t n, std::int16_t* sft)
+                          std::size_t n, std::int16_t* sft, cudaStream_t stream)
 {
-    col_sft_kernel<T><<<static_cast<unsigned>(n), 256>>>(
+    col_sft_kernel<T><<<static_cast<unsigned>(n), 256, 0, stream>>>(
         static_cast<unsigned>(k), V, ldv, sft);
 }
 
 template <typename T>
 void pack_A_lo_real_impl(T const* A, std::size_t lda, std::size_t m,
                          std::size_t k, std::int16_t const* sftA,
-                         std::int8_t* A_lo, std::size_t lda_lo, double inv_e)
+                         std::int8_t* A_lo, std::size_t lda_lo, double inv_e,
+                         cudaStream_t stream)
 {
     using R = real_t<T>;
     dim3 const threads(kTileDim, kTileDim);
     dim3 const grid(static_cast<unsigned>((m + kTileDim - 1) / kTileDim),
                     static_cast<unsigned>((lda_lo + kTileDim - 1) / kTileDim));
-    extract_A_lo_real_kernel<T><<<grid, threads>>>(
+    extract_A_lo_real_kernel<T><<<grid, threads, 0, stream>>>(
         static_cast<unsigned>(m), static_cast<unsigned>(k), A, lda, sftA, A_lo,
         lda_lo, static_cast<R>(inv_e));
 }
@@ -358,13 +360,13 @@ template <typename T>
 void pack_A_lo_cplx_impl(T const* A, std::size_t lda, std::size_t m,
                          std::size_t k, std::int16_t const* sftA,
                          std::int8_t* A_lo_re, std::int8_t* A_lo_im,
-                         std::size_t lda_lo, double inv_e)
+                         std::size_t lda_lo, double inv_e, cudaStream_t stream)
 {
     using R = real_t<T>;
     dim3 const threads(kTileDim, kTileDim);
     dim3 const grid(static_cast<unsigned>((m + kTileDim - 1) / kTileDim),
                     static_cast<unsigned>((lda_lo + kTileDim - 1) / kTileDim));
-    extract_A_lo_cplx_kernel<T><<<grid, threads>>>(
+    extract_A_lo_cplx_kernel<T><<<grid, threads, 0, stream>>>(
         static_cast<unsigned>(m), static_cast<unsigned>(k), A, lda, sftA,
         A_lo_re, A_lo_im, lda_lo, static_cast<R>(inv_e));
 }
@@ -372,9 +374,9 @@ void pack_A_lo_cplx_impl(T const* A, std::size_t lda, std::size_t m,
 template <typename T>
 void pack_B_lo_real_impl(T const* B, std::size_t ldb, std::size_t k,
                          std::size_t n, std::int16_t const* sftB,
-                         std::int8_t* B_lo, std::size_t ldb_lo)
+                         std::int8_t* B_lo, std::size_t ldb_lo, cudaStream_t stream)
 {
-    extract_B_lo_real_kernel<T><<<static_cast<unsigned>(n), 256>>>(
+    extract_B_lo_real_kernel<T><<<static_cast<unsigned>(n), 256, 0, stream>>>(
         static_cast<unsigned>(k), B, ldb, sftB, B_lo, ldb_lo);
 }
 
@@ -382,10 +384,11 @@ template <typename T>
 void pack_B_lo_cplx_impl(T const* B, std::size_t ldb, std::size_t k,
                          std::size_t n, std::int16_t const* sftB,
                          std::int8_t* B_lo_re, std::int8_t* B_lo_im,
-                         std::size_t ldb_lo)
+                         std::size_t ldb_lo, cudaStream_t stream)
 {
-    extract_B_lo_cplx_kernel<T><<<static_cast<unsigned>(n), 256>>>(
-        static_cast<unsigned>(k), B, ldb, sftB, B_lo_re, B_lo_im, ldb_lo);
+    extract_B_lo_cplx_kernel<T>
+        <<<static_cast<unsigned>(n), 256, 0, stream>>>(
+            static_cast<unsigned>(k), B, ldb, sftB, B_lo_re, B_lo_im, ldb_lo);
 }
 
 // ---- INT32 max of C'' (PAR find_max.hpp style) ----
@@ -519,61 +522,68 @@ __global__ void ozaki_two_pow_prime_kernel(std::int16_t const* sft,
 
 template <>
 void compute_row_sft<float>(float const* A, std::size_t lda, std::size_t m,
-                            std::size_t k, std::int16_t* sft, double inv_e)
+                            std::size_t k, std::int16_t* sft, double inv_e,
+                            cudaStream_t stream)
 {
-    compute_row_sft_impl(A, lda, m, k, sft, inv_e);
+    compute_row_sft_impl(A, lda, m, k, sft, inv_e, stream);
 }
 template <>
 void compute_row_sft<double>(double const* A, std::size_t lda, std::size_t m,
-                             std::size_t k, std::int16_t* sft, double inv_e)
+                             std::size_t k, std::int16_t* sft, double inv_e,
+                             cudaStream_t stream)
 {
-    compute_row_sft_impl(A, lda, m, k, sft, inv_e);
+    compute_row_sft_impl(A, lda, m, k, sft, inv_e, stream);
 }
 template <>
 void compute_row_sft<std::complex<float>>(std::complex<float> const* A,
                                           std::size_t lda, std::size_t m,
                                           std::size_t k, std::int16_t* sft,
-                                          double inv_e)
+                                          double inv_e, cudaStream_t stream)
 {
     compute_row_sft_impl(reinterpret_cast<cuComplex const*>(A), lda, m, k, sft,
-                         inv_e);
+                         inv_e, stream);
 }
 template <>
 void compute_row_sft<std::complex<double>>(std::complex<double> const* A,
                                            std::size_t lda, std::size_t m,
                                            std::size_t k, std::int16_t* sft,
-                                           double inv_e)
+                                           double inv_e, cudaStream_t stream)
 {
     compute_row_sft_impl(reinterpret_cast<cuDoubleComplex const*>(A), lda, m, k,
-                         sft, inv_e);
+                         sft, inv_e, stream);
 }
 
 template <>
 void compute_col_sft<float>(float const* V, std::size_t ldv, std::size_t k,
-                            std::size_t n, std::int16_t* sft)
+                            std::size_t n, std::int16_t* sft,
+                            cudaStream_t stream)
 {
-    compute_col_sft_impl(V, ldv, k, n, sft);
+    compute_col_sft_impl(V, ldv, k, n, sft, stream);
 }
 template <>
 void compute_col_sft<double>(double const* V, std::size_t ldv, std::size_t k,
-                             std::size_t n, std::int16_t* sft)
+                             std::size_t n, std::int16_t* sft,
+                             cudaStream_t stream)
 {
-    compute_col_sft_impl(V, ldv, k, n, sft);
+    compute_col_sft_impl(V, ldv, k, n, sft, stream);
 }
 template <>
 void compute_col_sft<std::complex<float>>(std::complex<float> const* V,
                                           std::size_t ldv, std::size_t k,
-                                          std::size_t n, std::int16_t* sft)
+                                          std::size_t n, std::int16_t* sft,
+                                          cudaStream_t stream)
 {
-    compute_col_sft_impl(reinterpret_cast<cuComplex const*>(V), ldv, k, n, sft);
+    compute_col_sft_impl(reinterpret_cast<cuComplex const*>(V), ldv, k, n, sft,
+                         stream);
 }
 template <>
 void compute_col_sft<std::complex<double>>(std::complex<double> const* V,
                                            std::size_t ldv, std::size_t k,
-                                           std::size_t n, std::int16_t* sft)
+                                           std::size_t n, std::int16_t* sft,
+                                           cudaStream_t stream)
 {
     compute_col_sft_impl(reinterpret_cast<cuDoubleComplex const*>(V), ldv, k, n,
-                         sft);
+                         sft, stream);
 }
 
 // ---- pack API (real: one plane) ----
@@ -581,31 +591,31 @@ void compute_col_sft<std::complex<double>>(std::complex<double> const* V,
 template <>
 void pack_A_lo<float>(float const* A, std::size_t lda, std::size_t m,
                       std::size_t k, std::int16_t const* sftA, std::int8_t* A_lo,
-                      std::size_t lda_lo, double inv_e)
+                      std::size_t lda_lo, double inv_e, cudaStream_t stream)
 {
-    pack_A_lo_real_impl(A, lda, m, k, sftA, A_lo, lda_lo, inv_e);
+    pack_A_lo_real_impl(A, lda, m, k, sftA, A_lo, lda_lo, inv_e, stream);
 }
 template <>
 void pack_A_lo<double>(double const* A, std::size_t lda, std::size_t m,
                        std::size_t k, std::int16_t const* sftA, std::int8_t* A_lo,
-                       std::size_t lda_lo, double inv_e)
+                       std::size_t lda_lo, double inv_e, cudaStream_t stream)
 {
-    pack_A_lo_real_impl(A, lda, m, k, sftA, A_lo, lda_lo, inv_e);
+    pack_A_lo_real_impl(A, lda, m, k, sftA, A_lo, lda_lo, inv_e, stream);
 }
 
 template <>
 void pack_B_lo<float>(float const* B, std::size_t ldb, std::size_t k,
                       std::size_t n, std::int16_t const* sftB, std::int8_t* B_lo,
-                      std::size_t ldb_lo)
+                      std::size_t ldb_lo, cudaStream_t stream)
 {
-    pack_B_lo_real_impl(B, ldb, k, n, sftB, B_lo, ldb_lo);
+    pack_B_lo_real_impl(B, ldb, k, n, sftB, B_lo, ldb_lo, stream);
 }
 template <>
 void pack_B_lo<double>(double const* B, std::size_t ldb, std::size_t k,
                        std::size_t n, std::int16_t const* sftB, std::int8_t* B_lo,
-                       std::size_t ldb_lo)
+                       std::size_t ldb_lo, cudaStream_t stream)
 {
-    pack_B_lo_real_impl(B, ldb, k, n, sftB, B_lo, ldb_lo);
+    pack_B_lo_real_impl(B, ldb, k, n, sftB, B_lo, ldb_lo, stream);
 }
 
 // ---- pack API (complex: Re/Im planes) ----
@@ -615,78 +625,82 @@ void pack_A_lo<std::complex<float>>(std::complex<float> const* A, std::size_t ld
                                     std::size_t m, std::size_t k,
                                     std::int16_t const* sftA, std::int8_t* A_lo_re,
                                     std::int8_t* A_lo_im, std::size_t lda_lo,
-                                    double inv_e)
+                                    double inv_e, cudaStream_t stream)
 {
     pack_A_lo_cplx_impl(reinterpret_cast<cuComplex const*>(A), lda, m, k, sftA,
-                        A_lo_re, A_lo_im, lda_lo, inv_e);
+                        A_lo_re, A_lo_im, lda_lo, inv_e, stream);
 }
 template <>
 void pack_A_lo<std::complex<double>>(std::complex<double> const* A,
                                      std::size_t lda, std::size_t m, std::size_t k,
                                      std::int16_t const* sftA, std::int8_t* A_lo_re,
                                      std::int8_t* A_lo_im, std::size_t lda_lo,
-                                     double inv_e)
+                                     double inv_e, cudaStream_t stream)
 {
     pack_A_lo_cplx_impl(reinterpret_cast<cuDoubleComplex const*>(A), lda, m, k,
-                        sftA, A_lo_re, A_lo_im, lda_lo, inv_e);
+                        sftA, A_lo_re, A_lo_im, lda_lo, inv_e, stream);
 }
 
 template <>
 void pack_B_lo<std::complex<float>>(std::complex<float> const* B, std::size_t ldb,
                                     std::size_t k, std::size_t n,
                                     std::int16_t const* sftB, std::int8_t* B_lo_re,
-                                    std::int8_t* B_lo_im, std::size_t ldb_lo)
+                                    std::int8_t* B_lo_im, std::size_t ldb_lo,
+                                    cudaStream_t stream)
 {
     pack_B_lo_cplx_impl(reinterpret_cast<cuComplex const*>(B), ldb, k, n, sftB,
-                        B_lo_re, B_lo_im, ldb_lo);
+                        B_lo_re, B_lo_im, ldb_lo, stream);
 }
 template <>
 void pack_B_lo<std::complex<double>>(std::complex<double> const* B,
                                      std::size_t ldb, std::size_t k, std::size_t n,
                                      std::int16_t const* sftB, std::int8_t* B_lo_re,
-                                     std::int8_t* B_lo_im, std::size_t ldb_lo)
+                                     std::int8_t* B_lo_im, std::size_t ldb_lo,
+                                     cudaStream_t stream)
 {
     pack_B_lo_cplx_impl(reinterpret_cast<cuDoubleComplex const*>(B), ldb, k, n,
-                        sftB, B_lo_re, B_lo_im, ldb_lo);
+                        sftB, B_lo_re, B_lo_im, ldb_lo, stream);
 }
 
 // ---- INT32 max of C'' API ----
 
 void compute_row_max_C(std::int32_t const* C, std::size_t ldc, std::size_t m,
-                       std::size_t n, std::int32_t* amax_row)
+                       std::size_t n, std::int32_t* amax_row,
+                       cudaStream_t stream)
 {
     dim3 const threads(kTileDim, kTileDim);
     unsigned const grid =
         static_cast<unsigned>((m + kTileDim - 1) / kTileDim);
-    row_max_C_kernel<<<grid, threads>>>(static_cast<unsigned>(m),
-                                        static_cast<unsigned>(n), C, ldc,
-                                        amax_row);
+    row_max_C_kernel<<<grid, threads, 0, stream>>>(static_cast<unsigned>(m),
+                                                   static_cast<unsigned>(n), C,
+                                                   ldc, amax_row);
 }
 
 void compute_col_max_C(std::int32_t const* C, std::size_t ldc, std::size_t m,
-                       std::size_t n, std::int32_t* amax_col)
+                       std::size_t n, std::int32_t* amax_col,
+                       cudaStream_t stream)
 {
-    col_max_C_kernel<<<static_cast<unsigned>(n), 256>>>(
+    col_max_C_kernel<<<static_cast<unsigned>(n), 256, 0, stream>>>(
         static_cast<unsigned>(m), C, ldc, amax_col);
 }
 
 void compute_row_max_C(std::int32_t const* C1, std::int32_t const* C2,
                        std::size_t ldc, std::size_t m, std::size_t n,
-                       std::int32_t* amax_row)
+                       std::int32_t* amax_row, cudaStream_t stream)
 {
     dim3 const threads(kTileDim, kTileDim);
     unsigned const grid =
         static_cast<unsigned>((m + kTileDim - 1) / kTileDim);
-    row_max_C_cplx_kernel<<<grid, threads>>>(static_cast<unsigned>(m),
-                                             static_cast<unsigned>(n), C1, C2,
-                                             ldc, amax_row);
+    row_max_C_cplx_kernel<<<grid, threads, 0, stream>>>(
+        static_cast<unsigned>(m), static_cast<unsigned>(n), C1, C2, ldc,
+        amax_row);
 }
 
 void compute_col_max_C(std::int32_t const* C1, std::int32_t const* C2,
                        std::size_t ldc, std::size_t m, std::size_t n,
-                       std::int32_t* amax_col)
+                       std::int32_t* amax_col, cudaStream_t stream)
 {
-    col_max_C_cplx_kernel<<<static_cast<unsigned>(n), 256>>>(
+    col_max_C_cplx_kernel<<<static_cast<unsigned>(n), 256, 0, stream>>>(
         static_cast<unsigned>(m), C1, C2, ldc, amax_col);
 }
 
@@ -694,13 +708,12 @@ void compute_col_max_C(std::int32_t const* C1, std::int32_t const* C2,
 
 void compute_ozaki_two_pow_primes(std::int16_t const* sft,
                                   std::int32_t const* amax_C, std::size_t n,
-                                  double* two_pow)
+                                  double* two_pow, cudaStream_t stream)
 {
     unsigned const block = 256;
     unsigned const grid  = static_cast<unsigned>((n + block - 1) / block);
-    ozaki_two_pow_prime_kernel<<<grid, block>>>(sft, amax_C,
-                                                static_cast<unsigned>(n),
-                                                two_pow);
+    ozaki_two_pow_prime_kernel<<<grid, block, 0, stream>>>(
+        sft, amax_C, static_cast<unsigned>(n), two_pow);
 }
 
 double max_two_pow_ozaki_prime(cublasHandle_t handle, std::int16_t const* sft,
@@ -710,17 +723,23 @@ double max_two_pow_ozaki_prime(cublasHandle_t handle, std::int16_t const* sft,
     if (n == 0)
         return 0.0;
 
-    compute_ozaki_two_pow_primes(sft, amax_C, n, d_two_pow);
+    cudaStream_t stream = nullptr;
+    cublasGetStream(handle, &stream);
+    compute_ozaki_two_pow_primes(sft, amax_C, n, d_two_pow, stream);
 
     cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
     int idx1 = 0;
-    assert(cublasIdamax(handle, static_cast<int>(n), d_two_pow, 1, &idx1) ==
-           CUBLAS_STATUS_SUCCESS);
-    assert(idx1 >= 1);
+    cublasStatus_t const iamax_status =
+        cublasIdamax(handle, static_cast<int>(n), d_two_pow, 1, &idx1);
+    assert(iamax_status == CUBLAS_STATUS_SUCCESS);
+    (void)iamax_status;
+    if (idx1 < 1)
+        return 0.0;
 
     double h_max = 0.0;
-    cudaMemcpy(&h_max, d_two_pow + (static_cast<std::size_t>(idx1) - 1),
-               sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(&h_max, d_two_pow + (static_cast<std::size_t>(idx1) - 1),
+                    sizeof(double), cudaMemcpyDeviceToHost, stream);
+    cudaStreamSynchronize(stream);
     return h_max;
 }
 
@@ -731,12 +750,16 @@ double nrm2_two_pow_ozaki_prime(cublasHandle_t handle, std::int16_t const* sft,
     if (n == 0)
         return 0.0;
 
-    compute_ozaki_two_pow_primes(sft, amax_C, n, d_two_pow);
+    cudaStream_t stream = nullptr;
+    cublasGetStream(handle, &stream);
+    compute_ozaki_two_pow_primes(sft, amax_C, n, d_two_pow, stream);
 
     cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
     double h_nrm2 = 0.0;
-    assert(cublasDnrm2(handle, static_cast<int>(n), d_two_pow, 1, &h_nrm2) ==
-           CUBLAS_STATUS_SUCCESS);
+    cublasStatus_t const nrm2_status =
+        cublasDnrm2(handle, static_cast<int>(n), d_two_pow, 1, &h_nrm2);
+    assert(nrm2_status == CUBLAS_STATUS_SUCCESS);
+    (void)nrm2_status;
     return h_nrm2;
 }
 
@@ -818,13 +841,15 @@ Int8ProbeLayout int8_probe_layout(std::size_t m, std::size_t n, std::size_t k,
     return layout;
 }
 
-void zero_device(void* ptr, std::size_t bytes)
+void zero_device(void* ptr, std::size_t bytes, cudaStream_t stream)
 {
     if (bytes == 0)
     {
         return;
     }
-    assert(cudaMemset(ptr, 0, bytes) == cudaSuccess);
+    cudaError_t const memset_status = cudaMemsetAsync(ptr, 0, bytes, stream);
+    assert(memset_status == cudaSuccess);
+    (void)memset_status;
 }
 
 std::size_t probe_work_bytes(std::size_t m, std::size_t n, std::size_t k,
@@ -839,12 +864,18 @@ void gemm_i8_tn(cublasHandle_t handle, std::size_t m, std::size_t n,
 {
     std::int32_t const one  = 1;
     std::int32_t const zero = 0;
-    assert(cublasGemmEx(handle, CUBLAS_OP_T, CUBLAS_OP_N, static_cast<int>(m),
-                        static_cast<int>(n), static_cast<int>(k), &one, A_lo,
-                        CUDA_R_8I, static_cast<int>(k), B_lo, CUDA_R_8I,
-                        static_cast<int>(k), &zero, C, CUDA_R_32I,
-                        static_cast<int>(m), CUBLAS_COMPUTE_32I,
-                        CUBLAS_GEMM_DEFAULT) == CUBLAS_STATUS_SUCCESS);
+    cublasPointerMode_t prev = CUBLAS_POINTER_MODE_DEVICE;
+    cublasGetPointerMode(handle, &prev);
+    cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    cublasStatus_t const gemm_status = cublasGemmEx(
+        handle, CUBLAS_OP_T, CUBLAS_OP_N, static_cast<int>(m),
+        static_cast<int>(n), static_cast<int>(k), &one, A_lo, CUDA_R_8I,
+        static_cast<int>(k), B_lo, CUDA_R_8I, static_cast<int>(k), &zero, C,
+        CUDA_R_32I, static_cast<int>(m), CUBLAS_COMPUTE_32I,
+        CUBLAS_GEMM_DEFAULT);
+    assert(gemm_status == CUBLAS_STATUS_SUCCESS);
+    (void)gemm_status;
+    cublasSetPointerMode(handle, prev);
 }
 
 template <typename T>
@@ -866,17 +897,20 @@ void ozaki_compute_scaling_factors_error_bound_real(
     auto* amax_col   = reinterpret_cast<std::int32_t*>(base + layout.amax_col);
     auto* d_two_pow  = reinterpret_cast<double*>(base + layout.two_pow);
 
-    compute_row_sft(A, lda, m, k, sftA, inv_e);
-    compute_col_sft(B, ldb, k, n, sftB);
-    zero_device(A_lo, layout.a_lo_bytes);
-    zero_device(B_lo, layout.b_lo_bytes);
-    pack_A_lo(A, lda, m, k, sftA, A_lo, layout.k_pad, inv_e);
-    pack_B_lo(B, ldb, k, n, sftB, B_lo, layout.k_pad);
+    cudaStream_t stream = nullptr;
+    cublasGetStream(handle, &stream);
+
+    compute_row_sft(A, lda, m, k, sftA, inv_e, stream);
+    compute_col_sft(B, ldb, k, n, sftB, stream);
+    zero_device(A_lo, layout.a_lo_bytes, stream);
+    zero_device(B_lo, layout.b_lo_bytes, stream);
+    pack_A_lo(A, lda, m, k, sftA, A_lo, layout.k_pad, inv_e, stream);
+    pack_B_lo(B, ldb, k, n, sftB, B_lo, layout.k_pad, stream);
 
     gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo, B_lo, C);
 
-    compute_row_max_C(C, layout.m_pad, m, n, amax_row);
-    compute_col_max_C(C, layout.m_pad, m, n, amax_col);
+    compute_row_max_C(C, layout.m_pad, m, n, amax_row, stream);
+    compute_col_max_C(C, layout.m_pad, m, n, amax_col, stream);
 
     *h_nrm2_a = nrm2_two_pow_ozaki_prime(handle, sftA, amax_row, m, d_two_pow);
     *h_max2_b = max_two_pow_ozaki_prime(handle, sftB, amax_col, n, d_two_pow);
@@ -904,18 +938,21 @@ void ozaki_compute_scaling_factors_error_bound_cplx(
     auto* amax_col   = reinterpret_cast<std::int32_t*>(base + layout.amax_col);
     auto* d_two_pow  = reinterpret_cast<double*>(base + layout.two_pow);
 
-    compute_row_sft(A, lda, m, k, sftA, inv_e);
-    compute_col_sft(B, ldb, k, n, sftB);
-    zero_device(A_lo_re, 2 * layout.a_lo_bytes);
-    zero_device(B_lo_re, 2 * layout.b_lo_bytes);
-    pack_A_lo(A, lda, m, k, sftA, A_lo_re, A_lo_im, layout.k_pad, inv_e);
-    pack_B_lo(B, ldb, k, n, sftB, B_lo_re, B_lo_im, layout.k_pad);
+    cudaStream_t stream = nullptr;
+    cublasGetStream(handle, &stream);
+
+    compute_row_sft(A, lda, m, k, sftA, inv_e, stream);
+    compute_col_sft(B, ldb, k, n, sftB, stream);
+    zero_device(A_lo_re, 2 * layout.a_lo_bytes, stream);
+    zero_device(B_lo_re, 2 * layout.b_lo_bytes, stream);
+    pack_A_lo(A, lda, m, k, sftA, A_lo_re, A_lo_im, layout.k_pad, inv_e, stream);
+    pack_B_lo(B, ldb, k, n, sftB, B_lo_re, B_lo_im, layout.k_pad, stream);
 
     gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo_re, B_lo_re, C1);
     gemm_i8_tn(handle, layout.m_pad, layout.n_pad, layout.k_pad, A_lo_im, B_lo_im, C2);
 
-    compute_row_max_C(C1, C2, layout.m_pad, m, n, amax_row);
-    compute_col_max_C(C1, C2, layout.m_pad, m, n, amax_col);
+    compute_row_max_C(C1, C2, layout.m_pad, m, n, amax_row, stream);
+    compute_col_max_C(C1, C2, layout.m_pad, m, n, amax_col, stream);
 
     *h_nrm2_a = nrm2_two_pow_ozaki_prime(handle, sftA, amax_row, m, d_two_pow);
     *h_max2_b = max_two_pow_ozaki_prime(handle, sftB, amax_col, n, d_two_pow);

@@ -23,11 +23,11 @@ inline constexpr int kMaxUFP = 5; // μ' = 5 - floor(log2 α)
 // inv_e scales |A| as |A|/|e| for Ā without rewriting A (default: 1).
 template <typename T>
 void compute_row_sft(T const* A, std::size_t lda, std::size_t m, std::size_t k,
-                     std::int16_t* sft, double inv_e = 1.0);
+                     std::int16_t* sft, double inv_e, cudaStream_t stream);
 
 template <typename T>
 void compute_col_sft(T const* V, std::size_t ldv, std::size_t k, std::size_t n,
-                     std::int16_t* sft);
+                     std::int16_t* sft, cudaStream_t stream);
 
 // --- INT8 packs (given sft) ---
 // Real: A_lo / B_lo are int8, column-major.
@@ -36,44 +36,49 @@ void compute_col_sft(T const* V, std::size_t ldv, std::size_t k, std::size_t n,
 template <typename T>
 void pack_A_lo(T const* A, std::size_t lda, std::size_t m, std::size_t k,
                std::int16_t const* sftA, std::int8_t* A_lo, std::size_t lda_lo,
-               double inv_e = 1.0);
+               double inv_e, cudaStream_t stream);
 
 template <typename T>
 void pack_A_lo(T const* A, std::size_t lda, std::size_t m, std::size_t k,
                std::int16_t const* sftA, std::int8_t* A_lo_re,
-               std::int8_t* A_lo_im, std::size_t lda_lo, double inv_e = 1.0);
+               std::int8_t* A_lo_im, std::size_t lda_lo, double inv_e,
+               cudaStream_t stream);
 
 template <typename T>
 void pack_B_lo(T const* B, std::size_t ldb, std::size_t k, std::size_t n,
-               std::int16_t const* sftB, std::int8_t* B_lo, std::size_t ldb_lo);
+               std::int16_t const* sftB, std::int8_t* B_lo, std::size_t ldb_lo,
+               cudaStream_t stream);
 
 template <typename T>
 void pack_B_lo(T const* B, std::size_t ldb, std::size_t k, std::size_t n,
                std::int16_t const* sftB, std::int8_t* B_lo_re,
-               std::int8_t* B_lo_im, std::size_t ldb_lo);
+               std::int8_t* B_lo_im, std::size_t ldb_lo, cudaStream_t stream);
 
 // --- INT32 max of C'' (Alg. 2 e', f') ---
 // Real: one C plane. Complex: two planes; hi = max(C1+C2, C2).
 void compute_row_max_C(std::int32_t const* C, std::size_t ldc, std::size_t m,
-                       std::size_t n, std::int32_t* amax_row);
+                       std::size_t n, std::int32_t* amax_row,
+                       cudaStream_t stream);
 
 void compute_col_max_C(std::int32_t const* C, std::size_t ldc, std::size_t m,
-                       std::size_t n, std::int32_t* amax_col);
+                       std::size_t n, std::int32_t* amax_col,
+                       cudaStream_t stream);
 
 void compute_row_max_C(std::int32_t const* C1, std::int32_t const* C2,
                        std::size_t ldc, std::size_t m, std::size_t n,
-                       std::int32_t* amax_row);
+                       std::int32_t* amax_row, cudaStream_t stream);
 
 void compute_col_max_C(std::int32_t const* C1, std::int32_t const* C2,
                        std::size_t ldc, std::size_t m, std::size_t n,
-                       std::int32_t* amax_col);
+                       std::int32_t* amax_col, cudaStream_t stream);
 
 // --- Alg. 2 primes: 2^{α'} with α' = α + e'/2, α = kMaxUFP - sft ---
 // Fused kernel writes 2^{α'_i} (always > 0) so cuBLAS iamax is valid.
 // Same for β' via sftB / amax_col. Real and complex share this path.
+// stream is the cuBLAS handle stream so the following reduction sees this write.
 void compute_ozaki_two_pow_primes(std::int16_t const* sft,
                                   std::int32_t const* amax_C, std::size_t n,
-                                  double* two_pow);
+                                  double* two_pow, cudaStream_t stream);
 
 // Fill two_pow, then cublasIdamax → max 2^{α'} (or max 2^{β'}).
 double max_two_pow_ozaki_prime(cublasHandle_t handle, std::int16_t const* sft,
