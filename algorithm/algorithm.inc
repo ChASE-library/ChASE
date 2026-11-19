@@ -819,6 +819,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
                 single->Output(LogLevel::Debug, oss.str(), "algorithm");       
             }
 #endif
+#endif
             if (j != converged)
             {
                 swap_kj(j, converged, resid);
@@ -833,7 +834,6 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
             index_converged.push_back(j);
 
             converged++;
-#endif
         }
         else
         {
@@ -1084,7 +1084,14 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
     // First step: W = alpha*(H²*V - c*V) on first half only (cols [0, unconverged))
     T alpha_first = T(sigma_1 / e_half);
     T gamma_first = T(-alpha_first * c);
+#ifdef CHASE_ENABLE_OZAKI
+    if (single->IsOzakiFpHemmFallback())
+        single->HEMM_H2(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+    else
+        single->HEMM_H2_Ozaki(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+#else
     single->HEMM_H2(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+#endif
     Av += 2 * unconverged;
 
     // Recurrence: t = 2 .. deg_max. Active columns [s, unconverged); retire only from the left.
@@ -1099,7 +1106,14 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
         T alpha = T(2.0 * tau / e_half);
         Base<T> beta_recur = sigma * tau;
 
+#ifdef CHASE_ENABLE_OZAKI
+        if (single->IsOzakiFpHemmFallback())
+            single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+        else
+            single->HEMM_H2_Ozaki(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+#else
         single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+#endif
         Av += 2 * active_count;
 
         sigma = tau;
@@ -2030,6 +2044,10 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             << std::setprecision(6) << b_sup << std::endl;
         single->Output(LogLevel::Info, oss.str(), "algorithm");
     }
+#endif
+
+#ifdef CHASE_ENABLE_OZAKI
+    single->initOzaki_II(deg, lambda_1, lower, b_sup);
 #endif
 
     //Initalize index vectors to keep track of the residuals and the indices of the eigenpairs

@@ -619,6 +619,13 @@ public:
         chase_->HEMM_Ozaki(nev, alpha, beta, offset_left, offset_right);
         perf_.add_filtered_vecs(nev - offset_right);
     }
+    void HEMM_H2_Ozaki(std::size_t nev, T alpha, T beta, T gamma,
+                       std::size_t offset_left,
+                       std::size_t offset_right = 0) override
+    {
+        chase_->HEMM_H2_Ozaki(nev, alpha, beta, gamma, offset_left, offset_right);
+        perf_.add_filtered_vecs(2 * (nev - offset_right));
+    }
 #endif
     void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
                  std::size_t offset_left, std::size_t offset_right = 0) override

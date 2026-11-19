@@ -527,6 +527,12 @@ public:
     {
         HEMM(block, alpha, beta, offset_left, offset_right);
     }
+    void HEMM_H2_Ozaki(std::size_t block, T alpha, T beta, T gamma,
+                       std::size_t offset_left,
+                       std::size_t offset_right = 0) override
+    {
+        HEMM_H2(block, alpha, beta, gamma, offset_left, offset_right);
+    }
 #endif
 
     void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,

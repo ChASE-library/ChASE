@@ -85,6 +85,13 @@ public:
     virtual void HEMM_Ozaki(std::size_t nev, T alpha, T beta,
                               std::size_t offset_left,
                               std::size_t offset_right = 0) = 0;
+    /**
+     * @brief Same contract as HEMM_H2 using Ozaki-II (GEMMul8) where implemented;
+     * CPU backends may forward to HEMM_H2.
+     */
+    virtual void HEMM_H2_Ozaki(std::size_t nev, T alpha, T beta, T gamma,
+                               std::size_t offset_left,
+                               std::size_t offset_right = 0) = 0;
 #endif
     /**
      * @brief Performs one Chebyshev recurrence step for H²: Vec2 = alpha*H*(H*Vec1)
