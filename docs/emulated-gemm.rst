@@ -4,6 +4,9 @@ Enabling GEMM emulation in ChASE
 
 On NVIDIA GPUs, ChASE can replace the matrix products inside the filter by an
 emulated GEMM via the `Ozaki-II scheme <https://journals.sagepub.com/doi/full/10.1177/10943420261467787>`__.
+Experiments report an excellent speed-up of ChASE with emulation on NVIDIA H100
+GPUs and newer. When the arithmetic intensity is high enough, that speed-up
+reaches a factor of 2 or more.
 
 Emulation with GEMMul8
 ======================
