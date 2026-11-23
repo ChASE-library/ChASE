@@ -1,5 +1,6 @@
 setup_test(flipSignGPURCCLDistTest flipSign.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)
 setup_test(shiftDiagonalGPURCCLDistTest shiftDiagonal.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)
+setup_test(matrixInfNormGPURCCLDistTest matrixInfNorm.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)
 setup_test(ResidualsGPURCCLDistTest residuals.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)
 setup_test(HEMMGPURCCLDistTest hemm.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)
 setup_test(PseudoHEMMGPURCCLDistTest pseudo_hermitian_hemm.cpp LIBRARIES pchase_gpu linalg_internal_rccl distMatrix_hip mpi_grid_rccl)

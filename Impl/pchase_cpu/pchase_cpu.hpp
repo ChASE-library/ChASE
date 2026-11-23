@@ -309,7 +309,17 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
-    void initOzaki_II() override {}
+    void initOzaki_II(std::size_t, chase::Base<T>, chase::Base<T>,
+                     chase::Base<T>) override {}
+#if defined(CHASE_OZAKI_GEMMUL8)
+    unsigned GetOzakiNumModuli() const override { return 0; }
+    void SetOzakiNumModuli(unsigned) override {}
+#elif defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override { return 0; }
+    void SetOzakiMantissaBits(int) override {}
+#endif
+    void Activate_HighPrecision_Fallback() override {}
+    bool IsOzakiFpHemmFallback() const override { return false; }
 #endif
 
     void ReinitColumns(std::size_t base_col, std::size_t const* col_indices,
@@ -503,6 +513,12 @@ public:
                     std::size_t offset_right = 0) override
     {
         HEMM(block, alpha, beta, offset_left, offset_right);
+    }
+    void HEMM_H2_Ozaki(std::size_t block, T alpha, T beta, T gamma,
+                       std::size_t offset_left,
+                       std::size_t offset_right = 0) override
+    {
+        HEMM_H2(block, alpha, beta, gamma, offset_left, offset_right);
     }
 #endif
 

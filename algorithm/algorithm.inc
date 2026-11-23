@@ -525,33 +525,68 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 {
     SCOPED_NVTX_RANGE();
 
-    // we build the permutation
     std::vector<int> index(unconverged, 0);
     for (int i = 0; i != index.size(); i++)
-    {
         index[i] = i;
-    }
+
     sort(index.begin(), index.end(),
          [&](const int& a, const int& b) { return (Lritzv[a] < Lritzv[b]); });
-    std::size_t converged = 0;
 
+    std::size_t converged = 0;
     for (auto k = 0; k < unconverged; k++)
     {
-        auto j = index[k]; // walk through
+        auto j = index[k];
 
-#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
-        if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] &&
-                                resid[j] < 100.0 * tol))
-#else
         if (resid[j] <= tol)
-#endif
         {
-
-#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
-            if (single->isSym() && resid[j] > tol && resid[j] >= residLast[j] &&
-                resid[j] < 100.0 * tol)
+            if (j != converged)
             {
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, residLast);
+                swap_kj(j, converged, Lritzv);
+                single->Swap(j + locked, converged + locked);
+            }
+            converged++;
+        }
+#ifdef CHASE_ENABLE_OZAKI
+        else if (resid[j] >= residLast[j])
+        {
+            //Residual stagnation detected. Activate fallback to FP64-GEMM or Max Ozaki coprime moduli number.
+            single->Activate_HighPrecision_Fallback();
+        }
+#endif
+    }
+    return converged;
+}
 
+template <class T>
+std::size_t Algorithm<T>::locking_with_early_locking(
+    ChaseBase<T>* single, std::size_t N, std::size_t unconverged, Base<T> tol,
+    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+    std::vector<Base<T>>* early_locked_residuals, std::size_t* degrees,
+    std::size_t locked)
+{
+    SCOPED_NVTX_RANGE();
+
+    std::vector<int> index(unconverged, 0);
+    for (int i = 0; i != index.size(); i++)
+        index[i] = i;
+
+    sort(index.begin(), index.end(),
+         [&](const int& a, const int& b) { return (Lritzv[a] < Lritzv[b]); });
+
+    std::size_t converged = 0;
+    for (auto k = 0; k < unconverged; k++)
+    {
+        auto j = index[k];
+
+        const bool early = single->isSym() && resid[j] >= residLast[j] &&
+                           resid[j] < 100.0 * tol;
+
+        if (resid[j] <= tol || early)
+        {
+            if (early && resid[j] > tol)
+            {
 #ifdef CHASE_OUTPUT
                 std::ostringstream oss;
                 oss << "locking unconverged pair is:" << resid[j]
@@ -561,19 +596,24 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
-#endif
+
             if (j != converged)
             {
-                swap_kj(j, converged, resid);     // if we filter again
-                swap_kj(j, converged, residLast); // if we filter again
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, residLast);
                 swap_kj(j, converged, Lritzv);
                 single->Swap(j + locked, converged + locked);
             }
-
             converged++;
         }
+#ifdef CHASE_ENABLE_OZAKI
+        else if (resid[j] >= residLast[j])
+        {
+            //Residual stagnation detected. Activate fallback to FP64-GEMM or Max Ozaki coprime moduli number.
+            single->Activate_HighPrecision_Fallback();
+        }
+#endif
     }
-
     return converged;
 }
 
@@ -779,6 +819,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
                 single->Output(LogLevel::Debug, oss.str(), "algorithm");       
             }
 #endif
+#endif
             if (j != converged)
             {
                 swap_kj(j, converged, resid);
@@ -793,7 +834,6 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
             index_converged.push_back(j);
 
             converged++;
-#endif
         }
         else
         {
@@ -992,7 +1032,7 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
         beta = T(-sigma * sigma_new);
 
 #ifdef CHASE_ENABLE_OZAKI
-         single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
+        single->HEMM_Ozaki(unprocessed, alpha, beta, offset / n);
 #else
         single->HEMM(unprocessed, alpha, beta, offset / n);
 #endif
@@ -1044,7 +1084,14 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
     // First step: W = alpha*(H²*V - c*V) on first half only (cols [0, unconverged))
     T alpha_first = T(sigma_1 / e_half);
     T gamma_first = T(-alpha_first * c);
+#ifdef CHASE_ENABLE_OZAKI
+    if (single->IsOzakiFpHemmFallback())
+        single->HEMM_H2(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+    else
+        single->HEMM_H2_Ozaki(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+#else
     single->HEMM_H2(unconverged, alpha_first, T(0), gamma_first, 0, 0);
+#endif
     Av += 2 * unconverged;
 
     // Recurrence: t = 2 .. deg_max. Active columns [s, unconverged); retire only from the left.
@@ -1059,7 +1106,14 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
         T alpha = T(2.0 * tau / e_half);
         Base<T> beta_recur = sigma * tau;
 
+#ifdef CHASE_ENABLE_OZAKI
+        if (single->IsOzakiFpHemmFallback())
+            single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+        else
+            single->HEMM_H2_Ozaki(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+#else
         single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
+#endif
         Av += 2 * active_count;
 
         sigma = tau;
@@ -1402,10 +1456,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     Base<T>* ritzv_ = single->GetRitzv();
 
     const double tol = config.GetTol();
-    
-#ifdef CHASE_ENABLE_OZAKI
-    single->initOzaki_II();
-#endif
 
     const std::size_t nevex = nev + nex;
     std::size_t unconverged = nev + nex;
@@ -1443,6 +1493,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     {
         single->QR(1.0);
     }
+    
     // --------------------------------- LANCZOS
     // ---------------------------------
 
@@ -1466,6 +1517,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
     Base<T> lambda_temp, lowerb_temp;
     lowerb = lowerb * config.GetDecayingRate();
+
+#ifdef CHASE_ENABLE_OZAKI
+    single->QR(1.0);
+    single->initOzaki_II(deg, lambda, lowerb, upperb);
+#endif
 
     std::size_t new_converged;
 
@@ -1527,9 +1583,15 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             oss << std::scientific << "iteration: " << iteration << "\t"
                 << std::setprecision(6) << lambda << "\t"
                 << std::setprecision(6) << lowerb << "\t"
-                << std::setprecision(6) << upperb << "\t" << unconverged
-                << std::endl;
-
+                << std::setprecision(6) << upperb << "\t" << unconverged;
+#if defined(CHASE_OZAKI_GEMMUL8)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t";
+#elif defined(CHASE_OZAKI_CUBLAS)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki mantissa bits: " << single->GetOzakiMantissaBits() << "\t";
+#endif
+            oss << std::endl;
             single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
@@ -1542,15 +1604,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         if (single->isSym())
         {
             for (auto i = 0; i < unconverged; ++i)
-                residLast[i] = std::min(residLast[i], resid[i]);
+                residLast[i] = resid[i]; //std::min(residLast[i], resid[i]);
         }
 
         //-------------------------------- DEGREES
         //--------------------------------
         if (config.DoOptimization() && iteration != 0)
         {
-            deg =
-                calc_degrees(single, N, unconverged, nex, upperb, lowerb,
+            deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb,
                                 tol, ritzv, resid, residLast, degrees, locked);            
         }
 
@@ -1699,11 +1760,24 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #endif
 
+#if defined(CHASE_OZAKI_GEMMUL8) && defined(CHASE_OUTPUT)
+        unsigned const ozaki_s = single->GetOzakiNumModuli();
+        bool const ozaki_fp = single->IsOzakiFpHemmFallback();
+#elif defined(CHASE_OZAKI_CUBLAS) && defined(CHASE_OUTPUT)
+        int const ozaki_bits = single->GetOzakiMantissaBits();
+        bool const ozaki_fp = single->IsOzakiFpHemmFallback();
+#endif
         if (single->isSym())
         {
+#if !defined(CHASE_SAVE_RESIDUALS) && !defined(CHASE_DISABLE_EARLY_LOCKING)
+            new_converged = locking_with_early_locking(
+                single, N, unconverged - single->isSym() * nex, tol, ritzv,
+                resid, residLast, &early_locked_residuals, degrees, locked);
+#else
             new_converged = locking(
                 single, N, unconverged - single->isSym() * nex, tol, ritzv,
                 resid, residLast, &early_locked_residuals, degrees, locked);
+#endif
         }
         else
         {
@@ -1711,6 +1785,21 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 single, N, unconverged, nex, tol, index.data(), ritzv, resid,
                 residLast, &early_locked_residuals, degrees, locked, iteration);
         }
+#if defined(CHASE_OZAKI_GEMMUL8) && defined(CHASE_OUTPUT)
+        if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||
+                          single->GetOzakiNumModuli() != ozaki_s))
+            single->Output(LogLevel::Info,
+                           "ozaki fallback at iteration: " +
+                               std::to_string(iteration + 1) + "\n",
+                           "algorithm");
+#elif defined(CHASE_OZAKI_CUBLAS) && defined(CHASE_OUTPUT)
+        if (!ozaki_fp && (single->IsOzakiFpHemmFallback() ||
+                          single->GetOzakiMantissaBits() != ozaki_bits))
+            single->Output(LogLevel::Info,
+                           "ozaki fallback at iteration: " +
+                               std::to_string(iteration) + "\n",
+                           "algorithm");
+#endif
 
         // ---------------------------- Update pointers
         // ---------------------------- Since we double buffer we need the
@@ -1957,6 +2046,10 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     }
 #endif
 
+#ifdef CHASE_ENABLE_OZAKI
+    single->initOzaki_II(deg, lambda_1, lower, b_sup);
+#endif
+
     //Initalize index vectors to keep track of the residuals and the indices of the eigenpairs
     std::vector<std::size_t> index(2*unconverged); //initial unconverged = 2*(nev+nex)
     std::iota(index.begin(), index.begin() + 2*unconverged, 0);
@@ -1997,8 +2090,15 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             oss << std::scientific << "iteration: " << iteration << "\t"
                 << std::setprecision(6) << lambda_1 << "\t"
                 << std::setprecision(6) << lower << "\t"
-                << std::setprecision(6) << b_sup << "\t" << unconverged
-                << std::endl;
+                << std::setprecision(6) << b_sup << "\t" << unconverged;
+#if defined(CHASE_OZAKI_GEMMUL8)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki num moduli: " << single->GetOzakiNumModuli() << "\t";
+#elif defined(CHASE_OZAKI_CUBLAS)
+            if (!single->IsOzakiFpHemmFallback())
+                oss << ", ozaki mantissa bits: " << single->GetOzakiMantissaBits() << "\t";
+#endif
+            oss << std::endl;
             single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif

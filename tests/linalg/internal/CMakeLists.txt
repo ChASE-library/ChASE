@@ -13,6 +13,7 @@ add_subdirectory(mpi)
 endif()
 
 if(TARGET linalg_internal_cuda)
+add_subdirectory(gpu/kernels/cuda)
 add_subdirectory(gpu/serial/cuda)
 endif()
 

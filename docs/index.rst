@@ -23,6 +23,7 @@ ChASE's Documentation
    parameters
    module
    example
+   emulated-gemm
 
 .. toctree::
    :maxdepth: 2

@@ -61,7 +61,6 @@ cublasStatus_t gemmul8Tgemm(
     float* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -72,7 +71,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<float, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha, A, lda, B, ldb, beta, C, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -93,7 +92,6 @@ cublasStatus_t gemmul8Tgemm(
     double* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -104,7 +102,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<double, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha, A, lda, B, ldb, beta, C, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -125,7 +123,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<float>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -141,7 +138,7 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<cuComplex, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha_c, A_c, lda, B_c, ldb, beta_c, C_c, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
 }
@@ -162,7 +159,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<double>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA,
     void* workB,
@@ -179,9 +175,47 @@ cublasStatus_t gemmul8Tgemm(
   (void)gemmul8::gemm<cuDoubleComplex, gemmul8::Backend::INT8>(
       handle, transa, transb, m, n, k,
       alpha_c, A_c, lda, B_c, ldb, beta_c, C_c, ldc,
-      num_moduli, fastmode, work, workA, workB,
+      num_moduli, false, work, workA, workB,
       enable_skip_scalA, enable_skip_scalB, skip_scalA, skip_scalB);
   return CUBLAS_STATUS_SUCCESS;
+}
+
+void set_memory_saving(cublasHandle_t handle, bool enable) {
+#if defined(GEMMUL8_VERSION_MAJOR)
+  gemmul8::set_memory_saving(handle, enable);
+#else
+  (void)handle;
+  (void)enable;
+#endif
+}
+void set_max_worksize(cublasHandle_t handle, std::size_t bytes) {
+#if defined(GEMMUL8_VERSION_MAJOR)
+  gemmul8::set_max_worksize(handle, bytes);
+#else
+  (void)handle;
+  (void)bytes;
+#endif
+}
+void clear_config(cublasHandle_t handle) {
+#if defined(GEMMUL8_VERSION_MAJOR)
+  gemmul8::clear_config(handle);
+#else
+  (void)handle;
+#endif
+}
+bool has_memory_saving() {
+#if defined(GEMMUL8_VERSION_MAJOR)
+  return true;
+#else
+  return false;
+#endif
+}
+const char* gemmul8_root() {
+#if defined(CHASE_GEMMUL8_ROOT)
+  return CHASE_GEMMUL8_ROOT;
+#else
+  return "";
+#endif
 }
 
 } // namespace gemmul8pp

@@ -28,6 +28,8 @@
 #include "linalg/internal/gpu/kernels/cuda/launchers/flip_sign.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/force_hermitian.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/lacpy.cuh"
+#include "linalg/internal/gpu/kernels/cuda/launchers/matrix_inf_norm.cuh"
+#include "linalg/internal/gpu/kernels/cuda/launchers/matrix_one_norm.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/precision_conversion.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/random_normal_distribution.cuh"
 #include "linalg/internal/gpu/kernels/cuda/launchers/residuals.cuh"
@@ -41,6 +43,8 @@
 #include "linalg/internal/gpu/kernels/hip/launchers/lacpy.hpp"
 #include "linalg/internal/gpu/kernels/hip/launchers/lanczos_reduction.hpp"
 #include "linalg/internal/gpu/kernels/hip/launchers/matrix_diag.hpp"
+#include "linalg/internal/gpu/kernels/hip/launchers/matrix_inf_norm.hpp"
+#include "linalg/internal/gpu/kernels/hip/launchers/matrix_one_norm.hpp"
 #include "linalg/internal/gpu/kernels/hip/launchers/precision_conversion.hpp"
 #include "linalg/internal/gpu/kernels/hip/launchers/random_normal_distribution.hpp"
 #include "linalg/internal/gpu/kernels/hip/launchers/residuals.hpp"
@@ -379,6 +383,49 @@ struct kernels<gpu_backend::cuda_backend>
     }
 
     template <typename T>
+    static void matrix_inf_norm(const T* matrix, std::size_t rows,
+                                std::size_t cols, std::size_t ld,
+                                chase::Base<T>* d_norm,
+                                stream_type stream =
+                                    runtime_type::default_stream())
+    {
+        chase::linalg::internal::cuda::matrixInfNorm_gpu(matrix, rows, cols,
+                                                         ld, d_norm, stream);
+    }
+
+    template <typename T>
+    static void matrix_one_norm(const T* matrix, std::size_t rows,
+                                std::size_t cols, std::size_t ld,
+                                chase::Base<T>* d_norm,
+                                stream_type stream =
+                                    runtime_type::default_stream())
+    {
+        chase::linalg::internal::cuda::matrixOneNorm_gpu(matrix, rows, cols, ld,
+                                                         d_norm, stream);
+    }
+
+    template <typename T>
+    static void matrix_row_abs_sums(const T* matrix, std::size_t rows,
+                                    std::size_t cols, std::size_t ld,
+                                    chase::Base<T>* d_row_sums,
+                                    stream_type stream =
+                                        runtime_type::default_stream())
+    {
+        chase::linalg::internal::cuda::matrixRowAbsSums_gpu(
+            matrix, rows, cols, ld, d_row_sums, stream);
+    }
+
+    template <typename T>
+    static void matrix_row_sums_max(const chase::Base<T>* d_row_sums,
+                                    std::size_t rows, chase::Base<T>* d_result,
+                                    stream_type stream =
+                                        runtime_type::default_stream())
+    {
+        chase::linalg::internal::cuda::matrixRowSumsMax_gpu(d_row_sums, rows,
+                                                            d_result, stream);
+    }
+
+    template <typename T>
     static void residual_gpu(std::size_t rows, std::size_t cols, T* W1,
                              std::size_t ldW1, T* W2, std::size_t ldW2,
                              chase::Base<T>* ritzv, chase::Base<T>* resids,
@@ -646,6 +693,49 @@ struct kernels<gpu_backend::hip_backend>
     {
         chase::linalg::internal::hip::absTrace_gpu(matrix, d_trace, n, ld,
                                                    stream);
+    }
+
+    template <typename T>
+    static void matrix_inf_norm(const T* matrix, std::size_t rows,
+                                std::size_t cols, std::size_t ld,
+                                chase::Base<T>* d_norm,
+                                stream_type stream =
+                                    runtime_type::default_stream())
+    {
+        chase::linalg::internal::hip::matrixInfNorm_gpu(matrix, rows, cols, ld,
+                                                        d_norm, stream);
+    }
+
+    template <typename T>
+    static void matrix_one_norm(const T* matrix, std::size_t rows,
+                                std::size_t cols, std::size_t ld,
+                                chase::Base<T>* d_norm,
+                                stream_type stream =
+                                    runtime_type::default_stream())
+    {
+        chase::linalg::internal::hip::matrixOneNorm_gpu(matrix, rows, cols, ld,
+                                                        d_norm, stream);
+    }
+
+    template <typename T>
+    static void matrix_row_abs_sums(const T* matrix, std::size_t rows,
+                                    std::size_t cols, std::size_t ld,
+                                    chase::Base<T>* d_row_sums,
+                                    stream_type stream =
+                                        runtime_type::default_stream())
+    {
+        chase::linalg::internal::hip::matrixRowAbsSums_gpu(
+            matrix, rows, cols, ld, d_row_sums, stream);
+    }
+
+    template <typename T>
+    static void matrix_row_sums_max(const chase::Base<T>* d_row_sums,
+                                    std::size_t rows, chase::Base<T>* d_result,
+                                    stream_type stream =
+                                        runtime_type::default_stream())
+    {
+        chase::linalg::internal::hip::matrixRowSumsMax_gpu(d_row_sums, rows,
+                                                           d_result, stream);
     }
 
     template <typename T>

@@ -181,7 +181,6 @@ html_context = {
     'current_version': version,
     'versions': {
         'latest': '/ChASE/latest/',
-        'v1.7.0': '/ChASE/v1.7.0/',
     },
     'version_selector': True,  # Enable version selector
      }

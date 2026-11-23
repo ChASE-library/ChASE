@@ -85,6 +85,13 @@ public:
     virtual void HEMM_Ozaki(std::size_t nev, T alpha, T beta,
                               std::size_t offset_left,
                               std::size_t offset_right = 0) = 0;
+    /**
+     * @brief Same contract as HEMM_H2 using Ozaki-II (GEMMul8) where implemented;
+     * CPU backends may forward to HEMM_H2.
+     */
+    virtual void HEMM_H2_Ozaki(std::size_t nev, T alpha, T beta, T gamma,
+                               std::size_t offset_left,
+                               std::size_t offset_right = 0) = 0;
 #endif
     /**
      * @brief Performs one Chebyshev recurrence step for H²: Vec2 = alpha*H*(H*Vec1)
@@ -290,7 +297,17 @@ public:
      *
      * This method initializes the workspace for Ozaki-II (GEMMul8).
      */
-    virtual void initOzaki_II() = 0;
+    virtual void initOzaki_II(std::size_t degree, Base<T> lambda_1, Base<T> lower,
+                             Base<T> upper) = 0;
+#if defined(CHASE_OZAKI_GEMMUL8)
+    virtual unsigned GetOzakiNumModuli() const = 0;
+    virtual void SetOzakiNumModuli(unsigned num_moduli) = 0;
+#elif defined(CHASE_OZAKI_CUBLAS)
+    virtual int GetOzakiMantissaBits() const = 0;
+    virtual void SetOzakiMantissaBits(int mantissa_bits) = 0;
+#endif
+    virtual void Activate_HighPrecision_Fallback() = 0;
+    virtual bool IsOzakiFpHemmFallback() const = 0;
 #endif
     /**
      * @brief Reinitialize selected columns of the subspace with random vectors.

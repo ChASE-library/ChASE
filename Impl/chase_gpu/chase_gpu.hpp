@@ -7,6 +7,7 @@
 #pragma once
 
 #include "algorithm/chaseBase.hpp"
+#include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
 #include "linalg/internal/gpu/backend/gpu_backend.hpp"
@@ -21,12 +22,14 @@
 #include <memory>
 #include <random>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
 #include "external/gemmul8pp/gemmul8pp.hpp"
+#include "external/gemmul8pp/utilities.hpp"
 #endif
 
 using namespace chase::linalg;
@@ -366,6 +369,15 @@ public:
                     lwork_);
         }
 #endif
+
+#ifdef CHASE_OZAKI_GEMMUL8
+        char const* ozaki_disable = std::getenv("CHASE_DISABLE_OZAKI");
+        if (ozaki_disable == nullptr || std::atoi(ozaki_disable) == 0)
+        {
+            runtime_type::device_malloc(reinterpret_cast<void**>(&d_inf_norm_H_),
+                                        sizeof(chase::Base<T>));
+        }
+#endif
     }
 
     ChASEGPU(const ChASEGPU&) = delete;
@@ -400,13 +412,16 @@ public:
 #endif
         if (d_H2_tmp_)
             runtime_type::device_free(d_H2_tmp_);
-#ifdef CHASE_ENABLE_OZAKI
-        if (ozaki_workspace_Hmat_)
-            runtime_type::device_free(ozaki_workspace_Hmat_);
-        if (ozaki_workspace_Vec1_)
-            runtime_type::device_free(ozaki_workspace_Vec1_);
-        if (ozaki_workspace_Vec2_)
-            runtime_type::device_free(ozaki_workspace_Vec2_);
+#ifdef CHASE_OZAKI_GEMMUL8
+        chase::linalg::gemmul8pp::clear_config(blasH_);
+        if (ozaki_workspace_)
+            runtime_type::device_free(ozaki_workspace_);
+        if (d_inf_norm_H_)
+            runtime_type::device_free(d_inf_norm_H_);
+#endif
+#if defined(CHASE_OZAKI_CUBLAS)
+        chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                     &ozaki_bits_device_);
 #endif
     }
 
@@ -516,80 +531,369 @@ public:
         Hmat_->H2D();
     }
 
-#ifdef CHASE_ENABLE_OZAKI
-    void initOzaki_II() override
+#ifdef CHASE_OZAKI_GEMMUL8
+
+    unsigned GetOzakiNumModuli() const override { return ozaki_num_moduli_; }
+
+    void SetOzakiNumModuli(unsigned num_moduli) override
+    {
+        ozaki_num_moduli_ = num_moduli;
+        ozaki_skip_scaling_activated_ = false;
+    }
+
+    void Activate_HighPrecision_Fallback() override
+    {
+        if (ozaki_fp_hemm_fallback || ozaki_fallback_disabled_)
+            return;
+        if (ozaki_fallback_num_moduli_ < 0)
+            ozaki_fp_hemm_fallback = true;
+        else
+            SetOzakiNumModuli(static_cast<unsigned>(ozaki_fallback_num_moduli_));
+    }
+
+    bool IsOzakiFpHemmFallback() const override
+    {
+        return ozaki_fp_hemm_fallback;
+    }
+
+    void initOzaki_II_allocate()
+    {
+        ozaki_save_memory_ = chase::linalg::gemmul8pp::has_memory_saving();
+        ozaki_fixed_workspace_ = false;
+        ozaki_max_worksize_ = std::size_t(12) << 30;
+        char const* env = std::getenv("CHASE_OZAKI_WORKSPACE_GB");
+        if (env != nullptr && std::strcmp(env, "MAX") == 0)
+        {
+            std::size_t const rows = Hmat_->rows();
+            std::size_t const cols = Vec1_.cols();
+            std::size_t const gemm_worksize = chase::linalg::gemmul8pp::workSize<T>(
+                rows, cols, Hmat_->cols(), ozaki_num_moduli_, true, true);
+            std::size_t const scaling_worksize =
+                chase::linalg::gemmul8pp::ozaki_scaling_factors_error_bound_work_bytes<T>(rows, cols, Hmat_->cols());
+            ozaki_max_worksize_ = std::max(gemm_worksize, scaling_worksize);
+            ozaki_save_memory_ = false;
+            ozaki_fixed_workspace_ = true;
+        }
+        else if (env != nullptr)
+        {
+            double const gb = std::atof(env);
+            if (gb > 0.0)
+                ozaki_max_worksize_ = static_cast<std::size_t>(gb * static_cast<double>(std::size_t(1) << 30));
+        }
+
+        chase::linalg::gemmul8pp::set_memory_saving(blasH_, ozaki_save_memory_);
+
+        if (ozaki_save_memory_)
+        {
+            chase::linalg::gemmul8pp::set_max_worksize(blasH_, ozaki_max_worksize_);
+        }
+
+        if (ozaki_workspace_ != nullptr)
+        {
+            runtime_type::device_free(ozaki_workspace_);
+            ozaki_workspace_ = nullptr;
+            ozaki_workspace_size_ = 0;
+        }
+
+        void* ozaki_workspace_tmp = nullptr;
+        cudaError_t const status = cudaMalloc(&ozaki_workspace_tmp, ozaki_max_worksize_);
+        if (status == cudaSuccess)
+        {
+            ozaki_workspace_size_ = ozaki_max_worksize_;
+            ozaki_workspace_ = reinterpret_cast<int8_t*>(ozaki_workspace_tmp);
+            ozaki_fp_hemm_fallback = false;
+        }
+        else
+        {
+            ozaki_fp_hemm_fallback = true;
+            ozaki_workspace_ = nullptr;
+            ozaki_workspace_size_ = 0;
+            chase::GetLogger().Log(chase::LogLevel::Warn, "linalg", std::string("Ozaki-II emulation aborted : ") + cudaGetErrorString(status) + "\n", 0);
+            cudaGetLastError();
+        }
+    }
+
+    // Tolerance Aware Flexible-Accuracy moduli number selectionfor Ozaki-II for Hermitian matrices only. 
+    //
+    // The working moduli number is the smallest with ||E^f|| < tol.
+    // The fallback moduli number is the smallest count with Safe Res < tol, active when residual stagnation happens.
+    // If none qualifies, then max moduli number is used. 
+    // If none qualifies, and CHASE_OZAKI_FPGEMM_FALLBACK is set, then the working-precision GEMM is used.
+    //
+    // Ā = (H − cI) / e, with c = (upper + lower) / 2 and e = (upper − lower) / 2.
+    // rho_A = ||H−cI||_∞ / |e| stands in for ||Ā||_2. Columns of V are taken as unit.
+    // Complex H uses ef_scale = 2 (see https://arxiv.org/abs/2609.05419 Eq. 12); real H keeps ef_scale = 1.
+    // ||E^f|| is ef_scale * Ozaki-II (1,2)-norm upper bound at each moduli count, and
+    // ef_scale * the IEEE γ_n bound at the working-precision GEMM slot.
+    //
+    // ||E^p|| = ||E^f|| * u2_model_sum(degree, λ_1, lower, upper).
+    // Safe Res = ||E^p|| * |upper − λ_1|.
+    //
+    // TODO : 
+    // - cite the paper.
+    // - double-check the ef_scale = 2 in complex case. 
+    // - replace the variation via coprime moduli number by required mantissa bits q. 
+    void initOzaki_II_Select_Moduli_Number(std::size_t degree, chase::Base<T> lambda_1, chase::Base<T> lower, chase::Base<T> upper, double* bounds, double* ep_bounds, double eigen_distance)
+    {
+        ozaki_error_model_ready_ = false;
+        ozaki_safe_res_met_ = false;
+        if (ozaki_fp_hemm_fallback)
+            return;
+
+        unsigned const moduli_number_min = chase::linalg::gemmul8pp::kMinNumModuliChase<T>; // minimum moduli number
+        unsigned const moduli_number_max = chase::linalg::gemmul8pp::kMaxNumModuli<T>; // maximum moduli number
+        unsigned const fp64_idx = moduli_number_max - moduli_number_min + 1;
+
+        double const u2 = chase::linalg::gemmul8pp::u2_model_sum(degree, static_cast<double>(lambda_1), static_cast<double>(lower), static_cast<double>(upper)); //upper bound on the 2nd Kind Chebyshev polynomial based error propagation model.
+
+        chase::Base<T> const c = (upper + lower) / chase::Base<T>(2);
+        chase::Base<T> const e = (upper - lower) / chase::Base<T>(2);
+
+        // Already on device after Lanczos. Diagonal kernel only: Shift() also toggles mixed precision and Ozaki skip-scaling.
+        kernel_dispatch::shift_diagonal(Hmat_->data(), std::min(Hmat_->rows(), Hmat_->cols()), Hmat_->ld(), -c);
+
+        // Probe Ā = (H-cI)/e via inv_e in A sft/pack (no device A/=e).
+        double const abs_e = std::abs(static_cast<double>(e));
+        double const inv_e = 1.0 / abs_e;
+        double nrm2_a = 0.0;
+        double max2_b = 0.0;
+
+        chase::linalg::gemmul8pp::ozaki_compute_scaling_factors_error_bound(blasH_, Hmat_->data(), Hmat_->ld(), Hmat_->rows(), Hmat_->cols(), Vec1_.data(), Vec1_.ld(), Vec1_.cols(), ozaki_workspace_, ozaki_workspace_size_, &nrm2_a, &max2_b, inv_e);
+
+        // ||Ā||_∞ via ||H−cI||_∞ / |e| (Ā = (H−cI)/e).
+        chase::Base<T> inf_norm_H = chase::Base<T>(0);
+        kernel_dispatch::matrix_inf_norm(Hmat_->data(), Hmat_->rows(), Hmat_->cols(), Hmat_->ld(), d_inf_norm_H_, stream_);
+        runtime_type::memcpy_d2h(&inf_norm_H, d_inf_norm_H_, sizeof(chase::Base<T>));
+
+        kernel_dispatch::shift_diagonal(Hmat_->data(), std::min(Hmat_->rows(), Hmat_->cols()), Hmat_->ld(), c);
+
+        double const rho_A = static_cast<double>(inf_norm_H) / abs_e;
+        constexpr double ef_scale = (std::is_same<T, std::complex<float>>::value || std::is_same<T, std::complex<double>>::value) ? 2.0 : 1.0;
+        for (unsigned selected_moduli_number = moduli_number_max; selected_moduli_number >= moduli_number_min; --selected_moduli_number)
+        {
+            bounds[selected_moduli_number - moduli_number_min] = ef_scale * chase::linalg::gemmul8pp::ozaki_gemm_error_bound<T>(rho_A, nrm2_a, max2_b, Hmat_->cols(), selected_moduli_number);
+            ep_bounds[selected_moduli_number - moduli_number_min] = bounds[selected_moduli_number - moduli_number_min] * u2;
+        }
+        bounds[fp64_idx] = ef_scale * chase::linalg::gemmul8pp::ieee_gemm_error_bound_12<T>(rho_A, Hmat_->cols());
+        ep_bounds[fp64_idx] = bounds[fp64_idx] * u2;
+        ozaki_error_model_ready_ = true;
+
+        if (!ozaki_fallback_disabled_)
+        {
+            double const tol_d = static_cast<double>(GetConfig().GetTol());
+            ozaki_num_moduli_ = moduli_number_max;
+            ozaki_fallback_num_moduli_ = static_cast<int>(moduli_number_max);
+            // Descending so the last hit is the cheapest slice under tol.
+            for (unsigned selected_moduli_number = moduli_number_max; selected_moduli_number >= moduli_number_min; --selected_moduli_number)
+            {
+                if (bounds[selected_moduli_number - moduli_number_min] < tol_d)
+                {
+                    ozaki_num_moduli_ = selected_moduli_number;
+                }
+                if ((ep_bounds[selected_moduli_number - moduli_number_min] * eigen_distance) < tol_d)
+                {
+                    ozaki_fallback_num_moduli_ = static_cast<int>(selected_moduli_number);
+                    ozaki_safe_res_met_ = true;
+                }
+            }
+            // FP-GEMM only when no slice meets Safe Res < tol and it is at least as accurate.
+            char const* env = std::getenv("CHASE_OZAKI_FPGEMM_FALLBACK");
+            bool const fp64_fallback_enabled = (env != nullptr && std::atoi(env) != 0);
+            double const fallback_safe_res = ep_bounds[ozaki_fallback_num_moduli_ - moduli_number_min] * eigen_distance;
+            if (fp64_fallback_enabled && fallback_safe_res >= tol_d && fallback_safe_res >= (ep_bounds[fp64_idx] * eigen_distance))
+            {
+                ozaki_fallback_num_moduli_ = -1;
+            }
+        }
+        else
+        {
+            ozaki_fallback_num_moduli_ = -1;
+        }
+    }
+
+#ifdef CHASE_OUTPUT
+    void initOzaki_II_print(unsigned moduli_number_min, unsigned moduli_number_max, double const* bounds, double const* ep_bounds, double eigen_distance)
+    {
+        unsigned const fp64_idx = moduli_number_max - moduli_number_min + 1;
+        bool const fp32 = std::is_same<chase::Base<T>, float>::value;
+        bool const fallback_chosen = ozaki_error_model_ready_ && !ozaki_fallback_disabled_;
+        std::string const gemm_fallback = (fallback_chosen && ozaki_fallback_num_moduli_ < 0) ? "ON" : "OFF";
+        std::string const oz_fallback = (fallback_chosen && ozaki_fallback_num_moduli_ == static_cast<int>(moduli_number_max)) ? "ON" : "OFF";
+
+        std::ostringstream oss;
+        double const gib = 1024.0 * 1024.0 * 1024.0;
+        std::string const moduli_count = std::to_string(ozaki_num_moduli_);
+        std::string const safe_moduli = ozaki_safe_res_met_ ? std::to_string(ozaki_fallback_num_moduli_) : "undefined";
+        std::string const save_memory = ozaki_save_memory_ ? "ON" : "OFF";
+        std::ostringstream workspace_ss;
+        workspace_ss << std::fixed << std::setprecision(2) << ozaki_max_worksize_ / gib << " GiB";
+
+        std::size_t const key_w = 15;
+        std::size_t val_w = std::max(moduli_count.size(), save_memory.size());
+        val_w = std::max(val_w, workspace_ss.str().size());
+        if (!fp32 && !isPseudoHerm())
+        {
+            val_w = std::max(val_w, safe_moduli.size());
+            val_w = std::max(val_w, gemm_fallback.size());
+            val_w = std::max(val_w, oz_fallback.size());
+        }
+        auto const settings_hline = [&]() { oss << "  +" << std::string(key_w + 2, '-') << "+" << std::string(val_w + 2, '-') << "+\n"; };
+        auto const settings_row = [&](char const* key, std::string const& val) { oss << "  | " << std::left << std::setw(static_cast<int>(key_w)) << key << " | " << std::left << std::setw(static_cast<int>(val_w)) << val << " |\n"; };
+
+        oss << "Ozaki-II GEMMul8\n";
+        settings_hline();
+        if (ozaki_fallback_disabled_)
+            settings_row("fixed_moduli", moduli_count);
+        else
+            settings_row("boost_moduli", moduli_count);
+        if (!fp32 && !isPseudoHerm())
+        {
+            settings_row("safe_moduli", safe_moduli);
+            settings_row("fp64_fallback", gemm_fallback);
+            settings_row("oz16_fallback", oz_fallback);
+        }
+        settings_row("save_memory", save_memory);
+        settings_row("workspace", workspace_ss.str());
+        settings_hline();
+
+        if (!fp32 && ozaki_error_model_ready_)
+        {
+            auto const hline = [&]() {
+                oss << "  +------------+";
+                for (unsigned selected_moduli_number = moduli_number_min; selected_moduli_number <= moduli_number_max; ++selected_moduli_number) oss << "----------+";
+                oss << "----------+\n";
+            };
+            hline();
+            oss << "  | " << std::left << std::setw(10) << "num_moduli" << " |";
+            for (unsigned selected_moduli_number = moduli_number_min; selected_moduli_number <= moduli_number_max; ++selected_moduli_number) oss << std::right << std::setw(9) << selected_moduli_number << " |";
+            oss << std::right << std::setw(9) << "FP64" << " |\n";
+            hline();
+            oss << std::scientific << std::setprecision(2);
+            oss << "  | " << std::left << std::setw(10) << "||E^f||  <" << " |";
+            for (unsigned selected_moduli_number = moduli_number_min; selected_moduli_number <= moduli_number_max; ++selected_moduli_number) oss << std::right << std::setw(9) << bounds[selected_moduli_number - moduli_number_min] << " |";
+            oss << std::right << std::setw(9) << bounds[fp64_idx] << " |\n";
+            oss << "  | " << std::left << std::setw(10) << "||E^p||  <" << " |";
+            for (unsigned selected_moduli_number = moduli_number_min; selected_moduli_number <= moduli_number_max; ++selected_moduli_number) oss << std::right << std::setw(9) << ep_bounds[selected_moduli_number - moduli_number_min] << " |";
+            oss << std::right << std::setw(9) << ep_bounds[fp64_idx] << " |\n";
+            oss << "  | " << std::left << std::setw(10) << "Safe Res <" << " |";
+            for (unsigned selected_moduli_number = moduli_number_min; selected_moduli_number <= moduli_number_max; ++selected_moduli_number) oss << std::right << std::setw(9) << (ep_bounds[selected_moduli_number - moduli_number_min] * eigen_distance) << " |";
+            oss << std::right << std::setw(9) << (ep_bounds[fp64_idx] * eigen_distance) << " |\n";
+            hline();
+        }
+        oss << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
+    }
+#endif
+
+    void initOzaki_II(std::size_t degree, chase::Base<T> lambda_1,
+                     chase::Base<T> lower, chase::Base<T> upper) override
     {
         SCOPED_NVTX_RANGE();
 
-        char* env = std::getenv("CHASE_OZAKI_NUM_MODULI");
+        char* env = std::getenv("CHASE_DISABLE_OZAKI");
+        if (env != nullptr && std::atoi(env) != 0)
+        {
+            ozaki_fp_hemm_fallback = true;
+            return;
+        }
+
+        ozaki_num_moduli_ = chase::linalg::gemmul8pp::kMaxNumModuli<T>;
+        ozaki_fallback_disabled_ = true;
+        env = std::getenv("CHASE_OZAKI_NUM_MODULI");
         if (env != nullptr)
         {
             ozaki_num_moduli_ = static_cast<unsigned>(std::atoi(env));
-        }else
+        }
+        else if (!isPseudoHerm() && std::is_same<chase::Base<T>, double>::value)
         {
-            double tol = GetConfig().GetTol();
-            ozaki_num_moduli_ = static_cast<unsigned>(std::min(15, 4+static_cast<int>(std::ceil(-std::log10(tol))))); // e.g. tol = 10^{-3} -> num_moduli = 7;
+            ozaki_fallback_disabled_ = false;
         }
 
-        env = std::getenv("CHASE_OZAKI_FASTMODE");
-        if (env != nullptr)
-            ozaki_fastmode_ = static_cast<bool>(std::atoi(env));
+        initOzaki_II_allocate();
 
-        env = std::getenv("CHASE_OZAKI_SKIP_SCALING");
-        if (env != nullptr)
-            ozaki_skip_scaling_ = static_cast<bool>(std::atoi(env));
-
-        ozaki_workspace_Hmat_size_ = 0;
-        ozaki_workspace_Vec1_size_ = 0;
-        ozaki_workspace_Vec2_size_ = 0;
-
-        const size_t worksize = chase::linalg::gemmul8pp::workSize<T>(
-            Hmat_->rows(), Vec1_.cols(), Hmat_->cols(), ozaki_num_moduli_,
-            true, true, &ozaki_workspace_Hmat_size_, &ozaki_workspace_Vec1_size_);
-         ozaki_workspace_Vec2_size_ = worksize - ozaki_workspace_Hmat_size_ - ozaki_workspace_Vec1_size_;
-        
-        void *ozaki_workspace_Hmat_tmp = nullptr;
-        void *ozaki_workspace_Vec1_tmp = nullptr;
-        void *ozaki_workspace_Vec2_tmp = nullptr;
-
-        size_t free_bytes = 0, total_bytes = 0;
-        CHECK_CUDA_ERROR(cudaMemGetInfo(&free_bytes, &total_bytes));
-
-        if(worksize < free_bytes)
+        unsigned const moduli_number_min = chase::linalg::gemmul8pp::kMinNumModuliChase<T>;
+        unsigned const moduli_number_max = chase::linalg::gemmul8pp::kMaxNumModuli<T>;
+        if (!isPseudoHerm())
         {
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Hmat_tmp, ozaki_workspace_Hmat_size_));
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Vec1_tmp, ozaki_workspace_Vec1_size_));
-            CHECK_CUDA_ERROR(cudaMalloc(&ozaki_workspace_Vec2_tmp, ozaki_workspace_Vec2_size_));
-            ozaki_workspace_Hmat_ = reinterpret_cast<int8_t *>(ozaki_workspace_Hmat_tmp);
-            ozaki_workspace_Vec1_ = reinterpret_cast<int8_t *>(ozaki_workspace_Vec1_tmp);
-            ozaki_workspace_Vec2_ = reinterpret_cast<int8_t *>(ozaki_workspace_Vec2_tmp);
-            #ifdef CHASE_OUTPUT
-            {
-                std::ostringstream oss;
-                oss << "OZAKI-II scheme enabled : ";
-                oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
-                oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
-                oss << "ozaki_skip_scaling_ = " << ozaki_skip_scaling_ << ", ";
-                oss << "ozaki_workspace = " << worksize / (1024.0*1024.0*1024.0) << " GB < free workspace = " << free_bytes / (1024.0*1024.0*1024.0) << " GB" << std::endl;
-                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",oss.str(), 0);
-            }
-            #endif
-        }else{
-            //FP32/64 fallback : 
+            double bounds[chase::linalg::gemmul8pp::kMaxNumModuliFp64 - chase::linalg::gemmul8pp::kMinNumModuliChaseFp32 + 2] = {};
+            double ep_bounds[chase::linalg::gemmul8pp::kMaxNumModuliFp64 - chase::linalg::gemmul8pp::kMinNumModuliChaseFp32 + 2] = {};
+            // Safe Res := ||E^p||_{1,2} * |λ_n − λ_1|.
+            double const eigen_distance = std::abs(static_cast<double>(upper) - static_cast<double>(lambda_1));
+            initOzaki_II_Select_Moduli_Number(degree, lambda_1, lower, upper, bounds, ep_bounds, eigen_distance);
+#ifdef CHASE_OUTPUT
+            initOzaki_II_print(moduli_number_min, moduli_number_max, bounds, ep_bounds, eigen_distance);
+#endif
+        }
+        else
+        {
+#ifdef CHASE_OUTPUT
+            initOzaki_II_print(moduli_number_min, moduli_number_max, nullptr, nullptr, 0.0);
+#endif
+        }
+    }
+
+#endif
+
+#if defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override { return ozaki_mantissa_bits_; }
+
+    void SetOzakiMantissaBits(int mantissa_bits) override
+    {
+        ozaki_mantissa_bits_ = mantissa_bits;
+        if (ozaki_cublas_handle_ != nullptr)
+        {
+            CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMaxMantissaBitCount(
+                ozaki_cublas_handle_, ozaki_mantissa_bits_));
+        }
+    }
+
+    void Activate_HighPrecision_Fallback() override
+    {
+        if (ozaki_fp_hemm_fallback || ozaki_fallback_disabled_)
+        {
+            return;
+        }
+        ozaki_fp_hemm_fallback = true;
+    }
+
+    bool IsOzakiFpHemmFallback() const override { return ozaki_fp_hemm_fallback; }
+
+    // Independent of initOzaki_II under CHASE_OZAKI_GEMMUL8. Reads the test
+    // environment variables. degree, lambda_1, lower, and upper are the inputs
+    // the mantissa-accuracy model will use later.
+    void initOzaki_II(std::size_t degree, chase::Base<T> lambda_1, chase::Base<T> lower,
+                      chase::Base<T> upper) override
+    {
+        (void)degree;
+        (void)lambda_1;
+        (void)lower;
+        (void)upper;
+
+        chase::linalg::cublaspp::CublasOzakiEnv env = chase::linalg::cublaspp::cublas_ozaki_env();
+        ozaki_fallback_disabled_ = env.disable_fallback;
+        ozaki_mantissa_bits_ = env.mantissa_bits;
+        if (env.disabled)
+        {
             ozaki_fp_hemm_fallback = true;
-            #ifdef CHASE_OUTPUT
-            {
-                std::ostringstream oss;
-                oss << "OZAKI-II scheme disabled : ";
-                oss << "ozaki_num_moduli_ = " << ozaki_num_moduli_ << ", ";
-                oss << "ozaki_fastmode_ = " << ozaki_fastmode_ << ", ";
-                oss << "ozaki_skip_scaling_ = " << ozaki_skip_scaling_ << ", ";
-                oss << "ozaki_fp_hemm_fallback = " << ozaki_fp_hemm_fallback << ", ";
-                oss << "ozaki_workspace = " << worksize / (1024.0*1024.0*1024.0) << " GB > free workspace = " << free_bytes / (1024.0*1024.0*1024.0) << " GB" << std::endl;
-                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",oss.str(), 0);
-            }
-            #endif
+            chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                         &ozaki_bits_device_);
+            ozaki_cublas_workspace_bytes_ = 0;
         }
+        else
+        {
+            ozaki_fp_hemm_fallback = !chase::linalg::cublaspp::cublas_ozaki_configure(
+                blasH_, &ozaki_cublas_handle_, &ozaki_cublas_workspace_, &ozaki_cublas_workspace_bytes_,
+                &ozaki_bits_device_, env);
+            if (ozaki_fp_hemm_fallback)
+            {
+                chase::linalg::cublaspp::cublas_ozaki_release(&ozaki_cublas_handle_, &ozaki_cublas_workspace_,
+                                                             &ozaki_bits_device_);
+                ozaki_cublas_workspace_bytes_ = 0;
+                env.summary = "cuBLAS Ozaki filter GEMM: workspace allocation failed, using native HEMM\n";
+            }
+        }
+        chase::GetLogger().Log(ozaki_fp_hemm_fallback ? chase::LogLevel::Warn : chase::LogLevel::Info, "linalg",
+                              env.summary, 0);
     }
 #endif
 
@@ -658,7 +962,7 @@ public:
         kernel_dispatch::shift_diagonal(
             Hmat_->data(), std::min(Hmat_->rows(), Hmat_->cols()), Hmat_->ld(),
             chase::Base<T>(std::real(c)));
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
         ozaki_skip_scaling_activated_ = false;
 #endif
         /*
@@ -738,7 +1042,7 @@ public:
         Vec1_.swapDataPointer(Vec2_);
     }
 
-#ifdef CHASE_ENABLE_OZAKI
+#ifdef CHASE_OZAKI_GEMMUL8
     void HEMM_Ozaki(std::size_t block, T alpha, T beta, std::size_t offset_left,
                     std::size_t offset_right = 0) override
     {
@@ -767,16 +1071,106 @@ public:
             Vec2_.data() + offset_left * Vec2_.ld() + locked_ * Vec2_.ld(),
             Vec2_.ld(),
             ozaki_num_moduli_,
-            ozaki_fastmode_,
-            static_cast<void *>(ozaki_workspace_Vec2_),
-            static_cast<void *>(ozaki_workspace_Hmat_),
-            static_cast<void *>(ozaki_workspace_Vec1_),
-            true,
-            true,
-            ozaki_skip_scaling_activated_ && ozaki_skip_scaling_,
+            static_cast<void *>(ozaki_workspace_),
+            nullptr,
+            nullptr,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_ && ozaki_skip_scaling_activated_,
             false));
-        ozaki_skip_scaling_activated_ = true;
+        if (ozaki_fixed_workspace_)
+            ozaki_skip_scaling_activated_ = true;
 
+        Vec1_.swapDataPointer(Vec2_);
+    }
+
+    void HEMM_H2_Ozaki(std::size_t block, T alpha, T beta, T gamma,
+                       std::size_t offset_left,
+                       std::size_t offset_right = 0) override
+    {
+        SCOPED_NVTX_RANGE();
+        std::size_t ncols = (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            Vec1_.swapDataPointer(Vec2_);
+            return;
+        }
+
+        std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        CHECK_CUBLAS_ERROR(chase::linalg::gemmul8pp::gemmul8Tgemm(
+            blasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+            Hmat_->rows(), ncols, Hmat_->cols(),
+            &one,
+            Hmat_->data(), Hmat_->ld(),
+            Vec1_.data() + col0 * Vec1_.ld(), Vec1_.ld(),
+            &zero, d_H2_tmp_, N_,
+            ozaki_num_moduli_,
+            static_cast<void*>(ozaki_workspace_),
+            nullptr,
+            nullptr,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_ && ozaki_skip_scaling_activated_,
+            false));
+            
+        if (ozaki_fixed_workspace_)
+            ozaki_skip_scaling_activated_ = true;
+
+        CHECK_CUBLAS_ERROR(chase::linalg::gemmul8pp::gemmul8Tgemm(
+            blasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+            Hmat_->rows(), ncols, Hmat_->cols(),
+            &alpha,
+            Hmat_->data(), Hmat_->ld(),
+            d_H2_tmp_, N_,
+            &beta, Vec2_.data() + col0 * Vec2_.ld(), Vec2_.ld(),
+            ozaki_num_moduli_,
+            static_cast<void*>(ozaki_workspace_),
+            nullptr,
+            nullptr,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_,
+            ozaki_fixed_workspace_ && ozaki_skip_scaling_activated_,
+            false));
+
+        chase::linalg::internal::active_gpu_serial::batchedAxpyScalar(
+            gamma, Vec1_.data() + col0 * Vec1_.ld(),
+            Vec2_.data() + col0 * Vec2_.ld(),
+            static_cast<int>(N_), static_cast<int>(ncols),
+            static_cast<int>(Vec1_.ld()), static_cast<int>(Vec2_.ld()), &stream_);
+
+        Vec1_.swapDataPointer(Vec2_);
+    }
+#endif
+
+#if defined(CHASE_OZAKI_CUBLAS)
+    void HEMM_Ozaki(std::size_t block, T alpha, T beta, std::size_t offset_left,
+                    std::size_t offset_right = 0) override
+    {
+        if (ozaki_fp_hemm_fallback || ozaki_cublas_handle_ == nullptr)
+        {
+            HEMM(block, alpha, beta, offset_left, offset_right);
+            return;
+        }
+
+        SCOPED_NVTX_RANGE();
+        std::size_t ncols = (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            Vec1_.swapDataPointer(Vec2_);
+            return;
+        }
+
+        cudaStream_t stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(blasH_, &stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(ozaki_cublas_handle_, stream));
+        blas_dispatch::check_status(blas_dispatch::gemm(
+            ozaki_cublas_handle_, blas_dispatch::op_n, blas_dispatch::op_n, Hmat_->rows(), ncols, Hmat_->cols(),
+            &alpha, Hmat_->data(), Hmat_->ld(),
+            Vec1_.data() + offset_left * Vec1_.ld() + locked_ * Vec1_.ld(), Vec1_.ld(), &beta,
+            Vec2_.data() + offset_left * Vec2_.ld() + locked_ * Vec2_.ld(), Vec2_.ld()));
         Vec1_.swapDataPointer(Vec2_);
     }
 #endif
@@ -786,13 +1180,13 @@ public:
                  std::size_t offset_right = 0) override
     {
         SCOPED_NVTX_RANGE();
-        std::size_t ncols =
-            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        std::size_t ncols = (offset_right < block) ? (block - offset_right) : std::size_t(0);
         if (ncols == 0)
         {
             Vec1_.swapDataPointer(Vec2_);
             return;
         }
+
         std::size_t col0 = offset_left + locked_;
         T one = T(1);
         T zero = T(0);
@@ -1186,18 +1580,31 @@ private:
                                      in the Pseudo Hermitian case. */
     int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
-#ifdef CHASE_ENABLE_OZAKI
-    size_t ozaki_workspace_Hmat_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Hmat. */
-    size_t ozaki_workspace_Vec1_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Vec1. */
-    size_t ozaki_workspace_Vec2_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8) for Vec2. */
-    int8_t* ozaki_workspace_Hmat_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Hmat. */
-    int8_t* ozaki_workspace_Vec1_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Vec1. */
-    int8_t* ozaki_workspace_Vec2_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8) for Vec2. */
+#ifdef CHASE_OZAKI_GEMMUL8
+    size_t ozaki_workspace_size_ = 0; /**< Workspace size for Ozaki-II (GEMMul8). */
+    int8_t* ozaki_workspace_ = nullptr; /**< Workspace for Ozaki-II (GEMMul8). */
+    chase::Base<T>* d_inf_norm_H_ = nullptr; /**< Device scalar for ||H−cI||_∞. */
+    size_t ozaki_max_worksize_ = size_t(12) << 30; /**< Max GEMMul8 workspace in bytes. */
     unsigned ozaki_num_moduli_ = 8; /**< Number of moduli for Ozaki-II (GEMMul8). */
-    bool ozaki_skip_scaling_      = false; /**< Flag to skip scaling Hmat in Ozaki-II (GEMMul8). */
-    bool ozaki_fastmode_        = false; /**< Flag to use fastmode in Ozaki-II (GEMMul8). */
+    int ozaki_fallback_num_moduli_ =
+        -1; /**< Smallest moduli beating FP64 Ep; -1 => FP-GEMM on stagnation. */
+    bool ozaki_fallback_disabled_ =
+        false; /**< Stagnation keeps the current moduli count: fixed 12 or 16, CHASE_OZAKI_NUM_MODULI, single precision, or pseudo-Hermitian. */
+    bool ozaki_safe_res_met_ = false; /**< True when a moduli count satisfies Safe Res. */
+    bool ozaki_fixed_workspace_ = false; /**< True when CHASE_OZAKI_WORKSPACE_GB is MAX. */
+    bool ozaki_save_memory_ = false; /**< Cap Ozaki-II workspace (off only when CHASE_OZAKI_WORKSPACE_GB is MAX). */
     bool ozaki_fp_hemm_fallback = false; /**< Flag to use FP32/64 fallback in Ozaki-II (GEMMul8). */
+    bool ozaki_error_model_ready_ = false; /**< True once ||E^f||, ||E^p||, and Safe Res have been filled. */
     bool ozaki_skip_scaling_activated_ = false; /**< Flag to activate skip scaling Hmat in Ozaki-II (GEMMul8). */
+#endif
+#if defined(CHASE_OZAKI_CUBLAS)
+    cublasHandle_t ozaki_cublas_handle_ = nullptr; /**< Filter-only FP64 emulation handle. */
+    void* ozaki_cublas_workspace_ = nullptr;
+    std::size_t ozaki_cublas_workspace_bytes_ = 0;
+    int* ozaki_bits_device_ = nullptr;
+    int ozaki_mantissa_bits_ = 32;
+    bool ozaki_fallback_disabled_ = false;
+    bool ozaki_fp_hemm_fallback = false;
 #endif
 };
 

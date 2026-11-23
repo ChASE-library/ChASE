@@ -86,6 +86,14 @@ struct hip_rccl
                   std::size_t offsize,
                   chase::Base<typename MatrixType::value_type> shift);
 
+    /** Global ||H||_∞ via local row-sums + RCCL SUM(row) + max + MAX(col). */
+    template <typename MatrixType>
+    static void matrixInfNorm(
+        MatrixType& H,
+        chase::Base<typename MatrixType::value_type>* d_row_sums,
+        chase::Base<typename MatrixType::value_type>* d_result,
+        hipStream_t stream);
+
     template <typename T>
     static void flipLowerHalfMatrixSign(
         chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H);
@@ -270,6 +278,7 @@ struct hip_rccl
 #include "linalg/internal/gpu/dist_xccl/rccl/hemm.hpp"
 #include "linalg/internal/gpu/dist_xccl/rccl/residuals.hpp"
 #include "linalg/internal/gpu/dist_xccl/rccl/shiftDiagonal.hpp"
+#include "linalg/internal/gpu/dist_xccl/rccl/matrix_inf_norm.hpp"
 #include "linalg/internal/gpu/dist_xccl/rccl/symOrHerm.hpp"
 #include "linalg/internal/gpu/dist_xccl/rccl/lanczos.hpp"
 #include "linalg/internal/gpu/dist_xccl/rccl/cholqr.hpp"

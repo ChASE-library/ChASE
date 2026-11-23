@@ -88,6 +88,7 @@ struct BSE_DriverProblemConfig
 
     std::string path_in; // path to the matrix input files
     bool isdouble;
+    bool iscomplex;
     double shiftDiag; // shift applied to the matrix diagonal (e.g. for BSE)
     bool saveResonant = false; // if true, save first diagonal block (N/2 x N/2) to file (distributed BlockBlock only)
 };
@@ -536,6 +537,10 @@ int main(int argc, char** argv)
         "", "double",
         "Is matrix double valued, false indicates the single type", true,
         &conf.isdouble);
+    desc.add<Value<bool>>(
+        "", "complex",
+        "Is matrix complex valued, false indicates the real type", true,
+        &conf.iscomplex);
     desc.add<Value<std::size_t>>("", "blocksize",
                                  "Sets the blocksize for the matrix", 64,
                                  &conf.blocksize);
@@ -625,14 +630,21 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (conf.isdouble)
+    if (conf.isdouble && conf.iscomplex)
     {
         bse_solve<std::complex<double>>(conf);
-        //bse_solve<double>(conf);
+    }
+    else if (conf.isdouble)
+    {
+        bse_solve<double>(conf);
+    }
+    else if (conf.iscomplex)
+    {
+        bse_solve<std::complex<float>>(conf);
     }
     else
     {
-        bse_solve<std::complex<float>>(conf);
+        bse_solve<float>(conf);
     }
 
 #if defined(USE_MPI) || defined(HAS_NCCL)

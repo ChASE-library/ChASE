@@ -98,6 +98,8 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
 
   add_library(chase_hip_kernels
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/shift_diagonal.hip
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_inf_norm.hip
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_one_norm.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/matrix_diag.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/flip_sign.hip
     ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/hip/kernels/lacpy.hip
@@ -371,12 +373,11 @@ if(CMAKE_CUDA_COMPILER)
     set(CUDA_curand_LIBRARY CUDA::curand)    
   endif()
 
-  enable_language(CUDA)
+  # One architecture, before enable_language(CUDA), shared with a ChASE-built GEMMul8.
+  include(CudaArchitectures)
+  chase_require_single_cuda_architecture()
 
-  # If variable not defined, set it to default value in order to comply with CMake Policy CMP0104
-  if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      set (CMAKE_CUDA_ARCHITECTURES "80")
-  endif()
+  enable_language(CUDA)
 
   if (${CMAKE_VERSION} VERSION_LESS "3.18.0")
     message("CMAKE version less than 3.18. Using old CMAKE CUDA policy for defining CUDA code generation flags")
@@ -410,6 +411,8 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/flip_sign.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/conjugate.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/abs_trace.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/matrix_inf_norm.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/matrix_one_norm.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/random_normal_distribution.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/gpu/kernels/cuda/kernels/residuals.cu

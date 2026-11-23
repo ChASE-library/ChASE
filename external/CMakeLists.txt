@@ -66,9 +66,8 @@ endif()
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
-  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      set(CMAKE_CUDA_ARCHITECTURES "80;90" CACHE STRING "CUDA architectures to build for")
-  endif()
+  include(CudaArchitectures)
+  chase_require_single_cuda_architecture()
   add_library(cublaspp INTERFACE)
   target_include_directories(cublaspp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/nvidia_gpu/cublaspp>
@@ -129,84 +128,63 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
   message(STATUS "rocBLAS/rocSOLVER support enabled for HIP.")
 endif()
 
-# Optional Ozaki Scheme II backend (GEMMul8). NVIDIA CUDA only.
+# Optional Ozaki filter GEMM. GEMMUL8 builds GEMMul8. CUBLAS uses cuBLAS FP64
+# fixed-point emulation and does not compile GEMMul8.
 if(CHASE_ENABLE_OZAKI)
-  if(NOT CUDAToolkit_FOUND)
-    message(FATAL_ERROR "CHASE_ENABLE_OZAKI=ON requires CUDAToolkit (CUDA).")
-  endif()
-  if(CHASE_ENABLE_HIP_EFFECTIVE AND NOT CUDAToolkit_FOUND)
-    message(FATAL_ERROR "CHASE_ENABLE_OZAKI is not supported on HIP-only builds.")
-  endif()
-
-  if(NOT DEFINED CUDAToolkit_NVCC_EXECUTABLE OR NOT EXISTS "${CUDAToolkit_NVCC_EXECUTABLE}")
-    message(FATAL_ERROR
-      "CHASE_ENABLE_OZAKI=ON requires NVCC (via CUDAToolkit). "
-      "CUDAToolkit_NVCC_EXECUTABLE='${CUDAToolkit_NVCC_EXECUTABLE}'")
-  endif()
-
-  if(NOT GEMMUL8_ROOT)
-    message(FATAL_ERROR "CHASE_ENABLE_OZAKI=ON requires -DGEMMUL8_ROOT=/path/to/GEMMul8 (must contain include/ and lib/).")
-  endif()
-
-  set(_GEMMUL8_INCLUDE_DIR "${GEMMUL8_ROOT}/include")
-  if(EXISTS "${GEMMUL8_ROOT}/GEMMul8/include")
-    set(_GEMMUL8_INCLUDE_DIR "${GEMMUL8_ROOT}/GEMMul8/include")
-  endif()
-
-  set(_GEMMUL8_LIB "")
-  foreach(_cand
-          "${GEMMUL8_ROOT}/lib/libgemmul8.so"
-          "${GEMMUL8_ROOT}/lib64/libgemmul8.so"
-          "${GEMMUL8_ROOT}/lib/libgemmul8.a"
-          "${GEMMUL8_ROOT}/lib64/libgemmul8.a"
-          "${GEMMUL8_ROOT}/GEMMul8/lib/libgemmul8.so"
-          "${GEMMUL8_ROOT}/GEMMul8/lib/libgemmul8.a")
-    if(EXISTS "${_cand}")
-      set(_GEMMUL8_LIB "${_cand}")
-      break()
+  string(TOUPPER "${CHASE_OZAKI_BACKEND}" _CHASE_OZAKI_BACKEND)
+  if(_CHASE_OZAKI_BACKEND STREQUAL "CUBLAS")
+    if(NOT CUDAToolkit_FOUND)
+      message(FATAL_ERROR "CHASE_OZAKI_BACKEND=CUBLAS requires the CUDA toolkit.")
     endif()
-  endforeach()
+    if(CUDAToolkit_VERSION VERSION_LESS 13.5)
+      message(FATAL_ERROR
+        "CHASE_OZAKI_BACKEND=CUBLAS requires CUDA >= 13.5 (found ${CUDAToolkit_VERSION}). "
+        "This toolkit has no CUBLAS_FP64_EMULATED_FIXEDPOINT_MATH. Use CHASE_OZAKI_BACKEND=GEMMUL8.")
+    endif()
+    target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1 CHASE_OZAKI_CUBLAS=1)
+    message(STATUS "Ozaki filter GEMM: cuBLAS FP64 fixed-point emulation (CUDA ${CUDAToolkit_VERSION})")
+  elseif(NOT _CHASE_OZAKI_BACKEND STREQUAL "GEMMUL8")
+    message(FATAL_ERROR "CHASE_OZAKI_BACKEND must be GEMMUL8 or CUBLAS, got '${CHASE_OZAKI_BACKEND}'.")
+  else()
+  include(GEMMul8)
+  chase_setup_gemmul8()
 
-  if(NOT EXISTS "${_GEMMUL8_INCLUDE_DIR}/gemmul8.hpp")
-    message(FATAL_ERROR
-      "GEMMul8 header not found. Expected '${_GEMMUL8_INCLUDE_DIR}/gemmul8.hpp'. "
-      "Set GEMMUL8_ROOT to your GEMMul8 build/install prefix (or source root containing GEMMul8/include).")
-  endif()
-
-  if(NOT _GEMMUL8_LIB)
-    message(FATAL_ERROR
-      "libgemmul8 not found under GEMMUL8_ROOT='${GEMMUL8_ROOT}'. "
-      "Expected lib/libgemmul8.(so|a) (or GEMMul8/lib/...).")
-  endif()
-
-  if(NOT TARGET gemmul8::gemmul8)
-    add_library(gemmul8::gemmul8 UNKNOWN IMPORTED)
-    set_target_properties(gemmul8::gemmul8 PROPERTIES
-      IMPORTED_LOCATION "${_GEMMUL8_LIB}"
-      INTERFACE_INCLUDE_DIRECTORIES "${_GEMMUL8_INCLUDE_DIR}"
-    )
-    target_link_libraries(gemmul8::gemmul8 INTERFACE CUDA::cublas CUDA::cudart)
-  endif()
-
-  message(STATUS "Ozaki Scheme II backend enabled (GEMMul8): ${_GEMMUL8_LIB}")
-
-  target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1)
+  target_compile_definitions(chase_algorithm INTERFACE CHASE_ENABLE_OZAKI=1 CHASE_OZAKI_GEMMUL8=1)
 
   enable_language(CUDA)
 
-  add_library(gemmul8pp ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/gemmul8pp.cu)
+  add_library(gemmul8pp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/gemmul8pp.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp/utilities.cu)
   set_target_properties(gemmul8pp PROPERTIES
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_SEPARABLE_COMPILATION ON)
-  target_compile_options(gemmul8pp PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:-gencode=arch=compute_90,code=sm_90>)
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_include_directories(gemmul8pp PRIVATE "${_GEMMUL8_INCLUDE_DIR}")
   target_include_directories(gemmul8pp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gemmul8pp>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/external/gemmul8pp>
   )
-  target_link_libraries(gemmul8pp PUBLIC gemmul8::gemmul8 CUDA::cublas CUDA::cudart)
+  if(_GEMMUL8_FROM_FETCH)
+    # Build against the copy in the build tree. Installed ChASE links the copy
+    # installed next to it, and consumers get an rpath to that lib directory.
+    target_link_libraries(gemmul8pp PUBLIC
+      "$<BUILD_INTERFACE:gemmul8::gemmul8>"
+      "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/libgemmul8.so>"
+      CUDA::cublas
+      CUDA::cudart)
+    target_link_options(gemmul8pp PUBLIC
+      "$<INSTALL_INTERFACE:-Wl,-rpath,$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}>")
+  else()
+    target_link_libraries(gemmul8pp PUBLIC gemmul8::gemmul8 CUDA::cublas CUDA::cudart)
+  endif()
   target_compile_definitions(gemmul8pp PUBLIC CHASE_ENABLE_OZAKI=1)
+  target_compile_definitions(gemmul8pp PRIVATE "CHASE_GEMMUL8_ROOT=\"${_GEMMUL8_ROOT_LOG}\"")
+  if(_GEMMUL8_FROM_FETCH)
+    add_dependencies(gemmul8pp gemmul8_ep)
+  endif()
+  message(STATUS "gemmul8pp uses CUDA architecture ${CMAKE_CUDA_ARCHITECTURES}, the same one as the rest of ChASE")
+  endif()
 endif()
 
 install(TARGETS blaspp lapackpp chase_cpu_linalg
@@ -275,7 +253,7 @@ if(CHASE_ENABLE_HIP_EFFECTIVE)
 endif()
 
 # Install Ozaki/GEMMul8 wrapper (library + headers).
-if(CHASE_ENABLE_OZAKI)
+if(CHASE_ENABLE_OZAKI AND _CHASE_OZAKI_BACKEND STREQUAL "GEMMUL8")
   install(TARGETS gemmul8pp
     EXPORT chase_targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

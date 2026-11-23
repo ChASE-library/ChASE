@@ -9,6 +9,8 @@
 
 #ifdef CHASE_ENABLE_OZAKI
 
+#include "table.hpp"
+
 namespace chase {
 namespace linalg {
 namespace gemmul8pp {
@@ -40,7 +42,6 @@ cublasStatus_t gemmul8Tgemm(
     float* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA = nullptr,
     void* workB = nullptr,
@@ -65,7 +66,6 @@ cublasStatus_t gemmul8Tgemm(
     double* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA = nullptr,
     void* workB = nullptr,
@@ -90,7 +90,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<float>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA = nullptr,
     void* workB = nullptr,
@@ -115,7 +114,6 @@ cublasStatus_t gemmul8Tgemm(
     std::complex<double>* C,
     std::size_t ldc,
     unsigned num_moduli,
-    bool fastmode,
     void* work,
     void* workA = nullptr,
     void* workB = nullptr,
@@ -123,6 +121,12 @@ cublasStatus_t gemmul8Tgemm(
     bool enable_skip_scalB = false,
     bool skip_scalA = false,
     bool skip_scalB = false);
+
+void set_memory_saving(cublasHandle_t handle, bool enable);
+void set_max_worksize(cublasHandle_t handle, std::size_t bytes);
+void clear_config(cublasHandle_t handle);
+bool has_memory_saving();
+const char* gemmul8_root();
 
 } // namespace gemmul8pp
 } // namespace linalg

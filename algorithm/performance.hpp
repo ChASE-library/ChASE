@@ -566,9 +566,37 @@ public:
     }
 
 #ifdef CHASE_ENABLE_OZAKI
-    void initOzaki_II() override
+    void initOzaki_II(std::size_t degree, Base<T> lambda_1, Base<T> lower,
+                     Base<T> upper) override
     {
-        chase_->initOzaki_II();
+        chase_->initOzaki_II(degree, lambda_1, lower, upper);
+    }
+#if defined(CHASE_OZAKI_GEMMUL8)
+    unsigned GetOzakiNumModuli() const override
+    {
+        return chase_->GetOzakiNumModuli();
+    }
+    void SetOzakiNumModuli(unsigned num_moduli) override
+    {
+        chase_->SetOzakiNumModuli(num_moduli);
+    }
+#elif defined(CHASE_OZAKI_CUBLAS)
+    int GetOzakiMantissaBits() const override
+    {
+        return chase_->GetOzakiMantissaBits();
+    }
+    void SetOzakiMantissaBits(int mantissa_bits) override
+    {
+        chase_->SetOzakiMantissaBits(mantissa_bits);
+    }
+#endif
+    void Activate_HighPrecision_Fallback() override
+    {
+        chase_->Activate_HighPrecision_Fallback();
+    }
+    bool IsOzakiFpHemmFallback() const override
+    {
+        return chase_->IsOzakiFpHemmFallback();
     }
 #endif
 
@@ -590,6 +618,13 @@ public:
     {
         chase_->HEMM_Ozaki(nev, alpha, beta, offset_left, offset_right);
         perf_.add_filtered_vecs(nev - offset_right);
+    }
+    void HEMM_H2_Ozaki(std::size_t nev, T alpha, T beta, T gamma,
+                       std::size_t offset_left,
+                       std::size_t offset_right = 0) override
+    {
+        chase_->HEMM_H2_Ozaki(nev, alpha, beta, gamma, offset_left, offset_right);
+        perf_.add_filtered_vecs(2 * (nev - offset_right));
     }
 #endif
     void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,

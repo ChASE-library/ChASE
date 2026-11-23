@@ -10,6 +10,11 @@
 
 #include "algorithm/types.hpp"
 #include <complex>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <sstream>
+#include <string>
 #include <cuComplex.h>
 #include <cublas_v2.h>
 #include <cuda.h>
@@ -93,6 +98,171 @@ namespace linalg
 {
 namespace cublaspp
 {
+#if defined(CHASE_OZAKI_CUBLAS)
+#if CUBLAS_VERSION < 131000
+#error CHASE_OZAKI_CUBLAS requires cuBLAS 13.1 (CUDA 13.5) for FP64 fixed-point emulation.
+#endif
+
+// Knobs for the filter GEMM handle. Same switches as the standalone Ozaki app.
+// The accuracy model that would pick mantissa_bits from tol is not connected.
+struct CublasOzakiEnv
+{
+    cublasEmulationStrategy_t strategy = CUBLAS_EMULATION_STRATEGY_EAGER;
+    cudaEmulationMantissaControl control = CUDA_EMULATION_MANTISSA_CONTROL_FIXED;
+    cudaEmulationSpecialValuesSupport special_values =
+        CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_DEFAULT;
+    int mantissa_bits = 32;
+    int mantissa_offset = 0;
+    std::size_t workspace_bytes = 64ull * 1024ull * 1024ull;
+    bool disable_fallback = false;
+    bool disabled = false;
+    std::string summary;
+};
+
+inline CublasOzakiEnv cublas_ozaki_env()
+{
+    CublasOzakiEnv env;
+    const char* disable = std::getenv("CHASE_DISABLE_OZAKI");
+    env.disabled = (disable != nullptr && disable[0] != '\0' && std::atoi(disable) != 0);
+
+    const char* strategy = std::getenv("CHASE_CUBLAS_EMULATION_STRATEGY");
+    const char* strategy_name = "eager";
+    if (strategy != nullptr && std::strcmp(strategy, "performant") == 0)
+    {
+        env.strategy = CUBLAS_EMULATION_STRATEGY_PERFORMANT;
+        strategy_name = "performant";
+    }
+    else if (strategy != nullptr && std::strcmp(strategy, "default") == 0)
+    {
+        env.strategy = CUBLAS_EMULATION_STRATEGY_DEFAULT;
+        strategy_name = "default";
+    }
+
+    const char* control = std::getenv("CHASE_CUBLAS_MANTISSA_CONTROL");
+    const char* control_name = "fixed";
+    if (control != nullptr && std::strcmp(control, "dynamic") == 0)
+    {
+        env.control = CUDA_EMULATION_MANTISSA_CONTROL_DYNAMIC;
+        control_name = "dynamic";
+    }
+
+    if (const char* bits = std::getenv("CHASE_CUBLAS_MANTISSA_BITS"))
+    {
+        env.mantissa_bits = std::atoi(bits);
+    }
+    if (const char* offset = std::getenv("CHASE_CUBLAS_MANTISSA_OFFSET"))
+    {
+        env.mantissa_offset = std::atoi(offset);
+    }
+    if (const char* mb = std::getenv("CHASE_CUBLAS_WORKSPACE_MB"))
+    {
+        env.workspace_bytes = static_cast<std::size_t>(std::atoi(mb)) * 1024ull * 1024ull;
+    }
+
+    const char* special = std::getenv("CHASE_CUBLAS_SPECIAL_VALUES");
+    const char* special_name = "default";
+    if (special != nullptr && std::strcmp(special, "none") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_NONE;
+        special_name = "none";
+    }
+    else if (special != nullptr && std::strcmp(special, "inf") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_INFINITY;
+        special_name = "inf";
+    }
+    else if (special != nullptr && std::strcmp(special, "nan") == 0)
+    {
+        env.special_values = CUDA_EMULATION_SPECIAL_VALUES_SUPPORT_NAN;
+        special_name = "nan";
+    }
+
+    if (const char* no_fallback = std::getenv("CHASE_CUBLAS_DISABLE_FALLBACK"))
+    {
+        env.disable_fallback = (std::atoi(no_fallback) != 0);
+    }
+
+    std::ostringstream oss;
+    oss << "cuBLAS Ozaki filter GEMM: " << (env.disabled ? "disabled" : "enabled")
+        << " strategy=" << strategy_name << " control=" << control_name
+        << " bits=" << env.mantissa_bits << " offset=" << env.mantissa_offset
+        << " workspace_mb=" << (env.workspace_bytes / (1024ull * 1024ull))
+        << " special=" << special_name
+        << " fallback=" << (env.disable_fallback ? "off" : "fp64") << "\n";
+    env.summary = oss.str();
+    return env;
+}
+
+inline void cublas_ozaki_release(cublasHandle_t* handle, void** workspace, int** bits)
+{
+    if (handle != nullptr && *handle != nullptr)
+    {
+        cublasDestroy(*handle);
+        *handle = nullptr;
+    }
+    if (workspace != nullptr && *workspace != nullptr)
+    {
+        cudaFree(*workspace);
+        *workspace = nullptr;
+    }
+    if (bits != nullptr && *bits != nullptr)
+    {
+        cudaFree(*bits);
+        *bits = nullptr;
+    }
+}
+
+// Configures a handle that is used only by the filter matvec. `like` supplies the stream.
+// Returns false when the workspace cannot be allocated; the caller then uses native HEMM.
+inline bool cublas_ozaki_configure(cublasHandle_t like, cublasHandle_t* handle, void** workspace,
+                                   std::size_t* capacity, int** bits, CublasOzakiEnv const& env)
+{
+    if (*handle == nullptr)
+    {
+        if (cublasCreate(handle) != CUBLAS_STATUS_SUCCESS)
+        {
+            return false;
+        }
+    }
+
+    cudaStream_t stream = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(like, &stream));
+    CHECK_CUBLAS_ERROR(cublasSetStream(*handle, stream));
+    CHECK_CUBLAS_ERROR(cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST));
+    CHECK_CUBLAS_ERROR(cublasSetMathMode(*handle, CUBLAS_FP64_EMULATED_FIXEDPOINT_MATH));
+    CHECK_CUBLAS_ERROR(cublasSetEmulationStrategy(*handle, env.strategy));
+
+    if (*capacity != env.workspace_bytes)
+    {
+        if (*workspace != nullptr)
+        {
+            cudaFree(*workspace);
+            *workspace = nullptr;
+            *capacity = 0;
+        }
+        if (env.workspace_bytes > 0)
+        {
+            if (cudaMalloc(workspace, env.workspace_bytes) != cudaSuccess)
+            {
+                return false;
+            }
+            *capacity = env.workspace_bytes;
+        }
+    }
+    CHECK_CUBLAS_ERROR(cublasSetWorkspace(*handle, *workspace, *capacity));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaControl(*handle, env.control));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMaxMantissaBitCount(*handle, env.mantissa_bits));
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaBitOffset(*handle, env.mantissa_offset));
+    if (*bits == nullptr && cudaMalloc(reinterpret_cast<void**>(bits), sizeof(int)) != cudaSuccess)
+    {
+        return false;
+    }
+    CHECK_CUBLAS_ERROR(cublasSetFixedPointEmulationMantissaBitCountPointer(*handle, *bits));
+    CHECK_CUBLAS_ERROR(cublasSetEmulationSpecialValuesSupport(*handle, env.special_values));
+    return true;
+}
+#endif
+
 /**
  * @ingroup cuBlasFunctions
  * @brief Performs the AXPY operation: y = alpha * x + y.
@@ -234,6 +404,70 @@ cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
                            double* result)
 {
     return cublasDznrm2(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
+                        incx, result);
+}
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n, const float* x,
+                           std::size_t incx, float* result)
+{
+    return cublasSasum(handle, n, x, incx, result);
+}
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const double* x, std::size_t incx, double* result)
+{
+    return cublasDasum(handle, n, x, incx, result);
+}
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const std::complex<float>* x, std::size_t incx,
+                           float* result)
+{
+    return cublasScasum(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
+                        result);
+}
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the sum of absolute values of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result sum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTasum(cublasHandle_t handle, std::size_t n,
+                           const std::complex<double>* x, std::size_t incx,
+                           double* result)
+{
+    return cublasDzasum(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
                         incx, result);
 }
 /**
@@ -1057,6 +1291,166 @@ cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
                         lda, B, CUDA_C_64F, ldb, beta, C, CUDA_C_64F, ldc,
                         ComputeType, CUBLAS_GEMM_DEFAULT);
 }
+
+#ifdef CHASE_ENABLE_OZAKI
+
+/**
+ * @brief Template specialization for int8_t → int32_t (Ozaki C'' probe).
+ * For A_lo from pack_A_lo (transposed layout), use transa = CUBLAS_OP_T.
+ */
+template <cublasComputeType_t ComputeType = CUBLAS_COMPUTE_32I>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, cublasOperation_t transa,
+                             cublasOperation_t transb, std::size_t m,
+                             std::size_t n, std::size_t k,
+                             const std::int32_t* alpha, const std::int8_t* A,
+                             std::size_t lda, const std::int8_t* B,
+                             std::size_t ldb, const std::int32_t* beta,
+                             std::int32_t* C, std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, static_cast<int>(m),
+                        static_cast<int>(n), static_cast<int>(k), alpha, A,
+                        CUDA_R_8I, static_cast<int>(lda), B, CUDA_R_8I,
+                        static_cast<int>(ldb), beta, C, CUDA_R_32I,
+                        static_cast<int>(ldc), ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n, const float* x,
+                            std::size_t incx, int* result)
+{
+    return cublasIsamax(handle, n, x, incx, result);
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const double* x, std::size_t incx, int* result)
+{
+    return cublasIdamax(handle, n, x, incx, result);
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const std::complex<float>* x, std::size_t incx,
+                            int* result)
+{
+    return cublasIcamax(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
+                        result);
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Finds the index of the element with the largest absolute value.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the 1-based index of the maximum.
+ * @return Status of the operation.
+ */
+cublasStatus_t cublasTiamax(cublasHandle_t handle, std::size_t n,
+                            const std::complex<double>* x, std::size_t incx,
+                            int* result)
+{
+    return cublasIzamax(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
+                        incx, result);
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the largest absolute value of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result maximum absolute value.
+ * @return Status of the operation.
+ */
+template <typename T>
+cublasStatus_t cublasTmaxAbs(cublasHandle_t handle, std::size_t n, const T* x,
+                             std::size_t incx, Base<T>* result)
+{
+    int idx = 0;
+    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    status = cublasTiamax(handle, n, x, incx, &idx);
+
+    if (status == CUBLAS_STATUS_SUCCESS)
+    {
+        T val{};
+        cudaError_t const err = cudaMemcpy(
+            &val, x + (static_cast<std::size_t>(idx) - 1) * incx, sizeof(T),
+            cudaMemcpyDeviceToHost);
+        *result = std::abs(val);
+    }
+
+    return status;
+}
+
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the 1-norm of a matrix (maximum absolute column sum).
+ * @param handle cuBLAS handle.
+ * @param rows Number of rows of matrix A.
+ * @param cols Number of columns of matrix A.
+ * @param A Pointer to input matrix A.
+ * @param lda Leading dimension of A.
+ * @param result Pointer to the result 1-norm.
+ * @return Status of the operation.
+ */
+template <typename T>
+cublasStatus_t cublasTmatrixOneNorm(cublasHandle_t handle, std::size_t rows,
+                                    std::size_t cols, const T* A, std::size_t lda,
+                                    Base<T>* result)
+{
+    cublasStatus_t status = cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+
+    Base<T> one = Base<T>(0);
+    for (std::size_t j = 0; j < cols; ++j)
+    {
+        Base<T> col_sum = Base<T>(0);
+        status = cublasTasum(handle, rows, A + j * lda, 1, &col_sum);
+        if (status != CUBLAS_STATUS_SUCCESS)
+        {
+            return status;
+        }
+        if (col_sum > one)
+        {
+            one = col_sum;
+        }
+    }
+
+    *result = one;
+    return status;
+}
+
+#endif // CHASE_ENABLE_OZAKI
 
 } // namespace cublaspp
 } // namespace linalg
