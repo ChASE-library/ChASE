@@ -17,7 +17,7 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 - **Sequences:** ChASE is particularly efficient when dealing with *sequences of eigenvalue problems*, where the eigenvectors solving for one problem can be use as input to accelerate the solution of the next one.
 - **Vectors input:** Since it is based on subspace iteration, ChASE can receive as input a matrix of vector equal to the number of desired eigenvalues. ChASE can experience substantial speed-ups when this input matrix contains some information about the sought after eigenvectors.
 - **Degree optimization:** For a fixed accuracy level, ChASE can optimize the degree of the Chebyshev polynomial filter so as to minimize the number of FLOPs necessary to reach convergence.
-- **Precision:** ChASE is also templated to work in *Single Precision* (SP) or *Double Precision* (DP).
+- **Precision:** ChASE is templated for *Single Precision* (SP) and *Double Precision* (DP). On NVIDIA GPUs the filter can also use an emulated GEMM: Ozaki-II through GEMMul8, or cuBLAS fixed-point emulation on CUDA 13.5 and newer. See the [emulated GEMM documentation](https://chase-library.github.io/ChASE/emulated-gemm.html).
 
 
 ## Builds of ChASE
@@ -121,7 +121,7 @@ cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 
 - Edoardo Di Napoli – Algorithm design and development
 - Xinzhe Wu – Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
-- Clément Richefort - Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, Pseudo-Hermitian project support, Integration of ChASE into the [YAMBO](https://www.yambo-code.eu/) code.
+- Clément Richefort - Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, algorithmic extension to Pseudo-Hermitian eigenproblems, Integration of ChASE into the [YAMBO](https://www.yambo-code.eu/) code, Ozaki-II emulated GEMM.
 
 ### Current contributors
 

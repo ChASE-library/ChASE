@@ -35,7 +35,7 @@ Main developers
 
   * Xinzhe Wu -- Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
 
-  * Clément Richefort -- Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, Pseudo-Hermitian project support, Integration of ChASE into YAMBO code.
+  * Clément Richefort -- Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, algorithmic extension to Pseudo-Hermitian eigenproblems, Integration of ChASE into YAMBO code, Ozaki-II emulated GEMM.
 
 Current Contributors
 =====================

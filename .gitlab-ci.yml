@@ -1,6 +1,33 @@
 variables:
   SCHEDULER_PARAMETERS: '-Aslai -N1'
   CUSTOM_CI_BUILDS_DIR: /e/scratch/cslai
+  # Shown on New pipeline. Leave empty for the normal build.
+  # A version such as 1.8.0 runs prepare_release and skips the other jobs.
+  RELEASE_VERSION:
+    value: ""
+    description: "Leave empty for a normal pipeline. Set a version such as 1.8.0 to run only prepare_release."
+  RELEASE_DATE:
+    value: ""
+    description: "Optional citation date, YYYY-MM-DD. Leave empty to use the pipeline date."
+  DOCS_CHECK:
+    value: ""
+    description: "Web pipeline only. 1 checks GitHub Pages access. build compiles the docs and does not publish."
+
+# Merge request pipelines compare the whole branch with master, so a later
+# README or docs commit still looked like a source change. Use the push
+# pipeline, which only sees the commits just pushed. A manual pipeline runs
+# only when RELEASE_VERSION is set.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web" && ($RELEASE_VERSION =~ /^\d+\.\d+\.\d+$/ || $RELEASE_VERSION =~ /^v\d+\.\d+\.\d+$/)
+    - if: $CI_PIPELINE_SOURCE == "web" && $DOCS_CHECK == "1"
+    - if: $CI_PIPELINE_SOURCE == "web" && $DOCS_CHECK == "build"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: never
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
 
 stages:
   - build
@@ -8,18 +35,160 @@ stages:
   - coverage
   - upload
 
+# The version number is chosen by a person. This job only checks that the
+# committed strings still agree, and that a version tag matches CMake.
+check_version:
+  stage: build
+  tags: [ public-docker ]
+  image:
+    name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  rules:
+    - if: $RELEASE_VERSION =~ /^\d+\.\d+\.\d+$/ || $RELEASE_VERSION =~ /^v\d+\.\d+\.\d+$/
+      when: never
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+  script:
+    - python3 scripts/sync_release_version.py check
+
+# A final version tag publishes that tag's documentation. Release candidates
+# and branch pipelines do not. The tag itself is the decision to publish.
+publish_docs:
+  stage: build
+  tags: [ public-docker ]
+  image:
+    name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq python3-pip python3-venv doxygen
+    - python3 -m venv /tmp/docs-venv
+    - /tmp/docs-venv/bin/pip install --quiet sphinx breathe sphinx-rtd-theme
+  script:
+    - |
+      if [ -z "${GH_PAGES_TOKEN}" ]; then
+        echo "Set the GitLab CI variable GH_PAGES_TOKEN."
+        exit 1
+      fi
+    - python3 scripts/sync_release_version.py check
+    - python3 scripts/publish_github_pages.py prepare
+    - cmake -S . -B build_docs -DPython_EXECUTABLE=/tmp/docs-venv/bin/python -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_BUILD_WITH_DOCS=ON -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries"
+    - cmake --build build_docs --target Sphinx -j4
+    - python3 scripts/publish_github_pages.py publish build_docs/sphinx/html
+
+# Same image and compile commands as publish_docs, without the GitHub push.
+check_docs_build:
+  stage: build
+  tags: [ public-docker ]
+  image:
+    name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $DOCS_CHECK == "build"
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq python3-pip python3-venv doxygen
+    - python3 -m venv /tmp/docs-venv
+    - /tmp/docs-venv/bin/pip install --quiet sphinx breathe sphinx-rtd-theme
+  script:
+    - python3 scripts/sync_release_version.py check
+    - cmake -S . -B build_docs -DPython_EXECUTABLE=/tmp/docs-venv/bin/python -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_BUILD_WITH_DOCS=ON -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries"
+    - cmake --build build_docs --target Sphinx -j4
+    - test -f build_docs/sphinx/html/index.html
+
+# Confirms the token can push to gh-pages and the current site has the
+# versioned layout. It does not build or publish documentation.
+check_pages_auth:
+  stage: build
+  tags: [ public-docker ]
+  image:
+    name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $DOCS_CHECK == "1"
+  script:
+    - |
+      if [ -z "${GH_PAGES_TOKEN}" ]; then
+        echo "Set the GitLab CI variable GH_PAGES_TOKEN."
+        exit 1
+      fi
+      git clone --depth 1 --branch gh-pages https://github.com/ChASE-library/ChASE.git pages
+      test -f pages/.nojekyll
+      test -d pages/latest
+      test -d pages/changelog
+      test -d pages/v1.7.5
+      askpass=$(mktemp)
+      printf '%s\n' '#!/bin/sh' 'printf "%s\n" "$GH_PAGES_TOKEN"' > "$askpass"
+      chmod 700 "$askpass"
+      GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 git -C pages push --dry-run "https://x-access-token@github.com/ChASE-library/ChASE.git" HEAD:gh-pages
+      rm -f "$askpass"
+
+# Start this from New pipeline and fill RELEASE_VERSION.
+# The other jobs stay out of that pipeline. This job does not choose the
+# number, and it does not create the tag. On master it pushes the version
+# commit to master. On any other branch it pushes that commit back to the
+# same branch.
+prepare_release:
+  stage: build
+  tags: [ public-docker ]
+  image:
+    name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $RELEASE_VERSION =~ /^\d+\.\d+\.\d+$/ || $RELEASE_VERSION =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      if [ -z "${RELEASE_VERSION}" ]; then
+        echo "Set RELEASE_VERSION to the version you chose, for example 1.8.0."
+        echo "This job does not choose major, minor, or patch."
+        exit 1
+      fi
+    - python3 scripts/sync_release_version.py set "${RELEASE_VERSION}" ${RELEASE_DATE:+--date "${RELEASE_DATE}"}
+    - |
+      ver="${RELEASE_VERSION#v}"
+      git config user.name "ChASE Bot"
+      git config user.email "chase@fz-juelich.de"
+      git add CMakeLists.txt CITATION.cff README.md docs/conf.py docs/quick-start.rst
+      if git diff --cached --quiet; then
+        echo "Version files already say ${ver}. Nothing to commit."
+        exit 0
+      fi
+      git commit -m "Set release version to ${ver}."
+      if [ -z "${CI_COMMIT_BRANCH}" ]; then
+        echo "This job only runs on a branch."
+        exit 1
+      fi
+      if [ -n "${RELEASE_PUSH_TOKEN}" ]; then
+        remote="https://oauth2:${RELEASE_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      else
+        remote="https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      fi
+      git push "${remote}" "HEAD:${CI_COMMIT_BRANCH}"
+      if [ "${CI_COMMIT_BRANCH}" = "master" ]; then
+        echo "Pushed version ${ver} to master. Tag v${ver} on that commit when you want the release."
+      else
+        echo "Pushed version ${ver} to ${CI_COMMIT_BRANCH}."
+      fi
+
 .default_source_changes: &only_source_changes
   rules:
-    - changes:
+    - if: $RELEASE_VERSION =~ /^\d+\.\d+\.\d+$/ || $RELEASE_VERSION =~ /^v\d+\.\d+\.\d+$/
+      when: never
+    # prepare_release only rewrites version strings. That commit does not need a library build.
+    - if: $CI_COMMIT_MESSAGE =~ /^Set release version to [0-9]+\.[0-9]+\.[0-9]+\./
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: never
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
         - Impl/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
         - algorithm/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
         - grid/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
         - external/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
         - linalg/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
         - tests/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - interface/**/*.{c,cc,cpp,h,hpp,f90,F90}
         - CMakeLists.txt
         - cmake/**/*.{cmake}
-        - .gitlab-ci.yml
+        - chase_config.h.in
     - when: never
 
 build_cpu:

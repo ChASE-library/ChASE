@@ -49,13 +49,23 @@ if [ -f "scripts/update_version_list.py" ] && [ -f "docs/conf.py" ]; then
     fi
 fi
 
-# Update Sphinx conf.py with detected version
+# Update Sphinx conf.py with detected version.
+# A version tag uses that tag. The latest docs use the newest release tag,
+# so master does not display a version that has not been chosen yet.
 if [ -f "docs/conf.py" ]; then
+    DISPLAY_VERSION=""
     if [ "$VERSION_TAG" != "latest" ]; then
-        # Update version in conf.py (handles both v*.*.* and v*.*.*-rc* patterns)
-        sed -i "s/^version = u'v[0-9.][^']*'/version = u'$VERSION_TAG'/" docs/conf.py || true
-        sed -i "s/^release = u'v[0-9.][^']*'/release = u'$VERSION_TAG'/" docs/conf.py || true
-        echo "Updated docs/conf.py with version: $VERSION_TAG"
+        DISPLAY_VERSION="$VERSION_TAG"
+    else
+        DISPLAY_VERSION=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || true)
+        if [[ ! "$DISPLAY_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            DISPLAY_VERSION=""
+        fi
+    fi
+    if [ -n "$DISPLAY_VERSION" ]; then
+        sed -i "s/^version = u'v[0-9.][^']*'/version = u'$DISPLAY_VERSION'/" docs/conf.py || true
+        sed -i "s/^release = u'v[0-9.][^']*'/release = u'$DISPLAY_VERSION'/" docs/conf.py || true
+        echo "Updated docs/conf.py with version: $DISPLAY_VERSION"
     fi
 fi
 
