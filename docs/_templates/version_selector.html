@@ -16,59 +16,42 @@
 
 <script>
 function switchVersion(url) {
-  // Get current path and determine base URL
-  const currentPath = window.location.pathname;
-  const pathParts = currentPath.split('/').filter(p => p);
-  
-  // Get known versions from the select options (dynamic, not hardcoded)
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
   const selector = document.getElementById('version-select');
   const knownVersions = [];
   if (selector) {
     for (let option of selector.options) {
-      const verName = option.text.trim();
-      knownVersions.push(verName);
+      knownVersions.push(option.text.trim());
     }
   }
-  
-  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
-  // This handles project pages where URL is: username.github.io/repo-name/version/...
-  let repoName = '';
   let versionIndex = -1;
-  
-  // Look for version in path (could be at index 1 or 2 depending on structure)
   for (let i = 0; i < pathParts.length; i++) {
     if (knownVersions.includes(pathParts[i])) {
       versionIndex = i;
-      if (i > 0) {
-        repoName = pathParts[i - 1]; // Repository name is before version
-      }
       break;
     }
   }
-  
-  // Get relative path (everything after version)
-  let relativePath = '';
-  if (versionIndex >= 0) {
-    // We're in a versioned path, get everything after version
-    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
-  } else {
-    // We're in root or unversioned, get current path
-    relativePath = currentPath;
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
   }
-  
-  // Construct new URL
-  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
-  // So we just need to append the relative path (page name)
-  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
-  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
-  
-  // If URL already includes the repo name, use it as-is
-  // Otherwise, we might need to add it (but conf.py should have it)
-  if (url.startsWith('http')) {
-    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
-  } else {
-    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
   }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
 }
 
 // Auto-detect current version from URL and update selector

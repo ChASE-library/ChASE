@@ -58,6 +58,18 @@
 #cmakedefine CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #endif
 
+#ifndef CHASE_ENABLE_OZAKI
+#cmakedefine CHASE_ENABLE_OZAKI
+#endif
+
+#ifndef CHASE_OZAKI_GEMMUL8
+#cmakedefine CHASE_OZAKI_GEMMUL8
+#endif
+
+#ifndef CHASE_OZAKI_CUBLAS
+#cmakedefine CHASE_OZAKI_CUBLAS
+#endif
+
 #ifndef XGEEV_EXISTS
 #cmakedefine XGEEV_EXISTS
 #endif

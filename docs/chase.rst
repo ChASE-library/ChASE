@@ -114,5 +114,7 @@ Use Case and Features
      optimize the degree of the Chebyshev polynomial filter so as to
      minimize the number of FLOPs necessary to reach convergence.
 
-   * **Precision:** ChASE is also templated to work in *Single
-     Precision* (SP) or *Double Precision* (DP).
+   * **Precision:** ChASE is templated to work in *Single
+     Precision* (SP) or *Double Precision* (DP). On NVIDIA GPUs the
+     filter products can use an emulated GEMM. See
+     :doc:`emulated-gemm`.
