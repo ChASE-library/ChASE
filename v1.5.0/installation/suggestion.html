@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChASE with MPI+OpenMP &mdash; ChASE v1.3.0 documentation</title>
+  <title>ChASE with MPI+OpenMP &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="../index.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -57,13 +56,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="../index.html">
-          
 
           
-            
-            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -71,7 +68,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -86,20 +83,141 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -108,7 +226,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -157,8 +275,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="chase-with-mpi-openmp">
-<h1>ChASE with MPI+OpenMP<a class="headerlink" href="#chase-with-mpi-openmp" title="Permalink to this headline">¶</a></h1>
+  <section id="chase-with-mpi-openmp">
+<h1>ChASE with MPI+OpenMP<a class="headerlink" href="#chase-with-mpi-openmp" title="Link to this heading">¶</a></h1>
 <p>Modern homogenous supercomputers are often equipped with hunderds of thousands of nodes which
 are connected with fast networks. Each node is of NUMA (Non-uniform memory access) types, which
 composes several NUMA domains. Each NUMA domain has its local memory, and is able to access the
@@ -173,8 +291,8 @@ should be considered. In order to attain good performance, we recommand:</p>
 <li><p>Bind the CPUs to the relevant MPI tasks.</p></li>
 </ol>
 </div></blockquote>
-<div class="section" id="allocating-ressources-and-running-jobs-slurm">
-<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#allocating-ressources-and-running-jobs-slurm" title="Permalink to this headline">¶</a></h2>
+<section id="allocating-ressources-and-running-jobs-slurm">
+<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#allocating-ressources-and-running-jobs-slurm" title="Link to this heading">¶</a></h2>
 <p>The optimal use of resources is usually achieved by carefully
 designing the script code which is used for the job submission. An
 example of a job script for a  <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler is given below:</p>
@@ -188,16 +306,16 @@ example of a job script for a  <code class="docutils literal notranslate"><span 
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="estimating-memory-requirement">
-<h2>Estimating Memory Requirement<a class="headerlink" href="#estimating-memory-requirement" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="estimating-memory-requirement">
+<h2>Estimating Memory Requirement<a class="headerlink" href="#estimating-memory-requirement" title="Link to this heading">¶</a></h2>
 <p>An important aspect of executing ChASE on a parallel cluster is the
 memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. To help the user to make the correct
 decision in terms of resources a simple formula for <strong>Block distribution</strong> of matrix can be used</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span>
+<span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">N</span></code> which depend on the size
@@ -213,8 +331,8 @@ The value of this factor for these four types of floating numbers are respective
 <p>For ChASE with <strong>Block-Cyclic distribution</strong> of matrix, addtional memory of
 size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span> <span class="pre">*</span> <span class="pre">block</span></code> is required for managing the internal reshuffing
 for block-cyclic data layout. Thus the total memory required is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span>
+<span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>We provide a simple python script to estimate the memory requirement of ChASE depending
@@ -224,26 +342,26 @@ on the matrix size and available computation ressources: <a class="reference ext
 </pre></div>
 </div>
 <p>in which <code class="docutils literal notranslate"><span class="pre">${n}</span></code> is the rank of matrix, <code class="docutils literal notranslate"><span class="pre">${nev}</span></code> is the number of eigenpairs to be computed,  <code class="docutils literal notranslate"><span class="pre">${nex}</span></code> is the external size of searching space, and <code class="docutils literal notranslate"><span class="pre">${nodes}</span></code> are the number of MPI ranks to be used. Below is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem<span class="w"> </span>size
 -------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
+Matrix<span class="w"> </span>size:<span class="w">   </span><span class="m">360000</span>
+Eigenpairs:<span class="w">    </span><span class="m">2500</span>
+Extra<span class="w"> </span>vectors:<span class="w"> </span><span class="m">500</span>
+Precision:<span class="w">     </span>double<span class="w"> </span><span class="o">(</span><span class="m">8</span><span class="w"> </span>bytes<span class="o">)</span>
 
-MPI configuration
+MPI<span class="w"> </span>configuration
 -------------------------------
 <span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
+MPI<span class="w"> </span>grid<span class="w"> </span>size:<span class="w"> </span><span class="m">32</span><span class="w"> </span>x<span class="w"> </span><span class="m">36</span>
+Block<span class="w"> </span>size:<span class="w">    </span><span class="m">11250</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">10000</span>.0
 
-Matrix Distribution
+Matrix<span class="w"> </span>Distribution
 -------------------------------
-Data Layout:   block
+Data<span class="w"> </span>Layout:<span class="w">   </span>block
 
 
-Main memory usage per MPI-rank: <span class="m">17</span>.546 GB
-Total main memory usage <span class="o">(</span><span class="m">1824</span> ranks<span class="o">)</span>: <span class="m">20213</span>.410 GB
+Main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span>per<span class="w"> </span>MPI-rank:<span class="w"> </span><span class="m">17</span>.546<span class="w"> </span>GB
+Total<span class="w"> </span>main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span><span class="o">(</span><span class="m">1824</span><span class="w"> </span>ranks<span class="o">)</span>:<span class="w"> </span><span class="m">20213</span>.410<span class="w"> </span>GB
 </pre></div>
 </div>
 <p>Using such a formula one can verify if the allocation of
@@ -255,40 +373,40 @@ for a <code class="docutils literal notranslate"><span class="pre">N</span> <spa
 </div>
 <p>For the estimation of the memory requirement of ChASE with <strong>Block-Cyclic Distribution</strong>, at least three more arguments by the flags <code class="docutils literal notranslate"><span class="pre">--nrows</span></code>, <code class="docutils literal notranslate"><span class="pre">--ncols</span></code> and <code class="docutils literal notranslate"><span class="pre">--layout</span></code>. The implementation of ChASE with <strong>Block-Cyclic Distribution</strong> requires users provides explicitly
 the required MPI grid size. Moreover, the flag <code class="docutils literal notranslate"><span class="pre">--layout</span></code> should also be explicitly set as <code class="docutils literal notranslate"><span class="pre">block-cyclic</span></code> to active the mode of <strong>Block-Cyclic Distribution</strong>. Below is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem<span class="w"> </span>size
 -------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
+Matrix<span class="w"> </span>size:<span class="w">   </span><span class="m">360000</span>
+Eigenpairs:<span class="w">    </span><span class="m">2500</span>
+Extra<span class="w"> </span>vectors:<span class="w"> </span><span class="m">500</span>
+Precision:<span class="w">     </span>double<span class="w"> </span><span class="o">(</span><span class="m">8</span><span class="w"> </span>bytes<span class="o">)</span>
 
-MPI configuration
+MPI<span class="w"> </span>configuration
 -------------------------------
 <span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
+MPI<span class="w"> </span>grid<span class="w"> </span>size:<span class="w"> </span><span class="m">32</span><span class="w"> </span>x<span class="w"> </span><span class="m">36</span>
+Block<span class="w"> </span>size:<span class="w">    </span><span class="m">11250</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">10000</span>.0
 
-Matrix Distribution
+Matrix<span class="w"> </span>Distribution
 -------------------------------
-Data Layout:   block-cyclic
+Data<span class="w"> </span>Layout:<span class="w">   </span>block-cyclic
 
 
-Main memory usage per MPI-rank: <span class="m">25</span>.593 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29483</span>.125 GB
+Main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span>per<span class="w"> </span>MPI-rank:<span class="w"> </span><span class="m">25</span>.593<span class="w"> </span>GB
+Total<span class="w"> </span>main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span><span class="o">(</span><span class="m">1152</span><span class="w"> </span>ranks<span class="o">)</span>:<span class="w"> </span><span class="m">29483</span>.125<span class="w"> </span>GB
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="chase-with-multi-gpus">
-<h1>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Permalink to this headline">¶</a></h1>
+</section>
+</section>
+<section id="chase-with-multi-gpus">
+<h1>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Link to this heading">¶</a></h1>
 <p>Currently, ChASE is able to offload the most intensive computation (Hermitian Matrix-Matrix
 Multiplications), QR factorization and Rayleigh-Ritz computation to GPUs.
 The multi-GPUs version of ChASE is able to use all available cards for
 each node. This multi-GPUs version supports either 1 MPI task to manage all cards or 1 MPI task
 to manage only 1 binded GPU card. Some less intensive computation is also assigned to this MPI task and executed
 in multi-threading mode.</p>
-<div class="section" id="id1">
-<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<section id="id1">
+<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates 1 MPI task with
 multi-GPUs per node:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on the JUWELS GPU partition, in which each node has 4 V100 NVIDIA GPUs.</span>
@@ -301,7 +419,7 @@ multi-GPUs per node:</p>
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 <span class="c1">#SBATCH --gres=gpu:4</span>
 
-<span class="nb">export</span> <span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
+<span class="nb">export</span><span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
 </pre></div>
 </div>
 <p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates
@@ -316,7 +434,7 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 <span class="c1">#SBATCH --gres=gpu:4</span>
 
-<span class="nb">export</span> <span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
+<span class="nb">export</span><span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
 </pre></div>
 </div>
 <div class="admonition note">
@@ -325,19 +443,19 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
 GPU devices per computing node. More the number of available GPU/node should be always equal to or
 larger than the allocated MPI ranks per node.</p>
 </div>
-</div>
-<div class="section" id="id2">
-<h2>Estimating Memory Requirement<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id2">
+<h2>Estimating Memory Requirement<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <p>As mentiond in the previous section, for ChASE with multi-GPUs, it is important to make sure that
 the memory footprint of the library does not exceed the memory
 available on the GPU card. For ChASE with multi-GPUs using <strong>Block distribution</strong> of matrix, the
 memory requirement of CPU is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span>
+<span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>And the memory requirement of each GPU is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">block</span> <span class="o">*</span> <span class="n">max</span><span class="p">(</span><span class="n">gpu_m</span><span class="p">,</span> <span class="n">gpu_n</span><span class="p">)</span> <span class="o">+</span> <span class="n">gpu_m</span> <span class="o">*</span> <span class="n">gpu_n</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">block</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">max</span><span class="p">(</span><span class="n">gpu_m</span><span class="p">,</span><span class="w"> </span><span class="n">gpu_n</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">gpu_m</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">gpu_n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">block</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>In the formule related to GPU, new introduced parameters <code class="docutils literal notranslate"><span class="pre">gpu_m</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_n</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">m</span></code> and <code class="docutils literal notranslate"><span class="pre">n</span></code> which depend on the size of grid of GPUs per MPI rank. More precisely, <code class="docutils literal notranslate"><span class="pre">gpu_m=m/gpu_col</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_n=n/gpu_row</span></code>, in which the grid of GPUs per MPI rank is <code class="docutils literal notranslate"><span class="pre">gpu_row</span> <span class="pre">*</span> <span class="pre">gpu_col</span></code>. In ChASE, <code class="docutils literal notranslate"><span class="pre">gpu_row</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_col</span></code> are automatically computed by considering the available number of GPUs per MPI rank.</p>
@@ -347,41 +465,41 @@ memory requirement of CPU is:</p>
 </div>
 <p>It is quite similar to the one for ChASE with pure-CPUs, the only additional required information is <code class="docutils literal notranslate"><span class="pre">${nb_gpus}</span></code>, which indicates the number of GPUs used per MPI rank.
 Here is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem<span class="w"> </span>size
 -------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
+Matrix<span class="w"> </span>size:<span class="w">   </span><span class="m">360000</span>
+Eigenpairs:<span class="w">    </span><span class="m">2500</span>
+Extra<span class="w"> </span>vectors:<span class="w"> </span><span class="m">500</span>
+Precision:<span class="w">     </span>double<span class="w"> </span><span class="o">(</span><span class="m">8</span><span class="w"> </span>bytes<span class="o">)</span>
 
-MPI configuration
+MPI<span class="w"> </span>configuration
 -------------------------------
 <span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
+MPI<span class="w"> </span>grid<span class="w"> </span>size:<span class="w"> </span><span class="m">32</span><span class="w"> </span>x<span class="w"> </span><span class="m">36</span>
+Block<span class="w"> </span>size:<span class="w">    </span><span class="m">11250</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">10000</span>.0
 
-Matrix Distribution
+Matrix<span class="w"> </span>Distribution
 -------------------------------
-Data Layout:   block
+Data<span class="w"> </span>Layout:<span class="w">   </span>block
 
-GPU configuration per MPI-rank
+GPU<span class="w"> </span>configuration<span class="w"> </span>per<span class="w"> </span>MPI-rank
 -------------------------------
 <span class="c1">#GPUs:      4</span>
-GPU grid:   <span class="m">2</span> x <span class="m">2</span>
-Block size: <span class="m">5625</span>.0 x <span class="m">5000</span>.0
+GPU<span class="w"> </span>grid:<span class="w">   </span><span class="m">2</span><span class="w"> </span>x<span class="w"> </span><span class="m">2</span>
+Block<span class="w"> </span>size:<span class="w"> </span><span class="m">5625</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">5000</span>.0
 
 
-Main memory usage per MPI-rank: <span class="m">17</span>.792 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">20496</span>.497 GB
+Main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span>per<span class="w"> </span>MPI-rank:<span class="w"> </span><span class="m">17</span>.792<span class="w"> </span>GB
+Total<span class="w"> </span>main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span><span class="o">(</span><span class="m">1152</span><span class="w"> </span>ranks<span class="o">)</span>:<span class="w"> </span><span class="m">20496</span>.497<span class="w"> </span>GB
 
-Memory requirement per GPU: <span class="m">16</span>.747 GB
-Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> GPUs<span class="o">)</span>: <span class="m">66</span>.988 GB
+Memory<span class="w"> </span>requirement<span class="w"> </span>per<span class="w"> </span>GPU:<span class="w"> </span><span class="m">16</span>.747<span class="w"> </span>GB
+Total<span class="w"> </span>GPU<span class="w"> </span>memory<span class="w"> </span>per<span class="w"> </span>MPI-rank<span class="w"> </span><span class="o">(</span><span class="m">4</span><span class="w"> </span>GPUs<span class="o">)</span>:<span class="w"> </span><span class="m">66</span>.988<span class="w"> </span>GB
 </pre></div>
 </div>
 <p>For ChASE with multi-GPUS using <strong>Block-Cyclic Distribution</strong>, the memory requirement of GPU is the same as the one with <strong>Block Distribution</strong>, and the CPUs require addtional memory of
 size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span> <span class="pre">*</span> <span class="pre">block</span></code>. Thus the formule is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span>
+<span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>The usage of provided python script is:</p>
@@ -389,43 +507,43 @@ size <code class="docutils literal notranslate"><span class="pre">sizeof(float_t
 </pre></div>
 </div>
 <p>Here is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem<span class="w"> </span>size
 -------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
+Matrix<span class="w"> </span>size:<span class="w">   </span><span class="m">360000</span>
+Eigenpairs:<span class="w">    </span><span class="m">2500</span>
+Extra<span class="w"> </span>vectors:<span class="w"> </span><span class="m">500</span>
+Precision:<span class="w">     </span>double<span class="w"> </span><span class="o">(</span><span class="m">8</span><span class="w"> </span>bytes<span class="o">)</span>
 
-MPI configuration
+MPI<span class="w"> </span>configuration
 -------------------------------
 <span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
+MPI<span class="w"> </span>grid<span class="w"> </span>size:<span class="w"> </span><span class="m">32</span><span class="w"> </span>x<span class="w"> </span><span class="m">36</span>
+Block<span class="w"> </span>size:<span class="w">    </span><span class="m">11250</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">10000</span>.0
 
-Matrix Distribution
+Matrix<span class="w"> </span>Distribution
 -------------------------------
-Data Layout:   block-cyclic
+Data<span class="w"> </span>Layout:<span class="w">   </span>block-cyclic
 
-GPU configuration per MPI-rank
+GPU<span class="w"> </span>configuration<span class="w"> </span>per<span class="w"> </span>MPI-rank
 -------------------------------
 <span class="c1">#GPUs:      4</span>
-GPU grid:   <span class="m">2</span> x <span class="m">2</span>
-Block size: <span class="m">5625</span>.0 x <span class="m">5000</span>.0
+GPU<span class="w"> </span>grid:<span class="w">   </span><span class="m">2</span><span class="w"> </span>x<span class="w"> </span><span class="m">2</span>
+Block<span class="w"> </span>size:<span class="w"> </span><span class="m">5625</span>.0<span class="w"> </span>x<span class="w"> </span><span class="m">5000</span>.0
 
 
-Main memory usage per MPI-rank: <span class="m">25</span>.839 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29766</span>.212 GB
+Main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span>per<span class="w"> </span>MPI-rank:<span class="w"> </span><span class="m">25</span>.839<span class="w"> </span>GB
+Total<span class="w"> </span>main<span class="w"> </span>memory<span class="w"> </span>usage<span class="w"> </span><span class="o">(</span><span class="m">1152</span><span class="w"> </span>ranks<span class="o">)</span>:<span class="w"> </span><span class="m">29766</span>.212<span class="w"> </span>GB
 
-Memory requirement per GPU: <span class="m">16</span>.747 GB
-Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> GPUs<span class="o">)</span>: <span class="m">66</span>.988 GB
+Memory<span class="w"> </span>requirement<span class="w"> </span>per<span class="w"> </span>GPU:<span class="w"> </span><span class="m">16</span>.747<span class="w"> </span>GB
+Total<span class="w"> </span>GPU<span class="w"> </span>memory<span class="w"> </span>per<span class="w"> </span>MPI-rank<span class="w"> </span><span class="o">(</span><span class="m">4</span><span class="w"> </span>GPUs<span class="o">)</span>:<span class="w"> </span><span class="m">66</span>.988<span class="w"> </span>GB
 </pre></div>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The estimation of memory requirement by <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/scripts/analyze-mem-requirements.py">analyze-mem-requirements.py</a> is only based on the algorithmic aspects of ChASE. The buffer and memory requirement of libraries such as <code class="docutils literal notranslate"><span class="pre">MPI</span></code> has not been considered. So despite the python script calculation of memory consumption, some combination of MPI libraries (e.g., ParastationMPI) could lead to the crash of ChASE with <code class="docutils literal notranslate"><span class="pre">out</span> <span class="pre">of</span> <span class="pre">memory</span></code> even if the memory available is within the estimated bounds.</p>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -459,17 +577,15 @@ Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> G
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="../_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
 
   
 

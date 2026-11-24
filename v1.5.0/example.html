@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6. Examples &mdash; ChASE v1.3.0 documentation</title>
+  <title>6. Examples &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="index.html"/>
         <link rel="next" title="6.3.1. ChASE Object and Configuration" href="example/io.html"/>
         <link rel="prev" title="5.3.5.3. ChaseMpiDLAMultiGPU" href="module/chasempidlamultigpu.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -59,13 +58,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="index.html">
-          
 
           
-            
-            <img src="_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -73,7 +70,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -88,20 +85,141 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -124,7 +242,7 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -173,8 +291,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="examples">
-<span id="examples-chase"></span><h1><span class="section-number">6. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+  <section id="examples">
+<span id="examples-chase"></span><h1><span class="section-number">6. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h1>
 <p>In ChASE, we provides multiple examples which will
 help the user to get familiar with the library. In this section,
 we give an introduction about these examples.</p>
@@ -192,14 +310,14 @@ with the compilation/installation of ChASE. It has to be
 compiled independently by the user.</p></li>
 </ol>
 </div>
-<div class="section" id="hello-world">
-<span id="hello-world-chase"></span><h2><span class="section-number">6.1. </span>0. Hello World<a class="headerlink" href="#hello-world" title="Permalink to this headline">¶</a></h2>
+<section id="hello-world">
+<span id="hello-world-chase"></span><h2><span class="section-number">6.1. </span>0. Hello World<a class="headerlink" href="#hello-world" title="Link to this heading">¶</a></h2>
 <p>The first example in this section is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world">0_hello_world</a>. This example constructs a simple Clement matrix and find a given
 number of its eigenpairs.</p>
-</div>
-<div class="section" id="sequence-of-eigenproblems">
-<h2><span class="section-number">6.2. </span>1. Sequence of Eigenproblems<a class="headerlink" href="#sequence-of-eigenproblems" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="sequence-of-eigenproblems">
+<h2><span class="section-number">6.2. </span>1. Sequence of Eigenproblems<a class="headerlink" href="#sequence-of-eigenproblems" title="Link to this heading">¶</a></h2>
 <p>The second example in this section is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems">1_sequence_eigenproblems</a>. The purpose of this example is to illustrate how
 ChASE can be used to solve a sequence of eigenproblems. This example
@@ -209,9 +327,9 @@ new matrix is used to construct a new eigenproblem. This example can be
 used as template where the matrices in the sequences (of 2 or more
 eigenproblems) are read from disk instead of being generated by the
 code in the example.</p>
-</div>
-<div class="section" id="parallel-i-o-and-configuration">
-<h2><span class="section-number">6.3. </span>2. Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="parallel-i-o-and-configuration">
+<h2><span class="section-number">6.3. </span>2. Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Link to this heading">¶</a></h2>
 <p>The third example in this section <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>
 is quite similar to two previous ones. The differences are: 1) the
 configuration of parameters of ChASE from command line (supported by
@@ -225,17 +343,17 @@ Boost); 2) the parallel I/O which loads the local matrices into the computing no
 <li class="toctree-l1"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.3.5. Parser of command-line arguments</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="installation-and-linking">
-<h2><span class="section-number">6.4. </span>3. Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="installation-and-linking">
+<h2><span class="section-number">6.4. </span>3. Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Link to this heading">¶</a></h2>
 <p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a> shows the way to link ChASE to other applications, for more information, please visit <a class="reference internal" href="usage.html#link-by-cmake"><span class="std std-ref">Compiling with CMake</span></a>.</p>
-</div>
-<div class="section" id="c-fortran-interface">
-<h2><span class="section-number">6.5. </span>4. C/Fortran interface<a class="headerlink" href="#c-fortran-interface" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="c-fortran-interface">
+<h2><span class="section-number">6.5. </span>4. C/Fortran interface<a class="headerlink" href="#c-fortran-interface" title="Link to this heading">¶</a></h2>
 <p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">4_interface</a> shows multiple examples to use C and Fortran interface. For more information
 about the C/Fortran interface, please visit <a class="reference internal" href="usage.html#c-fortran-interface"><span class="std std-ref">Interface to C/Fortran</span></a>.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -278,17 +396,15 @@ about the C/Fortran interface, please visit <a class="reference internal" href="
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="_static/sphinx_highlight.js"></script>
 
   
 

@@ -1,0 +1,556 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ChaseMpiMatrices &mdash; ChASE v1.1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.1.1 documentation" href="../index.html"/>
+        <link rel="up" title="Modules" href="../module.html"/>
+        <link rel="next" title="ChaseMpiProperties" href="chasempiproperties.html"/>
+        <link rel="prev" title="Performance" href="perf.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/"selected>
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ChaseMpiMatrices</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE"><code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="chasempiproperties.html">ChaseMpiProperties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempi.html">ChaseMpi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempidla.html">ChaseMpiDLA</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../module.html">Modules</a> &raquo;</li>
+      
+    <li>ChaseMpiMatrices</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/module/chasempimatrices.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="chasempimatrices">
+<h1>ChaseMpiMatrices<a class="headerlink" href="#chasempimatrices" title="Link to this heading">¶</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE">
+<span id="_CPPv3I0EN5chase3mpi16ChaseMpiMatricesE"></span><span id="_CPPv2I0EN5chase3mpi16ChaseMpiMatricesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseMpiMatrices</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A class to setup the buffers of matrices and vectors which will be used by ChASE-MPI. </p>
+<p>This class provides two constructors:<ul class="simple">
+<li><p>Allocating the buffers for <a class="reference internal" href="chasempi.html#classchase_1_1mpi_1_1ChaseMpi"><span class="std std-ref">ChaseMpi</span></a> without MPI support.</p></li>
+<li><p>Allocating the buffers for <a class="reference internal" href="chasempi.html#classchase_1_1mpi_1_1ChaseMpi"><span class="std std-ref">ChaseMpi</span></a> with MPI support. </p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>T</strong> – the scalar type used for the application. ChASE is templated for real and complex scalar with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiMatrices::ChaseMpiMatrices__std::s.std::s.TP.Base:T:P.TP.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1ac7d54956be8cdd3531ad17c1bcf628ba"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseMpiMatrices</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_block</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V1</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">H</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V2</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiMatrices"><span class="std std-ref">ChaseMpiMatrices</span></a> for <strong>Non-MPI case</strong> which allocates everything required. </p>
+<p>The <strong>private members</strong> of this class are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For <code class="docutils literal notranslate"><span class="pre">H__</span></code> and <code class="docutils literal notranslate"><span class="pre">H_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">N</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, <code class="docutils literal notranslate"><span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, <code class="docutils literal notranslate"><span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">max_block</span></code>. </p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – size of the square matrix defining the eigenproblem. </p></li>
+<li><p><strong>max_block</strong> – Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equals to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
+<li><p><strong>V1</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p></li>
+<li><p><strong>ritz</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">ritz_</span></code>. </p></li>
+<li><p><strong>H</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">H_</span></code>. </p></li>
+<li><p><strong>V2</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. </p></li>
+<li><p><strong>resid</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">resid_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiMatrices::ChaseMpiMatrices__MPI_Comm.std::s.std::s.TP.Base:T:P.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a5f7e0b36cf6d61bee132b623ace1f9b7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseMpiMatrices</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">comm</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_block</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V1</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V2</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiMatrices"><span class="std std-ref">ChaseMpiMatrices</span></a> for <strong>MPI case</strong> which allocates everything required except <code class="docutils literal notranslate"><span class="pre">H_</span></code>. </p>
+<p>The <strong>private members</strong> of this class are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, <code class="docutils literal notranslate"><span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, <code class="docutils literal notranslate"><span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">H_</span></code> is not allocated here, but in <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1ChaseMpiProperties"><span class="std std-ref">ChaseMpiProperties</span></a> class which takes the MPI environment and data distribution scheme into account. </p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comm</strong> – the working MPI communicator of ChASE. </p></li>
+<li><p><strong>N</strong> – size of the square matrix defining the eigenproblem. </p></li>
+<li><p><strong>max_block</strong> – Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equals to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
+<li><p><strong>V1</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p></li>
+<li><p><strong>ritz</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">ritz_</span></code>. </p></li>
+<li><p><strong>V2</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. </p></li>
+<li><p><strong>resid</strong> – a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">resid_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices5get_HEv">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices5get_HEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices5get_HEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_H"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a2b4728c33c55244669b9f614de1da8e5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_H</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices5get_HEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return buffer stores the (local part if applicable) matrix A. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">H_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V1Ev">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6get_V1Ev"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6get_V1Ev"></span><span id="chase::mpi::ChaseMpiMatrices::get_V1"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1aa402a83cf927cd81facb3c48c2306b2f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_V1</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V1Ev" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">V1_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V2Ev">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6get_V2Ev"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6get_V2Ev"></span><span id="chase::mpi::ChaseMpiMatrices::get_V2"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a4cd5066c0d79549780388c436ee8185f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_V2</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V2Ev" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the buffer <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">V2_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices9get_RitzvEv">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices9get_RitzvEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices9get_RitzvEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_Ritzv"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1ad1a54c4e308f98750d25eb9491902164"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_Ritzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices9get_RitzvEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the buffer which stores the computed Ritz values. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices9get_ResidEv">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices9get_ResidEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices9get_ResidEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_Resid"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1af682dad522f8809965c0467c7bdde7db"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_Resid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices9get_ResidEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the buffer which stores the residual of computed Ritz pairs. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">resid_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-members">Private Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices3H__E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3H__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3H__E"></span><span id="chase::mpi::ChaseMpiMatrices::H____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a78357bd9c06f87f171c54f2eb3ff032e"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">H__</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3H__E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">H_</span></code> which stores (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices4V1__E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices4V1__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices4V1__E"></span><span id="chase::mpi::ChaseMpiMatrices::V1____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a918ebe978f9ad787b2a4d5b7b2da9736"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">V1__</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices4V1__E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also stored in <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices4V2__E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices4V2__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices4V2__E"></span><span id="chase::mpi::ChaseMpiMatrices::V2____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1aac709c16c42497e22f450c4e39e6a8f5"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">V2__</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices4V2__E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices7ritzv__E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices7ritzv__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices7ritzv__E"></span><span id="chase::mpi::ChaseMpiMatrices::ritzv____std::unique_ptr:Base:T:A:"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a7b892459ef8663323d03104ead89367b"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ritzv__</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices7ritzv__E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer which manages the buffer which stores the computed Ritz values. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices7resid__E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices7resid__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices7resid__E"></span><span id="chase::mpi::ChaseMpiMatrices::resid____std::unique_ptr:Base:T:A:"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a7a8825d334bb6c82bd524163649aac74"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">resid__</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices7resid__E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer which manages the buffer which stores the residual of computed Ritz pairs. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices2H_E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices2H_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices2H_E"></span><span id="chase::mpi::ChaseMpiMatrices::H___TP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1ac25078b2620f560e9a694495c9e33b5e"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">H_</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices2H_E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The buffer stores (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices3V1_E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3V1_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3V1_E"></span><span id="chase::mpi::ChaseMpiMatrices::V1___TP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1ac7658ea8b2e4ec0cdf8b970e27794b18"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">V1_</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3V1_E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also be stored in <code class="docutils literal notranslate"><span class="pre">V_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices3V2_E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3V2_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3V2_E"></span><span id="chase::mpi::ChaseMpiMatrices::V2___TP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1aa5bb4764a52e5288a4d0c8c39fa23428"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">V2_</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3V2_E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices6ritzv_E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6ritzv_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6ritzv_E"></span><span id="chase::mpi::ChaseMpiMatrices::ritzv___Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1a82ce8ea4183a79306f78fa21df21cfb0"></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ritzv_</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6ritzv_E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The buffer which stores the computed Ritz values. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi16ChaseMpiMatrices6resid_E">
+<span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6resid_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6resid_E"></span><span id="chase::mpi::ChaseMpiMatrices::resid___Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiMatrices_1aa73d5c91fa9ca5ce2b47b6b2380c7d5b"></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">resid_</span></span></span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6resid_E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The buffer which stores the residual of computed Ritz pairs. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="chasempiproperties.html" class="btn btn-neutral float-right" title="ChaseMpiProperties" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="perf.html" class="btn btn-neutral" title="Performance" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

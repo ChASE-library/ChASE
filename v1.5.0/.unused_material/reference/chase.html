@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>The chase() routine &mdash; ChASE v1.3.0 documentation</title>
+  <title>The chase() routine &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="../../_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="../../index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="../../index.html"/>
     <link href="../../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -57,13 +56,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="../../index.html">
-          
 
           
-            
-            <img src="../../_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="../../index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -71,7 +68,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -86,20 +83,141 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -108,7 +226,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example.html">6. Examples</a></li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -157,84 +275,84 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="the-chase-routine">
-<h1>The <a class="reference internal" href="#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">chase()</span></code></a> routine<a class="headerlink" href="#the-chase-routine" title="Permalink to this headline">¶</a></h1>
+  <section id="the-chase-routine">
+<h1>The <a class="reference internal" href="#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">chase()</span></code></a> routine<a class="headerlink" href="#the-chase-routine" title="Link to this heading">¶</a></h1>
 <p>The chase.cpp routine is the main routine of the ChASE
 library and includes several functions whose scope reflects the
 algorithm description provided in the <a class="reference internal" href="../../algorithm.html#algorithmic-structure"><span class="std std-ref">General algorithm</span></a>
 section. The signature of the <a class="reference internal" href="#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">chase()</span></code></a> function comprise variables
 that appear in other functions inside chase.cpp as well as in other
 routines.</p>
-<div class="section" id="function-definitions">
-<h2>Function definitions<a class="headerlink" href="#function-definitions" title="Permalink to this headline">¶</a></h2>
+<section id="function-definitions">
+<h2>Function definitions<a class="headerlink" href="#function-definitions" title="Link to this heading">¶</a></h2>
 <dl class="cpp function">
-<dt id="_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE">
-<span id="_CPPv35chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE"></span><span id="_CPPv25chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE"></span><span id="chase__MKL_Complex16P.i.MKL_Complex16P.MKL_Complex16P.doubleP.i.iC.iC.iPC.doubleC.CHASE_MODE_TYPEC.CHASE_OPT_TYPEC"></span>void <code class="sig-name descname">chase</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>H</em>, int <em>N</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>W</em>, double *<em>ritzv</em>, int <em>nev</em>, <em class="property">const</em> int <em>nex</em>, <em class="property">const</em> int <em>deg</em>, int *<em class="property">const</em> <em>degrees</em>, <em class="property">const</em> double <em>tol</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv415CHASE_MODE_TYPE" title="CHASE_MODE_TYPE">CHASE_MODE_TYPE</a> <em>mode</em>, <em class="property">const</em> <a class="reference internal" href="#_CPPv414CHASE_OPT_TYPE" title="CHASE_OPT_TYPE">CHASE_OPT_TYPE</a> <em>opt</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE">
+<span id="_CPPv35chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE"></span><span id="_CPPv25chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE"></span><span id="chase__MKL_Complex16P.i.MKL_Complex16P.MKL_Complex16P.doubleP.i.iC.iC.iPC.doubleC.CHASE_MODE_TYPEC.CHASE_OPT_TYPEC"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">chase</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">H</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">W</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nex</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">deg</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv415CHASE_MODE_TYPE" title="CHASE_MODE_TYPE"><span class="n"><span class="pre">CHASE_MODE_TYPE</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">mode</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv414CHASE_OPT_TYPE" title="CHASE_OPT_TYPE"><span class="n"><span class="pre">CHASE_OPT_TYPE</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">opt</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv47ColSwapP13MKL_Complex16iii">
-<span id="_CPPv37ColSwapP13MKL_Complex16iii"></span><span id="_CPPv27ColSwapP13MKL_Complex16iii"></span><span id="ColSwap__MKL_Complex16P.i.i.i"></span>void <code class="sig-name descname">ColSwap</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em>, int <em>N</em>, int <em>i</em>, int <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv47ColSwapP13MKL_Complex16iii" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv47ColSwapP13MKL_Complex16iii">
+<span id="_CPPv37ColSwapP13MKL_Complex16iii"></span><span id="_CPPv27ColSwapP13MKL_Complex16iii"></span><span id="ColSwap__MKL_Complex16P.i.i.i"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ColSwap</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">i</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">j</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv47ColSwapP13MKL_Complex16iii" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv412calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16">
-<span id="_CPPv312calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv212calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16"></span><span id="calc_degrees__i.i.i.double.double.double.doubleP.doubleP.iP.MKL_Complex16P.MKL_Complex16P"></span>int <code class="sig-name descname">calc_degrees</code><span class="sig-paren">(</span>int <em>N</em>, int <em>unconverged</em>, int <em>core</em>, double <em>upperb</em>, double <em>lowerb</em>, double <em>tol</em>, double *<em>ritzv</em>, double *<em>resid</em>, int *<em>degrees</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>W</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv412calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv412calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16">
+<span id="_CPPv312calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv212calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16"></span><span id="calc_degrees__i.i.i.double.double.double.doubleP.doubleP.iP.MKL_Complex16P.MKL_Complex16P"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">calc_degrees</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">core</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lowerb</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">W</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv412calc_degreesiiidddPdPdPiP13MKL_Complex16P13MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv47lockingiidPdPdPiP13MKL_Complex16">
-<span id="_CPPv37lockingiidPdPdPiP13MKL_Complex16"></span><span id="_CPPv27lockingiidPdPdPiP13MKL_Complex16"></span><span id="locking__i.i.double.doubleP.doubleP.iP.MKL_Complex16P"></span>int <code class="sig-name descname">locking</code><span class="sig-paren">(</span>int <em>N</em>, int <em>unconverged</em>, double <em>tol</em>, double *<em>ritzv</em>, double *<em>resid</em>, int *<em>degrees</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv47lockingiidPdPdPiP13MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv47lockingiidPdPdPiP13MKL_Complex16">
+<span id="_CPPv37lockingiidPdPdPiP13MKL_Complex16"></span><span id="_CPPv27lockingiidPdPdPiP13MKL_Complex16"></span><span id="locking__i.i.double.doubleP.doubleP.iP.MKL_Complex16P"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">locking</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv47lockingiidPdPdPiP13MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv414calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
-<span id="_CPPv314calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv214calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="calc_residuals__i.i.double.doubleP.doubleP.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span>void <code class="sig-name descname">calc_residuals</code><span class="sig-paren">(</span>int <em>N</em>, int <em>unconverged</em>, double <em>tol</em>, double *<em>ritzv</em>, double *<em>resid</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>H</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>W</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv414calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
+<span id="_CPPv314calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv214calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="calc_residuals__i.i.double.doubleP.doubleP.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">calc_residuals</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">H</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">W</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414calc_residualsiidPdPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv42QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
-<span id="_CPPv32QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv22QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="QR__i.i.i.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span>void <code class="sig-name descname">QR</code><span class="sig-paren">(</span>int <em>N</em>, int <em>nevex</em>, int <em>converged</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>W</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>tau</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>saveW</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv42QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv42QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
+<span id="_CPPv32QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv22QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="QR__i.i.i.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nevex</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">converged</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">W</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">tau</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">saveW</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv42QRiiiP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv42RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
-<span id="_CPPv32RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv22RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="RR__i.i.doubleP.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span>void <code class="sig-name descname">RR</code><span class="sig-paren">(</span>int <em>N</em>, int <em>block</em>, double *<em>Lambda</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>H</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>V</em>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<em>W</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv42RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv42RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16">
+<span id="_CPPv32RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="_CPPv22RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16"></span><span id="RR__i.i.doubleP.MKL_Complex16P.MKL_Complex16P.MKL_Complex16P"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Lambda</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">H</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">W</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv42RRiiPdP13MKL_Complex16P13MKL_Complex16P13MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd></dd></dl>
 
-</div>
-<div class="section" id="type-definitions">
-<h2>Type definitions<a class="headerlink" href="#type-definitions" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="type-definitions">
+<h2>Type definitions<a class="headerlink" href="#type-definitions" title="Link to this heading">¶</a></h2>
 <dl class="cpp type">
-<dt id="_CPPv413MKL_Complex16">
-<span id="_CPPv313MKL_Complex16"></span><span id="_CPPv213MKL_Complex16"></span><span id="MKL_Complex16"></span><em class="property">type </em><code class="sig-name descname">MKL_Complex16</code><a class="headerlink" href="#_CPPv413MKL_Complex16" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv413MKL_Complex16">
+<span id="_CPPv313MKL_Complex16"></span><span id="_CPPv213MKL_Complex16"></span><span id="MKL_Complex16"></span><span class="k"><span class="pre">type</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MKL_Complex16</span></span></span><a class="headerlink" href="#_CPPv413MKL_Complex16" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Defined by a preprocessing directive as
 <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code> type in case ChASE does not
 make use of the MKL library, but can use MKL’s BLAS and LAPACK.</p>
 </dd></dl>
 
 <dl class="cpp type">
-<dt id="_CPPv415CHASE_MODE_TYPE">
-<span id="_CPPv315CHASE_MODE_TYPE"></span><span id="_CPPv215CHASE_MODE_TYPE"></span><span id="CHASE_MODE_TYPE"></span><em class="property">type </em><code class="sig-name descname">CHASE_MODE_TYPE</code><a class="headerlink" href="#_CPPv415CHASE_MODE_TYPE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv415CHASE_MODE_TYPE">
+<span id="_CPPv315CHASE_MODE_TYPE"></span><span id="_CPPv215CHASE_MODE_TYPE"></span><span id="CHASE_MODE_TYPE"></span><span class="k"><span class="pre">type</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CHASE_MODE_TYPE</span></span></span><a class="headerlink" href="#_CPPv415CHASE_MODE_TYPE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Defined as type <code class="docutils literal notranslate"><span class="pre">char</span></code> via a preprocessing directive and
 used to define the type of the values of the
 <a class="reference internal" href="#_CPPv44mode" title="mode"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">mode</span></code></a> variable.</p>
 </dd></dl>
 
 <dl class="cpp type">
-<dt id="_CPPv414CHASE_OPT_TYPE">
-<span id="_CPPv314CHASE_OPT_TYPE"></span><span id="_CPPv214CHASE_OPT_TYPE"></span><span id="CHASE_OPT_TYPE"></span><em class="property">type </em><code class="sig-name descname">CHASE_OPT_TYPE</code><a class="headerlink" href="#_CPPv414CHASE_OPT_TYPE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv414CHASE_OPT_TYPE">
+<span id="_CPPv314CHASE_OPT_TYPE"></span><span id="_CPPv214CHASE_OPT_TYPE"></span><span id="CHASE_OPT_TYPE"></span><span class="k"><span class="pre">type</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CHASE_OPT_TYPE</span></span></span><a class="headerlink" href="#_CPPv414CHASE_OPT_TYPE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Defined as type <code class="docutils literal notranslate"><span class="pre">char</span></code> via a preprocessing directive and
 used to define the type of the values of the
 <a class="reference internal" href="#_CPPv43opt" title="opt"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">opt</span></code></a> variable.</p>
 </dd></dl>
 
-</div>
-<div class="section" id="variable-definitions">
-<h2>Variable definitions<a class="headerlink" href="#variable-definitions" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="variable-definitions">
+<h2>Variable definitions<a class="headerlink" href="#variable-definitions" title="Link to this heading">¶</a></h2>
 <dl class="cpp var">
-<dt id="_CPPv41H">
-<span id="_CPPv31H"></span><span id="_CPPv21H"></span><span id="H__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<code class="sig-name descname">H</code><a class="headerlink" href="#_CPPv41H" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv41H">
+<span id="_CPPv31H"></span><span id="_CPPv21H"></span><span id="H__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">H</span></span></span><a class="headerlink" href="#_CPPv41H" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Array of size <a class="reference internal" href="#_CPPv41N" title="N"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N</span></code></a> <span class="math notranslate nohighlight">\(\times\)</span>
 <a class="reference internal" href="#_CPPv41N" title="N"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N</span></code></a>. It stores the input hermitian matrix.
 <strong>TODO</strong> If uplo = UPPER/LOWER only the leading
@@ -245,14 +363,14 @@ referenced.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv41N">
-<span id="_CPPv31N"></span><span id="_CPPv21N"></span><span id="N__i"></span>int <code class="sig-name descname">N</code><a class="headerlink" href="#_CPPv41N" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv41N">
+<span id="_CPPv31N"></span><span id="_CPPv21N"></span><span id="N__i"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">N</span></span></span><a class="headerlink" href="#_CPPv41N" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Number of rows and columns of Matrix <a class="reference internal" href="#_CPPv41H" title="H"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">H</span></code></a>.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv41V">
-<span id="_CPPv31V"></span><span id="_CPPv21V"></span><span id="V__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<code class="sig-name descname">V</code><a class="headerlink" href="#_CPPv41V" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv41V">
+<span id="_CPPv31V"></span><span id="_CPPv21V"></span><span id="V__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">V</span></span></span><a class="headerlink" href="#_CPPv41V" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Array containing a collection of vectors, of size (<a class="reference internal" href="#_CPPv41N" title="N"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N</span></code></a>,
 <a class="reference internal" href="#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> + <a class="reference internal" href="#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>).  On entry, if <a class="reference internal" href="#_CPPv44mode" title="mode"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">mode</span></code></a> =
 <code class="docutils literal notranslate"><span class="pre">A</span></code>, it is used to provide approximate eigenvectors which work as
@@ -263,16 +381,16 @@ block contains eigenvectors at least as accurate as the required
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv41W">
-<span id="_CPPv31W"></span><span id="_CPPv21W"></span><span id="W__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16">MKL_Complex16</a> *<code class="sig-name descname">W</code><a class="headerlink" href="#_CPPv41W" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv41W">
+<span id="_CPPv31W"></span><span id="_CPPv21W"></span><span id="W__MKL_Complex16P"></span><a class="reference internal" href="#_CPPv413MKL_Complex16" title="MKL_Complex16"><span class="n"><span class="pre">MKL_Complex16</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">W</span></span></span><a class="headerlink" href="#_CPPv41W" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Array containing a collection of auxiliary vectors used as working
 space throughout the code, of size (<a class="reference internal" href="#_CPPv41N" title="N"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> +
 <a class="reference internal" href="#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>).</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv44ritz">
-<span id="_CPPv34ritz"></span><span id="_CPPv24ritz"></span><span id="ritz__doubleP"></span>double *<code class="sig-name descname">ritz</code><a class="headerlink" href="#_CPPv44ritz" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv44ritz">
+<span id="_CPPv34ritz"></span><span id="_CPPv24ritz"></span><span id="ritz__doubleP"></span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ritz</span></span></span><a class="headerlink" href="#_CPPv44ritz" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Array of size <a class="reference internal" href="#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> + <a class="reference internal" href="#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>.  It
 contains and ordered collection of real numbers. On
 entry, if mode = <code class="docutils literal notranslate"><span class="pre">A</span></code>, it contains approximations to the
@@ -284,8 +402,8 @@ the next <a class="reference internal" href="#_CPPv43nex" title="nex"><code clas
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv43nev">
-<span id="_CPPv33nev"></span><span id="_CPPv23nev"></span><span id="nev__i"></span>int <code class="sig-name descname">nev</code><a class="headerlink" href="#_CPPv43nev" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv43nev">
+<span id="_CPPv33nev"></span><span id="_CPPv23nev"></span><span id="nev__i"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nev</span></span></span><a class="headerlink" href="#_CPPv43nev" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Specifies the number of required eigenvalues. This is usually
 a fraction of the total eigenspectrum. The maximum value of such
 fraction dependes on the size of the eigenproblem but as a rule
@@ -294,8 +412,8 @@ efficiently.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv43nex">
-<span id="_CPPv33nex"></span><span id="_CPPv23nex"></span><span id="nex__i"></span>int <code class="sig-name descname">nex</code><a class="headerlink" href="#_CPPv43nex" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv43nex">
+<span id="_CPPv33nex"></span><span id="_CPPv23nex"></span><span id="nex__i"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nex</span></span></span><a class="headerlink" href="#_CPPv43nex" title="Link to this definition">¶</a><br /></dt>
 <dd><p>It specifies the initial size of the search subspace <em>S</em>
 such that size(<em>S</em>) = (<a class="reference internal" href="#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> +
 <a class="reference internal" href="#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>). Its optimal choice represents a
@@ -310,8 +428,8 @@ between index 250 and 300 are quite clustered.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv43deg">
-<span id="_CPPv33deg"></span><span id="_CPPv23deg"></span><span id="deg__iC"></span><em class="property">const</em> int <code class="sig-name descname">deg</code><a class="headerlink" href="#_CPPv43deg" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv43deg">
+<span id="_CPPv33deg"></span><span id="_CPPv23deg"></span><span id="deg__iC"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deg</span></span></span><a class="headerlink" href="#_CPPv43deg" title="Link to this definition">¶</a><br /></dt>
 <dd><p>If <a class="reference internal" href="#_CPPv43opt" title="opt"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">opt</span></code></a> = <code class="docutils literal notranslate"><span class="pre">N</span></code>, it specifies the constant
 Chebyshev polynomial degree used in the filter to enhance
 the convergence ration of sought after
@@ -324,8 +442,8 @@ degree is computed on the fly. Suggested value:
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv47degrees">
-<span id="_CPPv37degrees"></span><span id="_CPPv27degrees"></span><span id="degrees__iPC"></span>int *<em class="property">const</em> <code class="sig-name descname">degrees</code><a class="headerlink" href="#_CPPv47degrees" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv47degrees">
+<span id="_CPPv37degrees"></span><span id="_CPPv27degrees"></span><span id="degrees__iPC"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">degrees</span></span></span><a class="headerlink" href="#_CPPv47degrees" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Array of size <a class="reference internal" href="#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> + <a class="reference internal" href="#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>. While a required
 input array, the contents are ignored.  This variable is planned
 for cases where ChASE is utilized to solve a sequence or correlated
@@ -333,8 +451,8 @@ eigenproblems.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv43tol">
-<span id="_CPPv33tol"></span><span id="_CPPv23tol"></span><span id="tol__doubleC"></span><em class="property">const</em> double <code class="sig-name descname">tol</code><a class="headerlink" href="#_CPPv43tol" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv43tol">
+<span id="_CPPv33tol"></span><span id="_CPPv23tol"></span><span id="tol__doubleC"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tol</span></span></span><a class="headerlink" href="#_CPPv43tol" title="Link to this definition">¶</a><br /></dt>
 <dd><p>It specifies the accuracy of the
 solutions. <a class="reference internal" href="#_CPPv43tol" title="tol"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">tol</span></code></a> is the minimum tolerance the
 residuals of the required eigenpairs should have to be
@@ -342,8 +460,8 @@ declared converged.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv44mode">
-<span id="_CPPv34mode"></span><span id="_CPPv24mode"></span><span id="mode__CHASE_MODE_TYPEC"></span><em class="property">const</em> <a class="reference internal" href="#_CPPv415CHASE_MODE_TYPE" title="CHASE_MODE_TYPE">CHASE_MODE_TYPE</a> <code class="sig-name descname">mode</code><a class="headerlink" href="#_CPPv44mode" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv44mode">
+<span id="_CPPv34mode"></span><span id="_CPPv24mode"></span><span id="mode__CHASE_MODE_TYPEC"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv415CHASE_MODE_TYPE" title="CHASE_MODE_TYPE"><span class="n"><span class="pre">CHASE_MODE_TYPE</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mode</span></span></span><a class="headerlink" href="#_CPPv44mode" title="Link to this definition">¶</a><br /></dt>
 <dd><p>It specifies whether the user provides ChASE with
 information about the approximate solution of the
 eigenproblem (e.g. when dealing with a sequence of
@@ -364,8 +482,8 @@ spectrum.</p>
 </dd></dl>
 
 <dl class="cpp var">
-<dt id="_CPPv43opt">
-<span id="_CPPv33opt"></span><span id="_CPPv23opt"></span><span id="opt__CHASE_OPT_TYPEC"></span><em class="property">const</em> <a class="reference internal" href="#_CPPv414CHASE_OPT_TYPE" title="CHASE_OPT_TYPE">CHASE_OPT_TYPE</a> <code class="sig-name descname">opt</code><a class="headerlink" href="#_CPPv43opt" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv43opt">
+<span id="_CPPv33opt"></span><span id="_CPPv23opt"></span><span id="opt__CHASE_OPT_TYPEC"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv414CHASE_OPT_TYPE" title="CHASE_OPT_TYPE"><span class="n"><span class="pre">CHASE_OPT_TYPE</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">opt</span></span></span><a class="headerlink" href="#_CPPv43opt" title="Link to this definition">¶</a><br /></dt>
 <dd><p>It specifies whether ChASE uses the same polynomial
 degree for all the vectors to be filtered or run only one
 loop iteration using the same polynomial degree for all
@@ -380,8 +498,8 @@ filter use an optimal polynomial degree tailored to each
 filtered vector.</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -415,17 +533,16 @@ filtered vector.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="../../_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../../_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="../../https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   
 

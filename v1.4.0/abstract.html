@@ -1,0 +1,602 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2. Virtual Abstract of Numerical Kernels &mdash; ChASE v1.4.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ChASE v1.4.0 documentation" href="index.html"/>
+        <link rel="next" title="3. Parallel implementations" href="parallel.html"/>
+        <link rel="prev" title="1.4. Algorithm optimizations" href="optimizations.html"/>
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="index.html" class="icon icon-home"> ChASE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.4.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/"selected>
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Virtual Abstract of Numerical Kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#benefits">2.1. Benefits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#definition-of-interface">2.2. Definition of Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE"><code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase5ShiftE1Tb"><code class="docutils literal notranslate"><span class="pre">Shift()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE"><code class="docutils literal notranslate"><span class="pre">HEMM()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE"><code class="docutils literal notranslate"><span class="pre">QR()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">RR()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Resd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE"><code class="docutils literal notranslate"><span class="pre">Lanczos()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"><code class="docutils literal notranslate"><span class="pre">Lanczos()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T"><code class="docutils literal notranslate"><span class="pre">LanczosDos()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase4SwapENSt6size_tENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Swap()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase4LockENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Lock()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase5StartEv"><code class="docutils literal notranslate"><span class="pre">Start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase3EndEv"><code class="docutils literal notranslate"><span class="pre">End()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase8initVecsEb"><code class="docutils literal notranslate"><span class="pre">initVecs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4NK5chase5Chase4GetNEv"><code class="docutils literal notranslate"><span class="pre">GetN()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase6GetNevEv"><code class="docutils literal notranslate"><span class="pre">GetNev()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase6GetNexEv"><code class="docutils literal notranslate"><span class="pre">GetNex()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase8GetRitzvEv"><code class="docutils literal notranslate"><span class="pre">GetRitzv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase8GetResidEv"><code class="docutils literal notranslate"><span class="pre">GetResid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase9GetConfigEv"><code class="docutils literal notranslate"><span class="pre">GetConfig()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase10get_nprocsEv"><code class="docutils literal notranslate"><span class="pre">get_nprocs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N5chase5Chase6OutputENSt6stringE"><code class="docutils literal notranslate"><span class="pre">Output()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li><span class="section-number">2. </span>Virtual Abstract of Numerical Kernels</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/abstract.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="virtual-abstract-of-numerical-kernels">
+<span id="virtual-abstrac-numerical-kernels"></span><h1><span class="section-number">2. </span>Virtual Abstract of Numerical Kernels<a class="headerlink" href="#virtual-abstract-of-numerical-kernels" title="Link to this heading">¶</a></h1>
+<p>ChASE relies on a modest number of numerical kernels whose calls execute almost all FLOPs.
+Because of its simple structure, there would be clear advantages in the separation of
+the numerical kernels from the algorithm implementation. In ChASE, the linear algebra
+kernels are separated from the main algorithm through the use of an object-oriented software interface.</p>
+<section id="benefits">
+<h2><span class="section-number">2.1. </span>Benefits<a class="headerlink" href="#benefits" title="Link to this heading">¶</a></h2>
+<p>With the help of the seperation of numerical kernels,</p>
+<ol class="arabic simple">
+<li><p>First, ChASE can be easily integrated into existing codes thanks to the relative simplicity of the software interface. For instance, the low-level kernels can be implemented according to an existing distribution of the matrix elements of A so as to avoid the need to re-distribute data;</p></li>
+<li><p>Second, ChASE can easily exploit existing linear algebra libraries such as BLAS and LAPACK all the way up to GPU-based kernels, and even complex distributed-memory dense linear algebra frameworks such as Elemental.</p></li>
+</ol>
+</section>
+<section id="definition-of-interface">
+<h2><span class="section-number">2.2. </span>Definition of Interface<a class="headerlink" href="#definition-of-interface" title="Link to this heading">¶</a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase5ChaseE">
+<span id="_CPPv3I0EN5chase5ChaseE"></span><span id="_CPPv2I0EN5chase5ChaseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1Chase"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Chase</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase5ChaseE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Subclassed by <a class="reference internal" href="module/chasempi.html#classchase_1_1mpi_1_1ChaseMpi"><span class="std std-ref">chase::mpi::ChaseMpi&lt; ChaseMpiDLABlaslapack, T &gt;</span></a>, <a class="reference internal" href="module/chasempi.html#classchase_1_1mpi_1_1ChaseMpi"><span class="std std-ref">chase::mpi::ChaseMpi&lt; ChaseMpiDLABlaslapackSeqInplace, T &gt;</span></a>, <a class="reference internal" href="module/perf.html#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">chase::PerformanceDecoratorChase&lt; T &gt;</span></a>, <a class="reference internal" href="module/chasempi.html#classchase_1_1mpi_1_1ChaseMpi"><span class="std std-ref">chase::mpi::ChaseMpi&lt; MF, T &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase5ShiftE1Tb">
+<span id="_CPPv3N5chase5Chase5ShiftE1Tb"></span><span id="_CPPv2N5chase5Chase5ShiftE1Tb"></span><span id="chase::Chase::Shift__T.b"></span><span class="target" id="classchase_1_1Chase_1a40ba6246c9d190bcd4fc930fa07a2a2a"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Shift</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">c</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">isunshift</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase5ShiftE1Tb" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function shifts the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with a shift value <code class="docutils literal notranslate"><span class="pre">c</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> – the shift value on the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE">
+<span id="_CPPv3N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="_CPPv2N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="chase::Chase::HEMM__std::s.T.T.std::s"></span><span class="target" id="classchase_1_1Chase_1aa908bbc4ef9086b8f5d819dd1e7221d6"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">HEMM</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nev</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">beta</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function computes  <span class="math notranslate nohighlight">\(V1 = alpha * H*V2 + beta *
+V1\)</span> or  <span class="math notranslate nohighlight">\(V2 = alpha * H'*V1 + beta *
+V2\)</span>. This operation starts with an offset <code class="docutils literal notranslate"><span class="pre">offset</span></code> of column,</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> – the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> for this <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><strong>alpha</strong> – a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">H*V1</span></code> or ‘H’*V2`.</p></li>
+<li><p><strong>beta</strong> – a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">V1</span></code> or <code class="docutils literal notranslate"><span class="pre">V2</span></code>, respectively.</p></li>
+<li><p><strong>offset</strong> – the offset of column which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starts from. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::Chase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1Chase_1a81c7628094a98e76586e8d89f455f028"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function performs a QR factorization with an explicit construction of the unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code>.</p>
+<p>CholQR is used in default. Optionally, user can decide to use Househoulder QR. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fixednev</strong> – total number of converged eigenpairs before this time QR factorization. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::Chase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1Chase_1a8f9468c6c02d9ad01e2d698d5a33fccc"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function performs the Rayleigh-Ritz projection, which projects the eigenproblem to be a small one, then solves the small problem and reconstructs the eigenvectors. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – a pointer to the array which stores the computed eigenvalues. </p></li>
+<li><p><strong>block</strong> – the number of non-converged eigenpairs, which determines the size of small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="chase::Chase::Resd__Base:T:P.Base:T:P.std::s"></span><span class="target" id="classchase_1_1Chase_1aa867631c14eaf2b8e8d45d6facfa6431"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function computes the residuals of unconverged eigenpairs. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – an array stores the eigenvalues. </p></li>
+<li><p><strong>resid</strong> – a pointer to an array which stores the residual for each eigenpairs. </p></li>
+<li><p><strong>fixednev</strong> – number of converged eigenpairs. Thus the number of non-converged one which perform this operation of computing residual is <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">fixednev_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE">
+<span id="_CPPv3N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="_CPPv2N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="chase::Chase::Lanczos__std::s.Base:T:P"></span><span class="target" id="classchase_1_1Chase_1acb6f687adba9c6715c42cfdd42979041"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>It estimates the upper bound of user-interested spectrum by Lanczos eigensolver </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – the iterative steps for Lanczos eigensolver. </p></li>
+<li><p><strong>upperb</strong> – a pointer to the upper bound estimated by Lanczos eigensolver. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::Chase::Lanczos__std::s.std::s.Base:T:P.Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1Chase_1a40f4c81d5bb9ae66cfcd34be03c2f55c"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> class. It estimates the upper bound of user-interested spectrum by Lanczos eigensolver </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T">
+<span id="_CPPv3N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="_CPPv2N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="chase::Chase::LanczosDos__std::s.std::s.TP"></span><span class="target" id="classchase_1_1Chase_1aea0d73061f4a6381f6378b720c7a926b"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">LanczosDos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzVc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T" title="Link to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase4SwapENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4SwapENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4SwapENSt6size_tENSt6size_tE"></span><span id="chase::Chase::Swap__std::s.std::s"></span><span class="target" id="classchase_1_1Chase_1af130fd87a17637aadaf1cfbab66c2830"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Swap</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">i</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">j</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase4SwapENSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function swaps the two columns in a matrix used in the Chebyschev filter </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> – one of the column index to be swapped </p></li>
+<li><p><strong>j</strong> – another of the column index to be swapped </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase4LockENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4LockENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4LockENSt6size_tE"></span><span id="chase::Chase::Lock__std::s"></span><span class="target" id="classchase_1_1Chase_1afa97b2e98c6afb5ed2f65cde5521d986"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lock</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_converged</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase4LockENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>It locks the <code class="docutils literal notranslate"><span class="pre">new_converged</span></code> eigenvectors, which makes <code class="docutils literal notranslate"><span class="pre">locked_</span> <span class="pre">+=</span> <span class="pre">!</span> <span class="pre">new_converged</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_converged</strong> – number of newly converged eigenpairs in the present iterative step. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase5StartEv">
+<span id="_CPPv3N5chase5Chase5StartEv"></span><span id="_CPPv2N5chase5Chase5StartEv"></span><span id="chase::Chase::Start"></span><span class="target" id="classchase_1_1Chase_1a62135128d7c597d30707dfc2e81b332f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Start</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase5StartEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>It indicates the starting point to solve a (new) eigenproblem. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase3EndEv">
+<span id="_CPPv3N5chase5Chase3EndEv"></span><span id="_CPPv2N5chase5Chase3EndEv"></span><span id="chase::Chase::End"></span><span class="target" id="classchase_1_1Chase_1ad0374cef90cda13312edefcb9eef0fc2"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">End</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase3EndEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>It indicates the ending point of solving an eigenproblem. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase8initVecsEb">
+<span id="_CPPv3N5chase5Chase8initVecsEb"></span><span id="_CPPv2N5chase5Chase8initVecsEb"></span><span id="chase::Chase::initVecs__b"></span><span class="target" id="classchase_1_1Chase_1a95f80a731ff24f48f2c09cc35804a62f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">initVecs</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">random</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase8initVecsEb" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This member function initializes randomly the vectors when necessary. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>random</strong> – a boolean variable indicates if randomness of initial vectors is required.<ul class="simple">
+<li><p>For solving a sequence of eigenvalue problems, this variable is always <code class="docutils literal notranslate"><span class="pre">True</span></code> when solving the first problem.</p></li>
+<li><p>It could be false when the ritzv vectors from previous problem are recycled to speed up the convergence. </p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase5Chase4GetNEv">
+<span id="_CPPv3NK5chase5Chase4GetNEv"></span><span id="_CPPv2NK5chase5Chase4GetNEv"></span><span id="chase::Chase::GetNC"></span><span class="target" id="classchase_1_1Chase_1a11ebcceda456c3bf17747b4fe55df6f5"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetN</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase5Chase4GetNEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return size of matrix. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase6GetNevEv">
+<span id="_CPPv3N5chase5Chase6GetNevEv"></span><span id="_CPPv2N5chase5Chase6GetNevEv"></span><span id="chase::Chase::GetNev"></span><span class="target" id="classchase_1_1Chase_1a776f869ef8274176ec27f4267d4c6a23"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNev</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase6GetNevEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the number of eigenpairs to be computed. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase6GetNexEv">
+<span id="_CPPv3N5chase5Chase6GetNexEv"></span><span id="_CPPv2N5chase5Chase6GetNexEv"></span><span id="chase::Chase::GetNex"></span><span class="target" id="classchase_1_1Chase_1abdd4ebbf71def91ed2d7b89a86415659"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNex</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase6GetNexEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the external searching space size. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase8GetRitzvEv">
+<span id="_CPPv3N5chase5Chase8GetRitzvEv"></span><span id="_CPPv2N5chase5Chase8GetRitzvEv"></span><span id="chase::Chase::GetRitzv"></span><span class="target" id="classchase_1_1Chase_1a35d748977b0bba35116384251ecb33b7"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase8GetRitzvEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the computed ritz values. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase8GetResidEv">
+<span id="_CPPv3N5chase5Chase8GetResidEv"></span><span id="_CPPv2N5chase5Chase8GetResidEv"></span><span id="chase::Chase::GetResid"></span><span class="target" id="classchase_1_1Chase_1a44ee9633962cc73d38353cb1d336e937"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetResid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase8GetResidEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the residuals of computed ritz pairs. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase9GetConfigEv">
+<span id="_CPPv3N5chase5Chase9GetConfigEv"></span><span id="_CPPv2N5chase5Chase9GetConfigEv"></span><span id="chase::Chase::GetConfig"></span><span class="target" id="classchase_1_1Chase_1ad0e41c1be0e123aed6c03987e86da568"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="module/config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig"><span class="n"><span class="pre">ChaseConfig</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetConfig</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase9GetConfigEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return a class which contains the configuration parameters. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase10get_nprocsEv">
+<span id="_CPPv3N5chase5Chase10get_nprocsEv"></span><span id="_CPPv2N5chase5Chase10get_nprocsEv"></span><span id="chase::Chase::get_nprocs"></span><span class="target" id="classchase_1_1Chase_1a07e3061fc88a5e7a775ed876a6cbae1e"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase10get_nprocsEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return the number of MPI procs used, it is <code class="docutils literal notranslate"><span class="pre">1</span></code> when sequential ChASE is used </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase5Chase6OutputENSt6stringE">
+<span id="_CPPv3N5chase5Chase6OutputENSt6stringE"></span><span id="_CPPv2N5chase5Chase6OutputENSt6stringE"></span><span id="chase::Chase::Output__ss"></span><span class="target" id="classchase_1_1Chase_1aef8130fcca56d3b0ca79b2b9d6db94e6"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">str</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase5Chase6OutputENSt6stringE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Print some intermediate infos during the solving procedure. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="parallel.html" class="btn btn-neutral float-right" title="3. Parallel implementations" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="optimizations.html" class="btn btn-neutral" title="1.4. Algorithm optimizations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1.4.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

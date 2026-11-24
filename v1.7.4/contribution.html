@@ -1,0 +1,376 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing to ChASE &mdash; ChASE v1.7.4 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=04c8337e"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="prev" title="References and Contributors" href="reference.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/"selected>
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#express-interest-in-contributing">1. Express Interest in Contributing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sign-the-collaboration-agreement-cla">2. Sign the Collaboration Agreement (CLA)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-access-to-jsc-gitlab">3. Get Access to JSC GitLab</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-formatting-of-committed-codes">Auto Formatting of Committed Codes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-housekeeping-proposal">Documentation Housekeeping Proposal</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing to ChASE</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contribution.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing-to-chase">
+<h1>Contributing to ChASE<a class="headerlink" href="#contributing-to-chase" title="Link to this heading"></a></h1>
+<p>We welcome contributions to ChASE! This guide outlines the process for contributing to the project.</p>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<section id="express-interest-in-contributing">
+<h3>1. Express Interest in Contributing<a class="headerlink" href="#express-interest-in-contributing" title="Link to this heading"></a></h3>
+<p>If you’re interested in contributing to ChASE, you have two options:</p>
+<p><strong>Option A: Create an Issue or Pull Request on GitHub</strong></p>
+<p>You can create an issue or pull request on the <a class="reference external" href="https://github.com/ChASE-library/ChASE">GitHub repository</a>
+to express your interest in contributing and describe what you’d like to work on. This
+is just to let us know about your interest - you don’t need to fork and contribute code
+directly on GitHub.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since GitHub serves as a mirror repository from JSC GitLab, you cannot directly fork
+and contribute on GitHub. The GitHub repository is automatically synchronized from
+GitLab, so all active development happens on GitLab. After you express your interest,
+we will contact you to proceed with the contribution process.</p>
+</div>
+<p><strong>Option B: Contact the ChASE Team Directly</strong></p>
+<p>Alternatively, you can also contact us at <a class="reference external" href="mailto:chase&#37;&#52;&#48;fz-juelich&#46;de">chase<span>&#64;</span>fz-juelich<span>&#46;</span>de</a> with
+a motivated request of collaboration. We will consider your request and get in touch
+with you to evaluate if and how to give you access directly to the GitLab repository
+where the major developments of this software is carried out.</p>
+</section>
+<section id="sign-the-collaboration-agreement-cla">
+<h3>2. Sign the Collaboration Agreement (CLA)<a class="headerlink" href="#sign-the-collaboration-agreement-cla" title="Link to this heading"></a></h3>
+<p>If you have not contributed to the ChASE library before, we will ask you to agree to a
+Collaboration Agreement (CLA) before your pull request can be approved.</p>
+<p>Currently, there is no automatic mechanism to sign such an agreement. You need to:</p>
+<ul class="simple">
+<li><p>Download the file <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/CLA_ChASE.pdf">CLA_ChASE.pdf</a> (that is part of the repository)</p></li>
+<li><p>Print it</p></li>
+<li><p>Sign it</p></li>
+<li><p>Send it back to <a class="reference external" href="mailto:chase&#37;&#52;&#48;fz-juelich&#46;de">chase<span>&#64;</span>fz-juelich<span>&#46;</span>de</a></p></li>
+</ul>
+<p>Upon reception of your signed CLA, your request will be reviewed and then
+eventually go for the next step.</p>
+</section>
+<section id="get-access-to-jsc-gitlab">
+<h3>3. Get Access to JSC GitLab<a class="headerlink" href="#get-access-to-jsc-gitlab" title="Link to this heading"></a></h3>
+<p>After your request of contribution is approved and you’ve signed the CLA, the ChASE team will
+invite you to create an account on JSC GitLab for contributing. Once you have access:</p>
+<ul class="simple">
+<li><p>Create an account on JSC GitLab (if you don’t have one already)</p></li>
+<li><p>Accept the invitation to the ChASE repository</p></li>
+<li><p>Clone the repository from GitLab for development</p></li>
+</ul>
+<p>All active development happens on GitLab, while GitHub serves as a mirror repository.</p>
+</section>
+</section>
+<section id="auto-formatting-of-committed-codes">
+<h2>Auto Formatting of Committed Codes<a class="headerlink" href="#auto-formatting-of-committed-codes" title="Link to this heading"></a></h2>
+<p>ChASE relies on <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> to automatically format the codes pushed to the
+repository. This ensures consistent code style across the codebase.</p>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<p>Before committing code, make sure you have the following set up:</p>
+<ul>
+<li><p><strong>clang-format available</strong>: On JSC machines, load the Clang module:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">module</span><span class="w"> </span><span class="n">load</span><span class="w"> </span><span class="n">Clang</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Clone ChASE git repository</strong>: Make sure you have cloned the ChASE repository
+from GitLab</p></li>
+<li><p><strong>Configure git hooks</strong>: In the root directory of ChASE, configure git to use
+the project’s hooks:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">git</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="n">core</span><span class="p">.</span><span class="n">hooksPath</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">hooks</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h3>
+<p>Once the prerequisites are met, you can proceed with your normal git workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span><span class="o">{</span>changed<span class="w"> </span>files<span class="o">}</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;update xxxxx&quot;</span>
+</pre></div>
+</div>
+<p>When you commit, the git hook will automatically format your code using <code class="docutils literal notranslate"><span class="pre">clang-format</span></code>.
+You’ll see output like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[hellochase@jwlogin21 ChASE-format]$ git commit -m &quot;test hooks&quot;
+[clang-format] formatted and staged Impl/chase_gpu/chase_gpu.hpp
+[58-implement-distributed-memory-chase-extension-for-bse-matrix a1a7583] test hooks
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+</pre></div>
+</div>
+</section>
+</section>
+<section id="documentation-housekeeping-proposal">
+<h2>Documentation Housekeeping Proposal<a class="headerlink" href="#documentation-housekeeping-proposal" title="Link to this heading"></a></h2>
+<p>The following files in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> are internal planning/engineering notes and are
+not part of the Sphinx user documentation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">amd_port_convergence_plan.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">amd_gpu_port_architecture.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plan_pchase_cpu_pseudo_hermitian.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">solve_pseudo_missing_vs_julia.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontier_gpu_collective_benchmark.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontier_amd_gpu_porting_plan.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GITLAB_CI_DOCS_SNIPPET.yml</span></code></p></li>
+</ul>
+<p>Recommended follow-up: move these files into a dedicated developer-notes location
+(<code class="docutils literal notranslate"><span class="pre">docs/dev/</span></code> or top-level <code class="docutils literal notranslate"><span class="pre">notes/</span></code>) to keep the user-facing docs tree focused.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="reference.html" class="btn btn-neutral float-left" title="References and Contributors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

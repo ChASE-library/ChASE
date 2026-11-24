@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation and Setup on a Cluster &mdash; ChASE v1.1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ChASE v1.1.1 documentation" href="index.html"/>
+        <link rel="next" title="Dependencies" href="installation/dependencies.html"/>
+        <link rel="prev" title="Cloning ChASE source code" href="quick-start/quick-install.html"/>
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="index.html" class="icon icon-home"> ChASE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/"selected>
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Setup on a Cluster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#library-dependencies">Library Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation/dependencies.html">Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation/dependencies.html#loading-modules-on-cluster">Loading Modules on Cluster</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-on-cluster">Installation on Cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html">Installation on a CPU-only Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html#installation-with-gpu-support">Installation with GPU Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html#building-chase-with-examples">Building ChASE with Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#linking-chase">Linking ChASE</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation/link.html">Linking ChASE to other Application Software</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation/suggestion.html">ChASE with MPI+OpenMP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation/suggestion.html#chase-with-multi-gpus">ChASE with multi-GPUs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Installation and Setup on a Cluster</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="installation-and-setup-on-a-cluster">
+<h1>Installation and Setup on a Cluster<a class="headerlink" href="#installation-and-setup-on-a-cluster" title="Link to this heading">¶</a></h1>
+<p>This section provides guidelines to install and setup the ChASE
+library on computing clusters.
+Each guideline is given as a step by step set of instructions to install ChASE on a
+cluster either with or w/o support for GPUs. After the setup of ChASE,
+users are provided with a description of how
+to link and integrate ChASE into their own codes. Such integration can
+be achieved either by using one of the
+interfaces provided by the library, or by following our instructions
+to implement the user’s own interface.</p>
+<section id="library-dependencies">
+<h2>Library Dependencies<a class="headerlink" href="#library-dependencies" title="Link to this heading">¶</a></h2>
+<p>This section gives a brief introduction to the ChASE library dependencies and
+on how to load the required libraries on a given supercomputer.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation/dependencies.html#loading-modules-on-cluster">Loading Modules on Cluster</a></li>
+</ul>
+</div>
+</section>
+<section id="installation-on-cluster">
+<h2>Installation on Cluster<a class="headerlink" href="#installation-on-cluster" title="Link to this heading">¶</a></h2>
+<p>This section has two main goals: First, it provides the instructions
+for the installation of ChASE on a given supercomputer
+with or w/o multi-GPUs supports. Second, it describe how the user can
+take advantage of a number of ready-to-use examples to build a
+simple driver and have a first try running ChASE on a cluster.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html">Installation on a CPU-only Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html#installation-with-gpu-support">Installation with GPU Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html#building-chase-with-examples">Building ChASE with Examples</a></li>
+</ul>
+</div>
+</section>
+<section id="linking-chase">
+<h2>Linking ChASE<a class="headerlink" href="#linking-chase" title="Link to this heading">¶</a></h2>
+<p>In order to embed the ChASE library in an application software, ChASE
+can be opportunely linked following the instructions in this section.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation/link.html">Linking ChASE to other Application Software</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation/link.html#include-headers">Include headers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation/link.html#linking-to-chase-by-using-cmake">Linking to ChASE by using CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation/link.html#direct-linking">Direct linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation/link.html#linking-by-makefile">Linking by Makefile</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="recommendation-on-the-usage-of-computing-resources">
+<h2>Recommendation on the usage of Computing Resources<a class="headerlink" href="#recommendation-on-the-usage-of-computing-resources" title="Link to this heading">¶</a></h2>
+<p>Attaining the best performance with the available computing resources
+requires to understand the inner working of the ChASE library. Since
+the standard user is not expected to have such an understanding, this section
+supplies a number of simple recommendations for the submission and
+execution of jobs involving ChASE on a given computing cluster.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation/suggestion.html">ChASE with MPI+OpenMP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#allocating-ressources-and-running-jobs-slurm">Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#estimating-memory-requirement">Estimating Memory Requirement</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation/suggestion.html#chase-with-multi-gpus">ChASE with multi-GPUs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#id1">Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#id2">Estimating Memory Requirement</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation/dependencies.html" class="btn btn-neutral float-right" title="Dependencies" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quick-start/quick-install.html" class="btn btn-neutral" title="Cloning ChASE source code" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/sphinx_highlight.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

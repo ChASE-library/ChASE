@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Versions of the library &mdash; ChASE v1.3.0 documentation</title>
+  <title>Versions of the library &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="index.html"/>
         <link rel="next" title="Licenses and Copyright" href="license.html"/>
         <link rel="prev" title="ChASE: an Iterative Solver for Dense Eigenproblems" href="chase.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -59,13 +58,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="index.html">
-          
 
           
-            
-            <img src="_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -73,7 +70,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -88,13 +85,133 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Versions of the library</a><ul>
@@ -111,8 +228,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -121,7 +239,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -170,17 +288,17 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="versions-of-the-library">
-<h1>Versions of the library<a class="headerlink" href="#versions-of-the-library" title="Permalink to this headline">¶</a></h1>
+  <section id="versions-of-the-library">
+<h1>Versions of the library<a class="headerlink" href="#versions-of-the-library" title="Link to this heading">¶</a></h1>
 <p>Currently, the library consists of one major part, labelled ChASE-MPI, for
 solving dense eigenproblems. There will be another major part to support
 sparse eigenproblems in short future.
 ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
 LAPACK, and MPI).</p>
-<div class="section" id="chase-mpi">
-<h2>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="multi-configurations">
-<h3>Multi-Configurations<a class="headerlink" href="#multi-configurations" title="Permalink to this headline">¶</a></h3>
+<section id="chase-mpi">
+<h2>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Link to this heading">¶</a></h2>
+<section id="multi-configurations">
+<h3>Multi-Configurations<a class="headerlink" href="#multi-configurations" title="Link to this heading">¶</a></h3>
 <p>ChASE-MPI supports different configurations depending on the available
 hardware resources.</p>
 <blockquote>
@@ -199,14 +317,14 @@ graphics card on heterogeneous computing clusters. Currently we
 support one GPU card per MPI rank.</p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="matrix-distributions">
-<h3>Matrix Distributions<a class="headerlink" href="#matrix-distributions" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="matrix-distributions">
+<h3>Matrix Distributions<a class="headerlink" href="#matrix-distributions" title="Link to this heading">¶</a></h3>
 <p>In ChASE-MPI, the MPI nodes are constructed as 2D grid, two data distributions
 are support to assigned sub-blocks of dense matrix <strong>A</strong> into different
 MPI nodes.</p>
-<div class="section" id="block-distribution">
-<h4>Block Distribution<a class="headerlink" href="#block-distribution" title="Permalink to this headline">¶</a></h4>
+<section id="block-distribution">
+<h4>Block Distribution<a class="headerlink" href="#block-distribution" title="Link to this heading">¶</a></h4>
 <p>The first is called <strong>Block Distribution</strong>, in which each
 MPI rank of 2D grid is assigned a block of dense matrix <strong>A</strong>. The most important
 kernel of ChASE is the <strong>Hermitian Matrix-Matrix Multiplication</strong>. This
@@ -227,9 +345,9 @@ dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <spa
 the matrix <cite>A</cite> is split into 2D, with a series of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
 <span class="math notranslate nohighlight">\(i \in [0,2]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,2]\)</span>. Therefore, <span class="math notranslate nohighlight">\(A_{0,0}\)</span> is distributed
 to MPI rank 1, <span class="math notranslate nohighlight">\(A_{1,0}\)</span> is distributed to rank 2, <span class="math notranslate nohighlight">\(A_{2,0}\)</span> is distributed to rank 3, <span class="math notranslate nohighlight">\(A_{0,1}\)</span> is distributed to rank 4, <span class="math notranslate nohighlight">\(A_{1,1}\)</span> is distributed to rank 5, and so on.</p>
-</div>
-<div class="section" id="block-cyclic-distribution">
-<h4>Block-Cyclic Distribution<a class="headerlink" href="#block-cyclic-distribution" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="block-cyclic-distribution">
+<h4>Block-Cyclic Distribution<a class="headerlink" href="#block-cyclic-distribution" title="Link to this heading">¶</a></h4>
 <p>The second is called 2D <strong>Block-Cyclic Distribution</strong>. This distribution scheme was introduced
 for the implementation of dense matrix computations on distributed-memory machines. Compared to
 the <strong>Block Distribution</strong>, the main advantage of the Block-Cyclic Distribution is improving
@@ -241,7 +359,8 @@ in ChASE to avoid the re-distribution between these two types of distributions, 
 required for some application, e.g., solving generalized eigenproblem by ChASE with Cholesky factorization.
 In <strong>ChASE</strong>, its implementation with <strong>Block-Cyclic Distribution</strong> can achieve similar performance
 as the implementation with <strong>Block Distribution</strong>.</p>
-<a class="reference internal image-reference" href="_images/block-cyclic.png"><img alt="_images/block-cyclic.png" class="align-center" src="_images/block-cyclic.png" style="width: 240.5px; height: 241.0px;" /></a>
+<a class="reference internal image-reference" href="_images/block-cyclic.png"><img alt="_images/block-cyclic.png" class="align-center" src="_images/block-cyclic.png" style="width: 240.5px; height: 241.0px;" />
+</a>
 <p>The figure above show an example of ChASE which distributes a <span class="math notranslate nohighlight">\(n \times n\)</span>
 dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(2 \times 2\)</span> grid of MPI nodes in a block-cyclic scheme.
 Denoting the 4 MPI nodes as <span class="math notranslate nohighlight">\(P_{0,0}\)</span>, <span class="math notranslate nohighlight">\(P_{0,1}\)</span>, <span class="math notranslate nohighlight">\(P_{1,0}\)</span>, and <span class="math notranslate nohighlight">\(P_{1,1}\)</span>,
@@ -251,10 +370,10 @@ In this example, the matrix <cite>A</cite> is split into 2D, with a series of su
 in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
 For more details about <strong>Block-Cyclic Distribution</strong>,
 please refer to <a class="reference external" href="https://www.netlib.org/scalapack/slug/node75.html">Netlib</a> website.</p>
-</div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
+</section>
 
 
            </div>
@@ -297,17 +416,16 @@ please refer to <a class="reference external" href="https://www.netlib.org/scala
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   
 

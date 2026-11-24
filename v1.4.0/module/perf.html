@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Performance &mdash; ChASE v1.4.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.4.0 documentation" href="../index.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.4.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/"selected>
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Performance</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/module/perf.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="performance">
+<span id="id1"></span><h1>Performance<a class="headerlink" href="#performance" title="Link to this heading">¶</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase13ChasePerfDataE">
+<span id="_CPPv3I0EN5chase13ChasePerfDataE"></span><span id="_CPPv2I0EN5chase13ChasePerfDataE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1ChasePerfData"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChasePerfData</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>ChASE class for collecting data relative to FLOPs, timings, etc. </p>
+<p>The <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a> class collects and handles information relative to the execution of the eigensolver. It collects information about<ul class="simple">
+<li><p>Number of subspace iterations</p></li>
+<li><p>Number of filtered vectors</p></li>
+<li><p>Timings of each main algorithmic procedure (Lanczos, Filter, etc.)</p></li>
+<li><p>Number of FLOPs executed</p></li>
+</ul>
+</p>
+<p>The number of iterations and filtered vectors can be used to monitor the behavior of the algorithm as it attempts to converge all the desired eigenpairs. The timings and number of FLOPs are use to measure performance, especially parallel performance. The timings are stored in a vector of objects derived by the class template <code class="docutils literal notranslate"><span class="pre">std::chrono::duration</span></code>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData14get_iter_countEv">
+<span id="_CPPv3N5chase13ChasePerfData14get_iter_countEv"></span><span id="_CPPv2N5chase13ChasePerfData14get_iter_countEv"></span><span id="chase::ChasePerfData::get_iter_count"></span><span class="target" id="classchase_1_1ChasePerfData_1a40b81b3734e5e1b26a7c9abdf46795d3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_iter_count</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData14get_iter_countEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Returns the number of total subspace iterations executed by ChASE. </p>
+<p>The <em>S</em> in ChASE stands for <em>Subspace iteration</em>. The main engine under the hood of ChASE is a <em>loop</em> enveloping all the main routines executed by the code. Because of this structure, ChASE is a truly iterative algorithm based on subspace filtering. Counting the number of times such a loop is repeated gives a measure of the effectiveness of the algorithm and it is usually a non-linear function of the spectral distribution. For example, when using the flag <code class="docutils literal notranslate"><span class="pre">approximate_</span> <span class="pre">=</span> <span class="pre">'true'</span></code> to solve a sequence of eigenproblems, one can observe that the number of subspace iteration decreases as a function of sequences index. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The total number of subspace iterations. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv">
+<span id="_CPPv3N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="_CPPv2N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="chase::ChasePerfData::get_filtered_vecs"></span><span class="target" id="classchase_1_1ChasePerfData_1aa83a77b8af43f021c10e99dfff6a760f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_filtered_vecs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Returns the cumulative number of times each column vector is filtered by one degree.</p>
+<p>The most computationally expensive routine of ChASE is the Chebyshev filter. Within the filter a matrix of vectors <em>V</em> is filtered with a varying degree each time a subspace iteration is executed. This counter return the total number of times each vector in <em>V</em> goes through a filtering step. For instance, when the flag <code class="docutils literal notranslate"><span class="pre">optim_</span> <span class="pre">=</span> <span class="pre">false</span> </code>, such a number roughly corresponds to rank(V) x degree x iter_count. When the <code class="docutils literal notranslate"><span class="pre">optim_</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> such a calculation is quite more complicated. Roughly speaking, this counter is useful to monitor the convergence ration of the filtered vectors and together with <code class="docutils literal notranslate"><span class="pre">get_iter_count</span></code> convey the effectiveness of the algorithm. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Cumulative number of filtered vectors. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData9get_flopsENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData9get_flopsENSt6size_tE"></span><span id="chase::ChasePerfData::get_flops__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a26a0b45439a19f37474365aeef3d2f2c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Returns the total number of FLOPs executed by ChASE. </p>
+<p>When measuring performance, it is fundamental to understand how many operations a routine executes against the total time to solutions. This counter returns the total amount of operations executed by ChASE and can be used to extract the performance of ChASE and compare it with theoretical peak performance of the platform where the code is executed. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> – Size of the eigenproblem matrix </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The total number of operations executed by ChASE. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData16get_filter_flopsENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData16get_filter_flopsENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData16get_filter_flopsENSt6size_tE"></span><span id="chase::ChasePerfData::get_filter_flops__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1ac3590b15551c6b5dba99048685a26249"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_filter_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData16get_filter_flopsENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Returns the total number of FLOPs of the Chebyshev filter. </p>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">get_flops</span></code>, this counter return the total number of operations executed by the Chebyshev filter alone. Since the filter is the routine that executes, on average, 80% of the total FLOPs of ChASE, this counter is a good indicator of the performance of the entire algorithm. Because the filter executes almost exclusively BLAS-3 operations, this counter is quite useful to monitor how well the filter is close to the peak performance of the platform where ChASE is executed. This can be quite useful to fine tune the use of the computational resources used. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> – Size of the eigenproblem matrix </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The total number of operations executed by the polynomial filter. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData5printENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData5printENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData5printENSt6size_tE"></span><span id="chase::ChasePerfData::print__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1ab58ef2e1dfec6d026a0e62ecab4f2ded"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">print</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5printENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Print function outputting counters and timings for all routines. </p>
+<p>It prints by default ( for N = 0) in the order,<ul class="simple">
+<li><p>size of the eigenproblem</p></li>
+<li><p>total number of subspace iterations executed</p></li>
+<li><p>total number of filtered vectors</p></li>
+<li><p>time-to-solution of the following 6 main sections of the ChASE algorithm:<ol class="lowerroman simple">
+<li><p>Total time-to-solution</p></li>
+<li><p>Estimates of the spectral bounds based on Lanczos,</p></li>
+<li><p>Chebyshev filter,</p></li>
+<li><p>QR decomposition,</p></li>
+<li><p>Raleygh-Ritz procedure including the solution of the reduced dense problem,</p></li>
+<li><p>Computation of the eigenpairs residuals</p></li>
+</ol>
+</p></li>
+</ul>
+</p>
+<p>When the parameter <code class="docutils literal notranslate"><span class="pre">N</span></code> is set to be a number else than zero, the function returns total FLOPs and filter FLOPs, respectively. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> – Control parameter. By default equal to <em>0</em>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase25PerformanceDecoratorChaseE">
+<span id="_CPPv3I0EN5chase25PerformanceDecoratorChaseE"></span><span id="_CPPv2I0EN5chase25PerformanceDecoratorChaseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1PerformanceDecoratorChase"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PerformanceDecoratorChase</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase"><span class="n"><span class="pre">chase</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Chase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A derived class used to extract performance and configuration data. </p>
+<p>This is a class derived from the <a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> class which plays the role of interface for the kernels used by the library. All members of the <a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> class are virtual functions. These functions are re-implemented in the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> class. All derived members that provide an interface to computational kernels are reimplemented by <em>decorating</em> the original function with time pointers which are members of the <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a> class. All derived members that provide an interface to input or output data are called without any specific decoration. In addition to the virtual member of the <a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> class, the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> class has also among its public members a reference to an object of type <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a>. When using <a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> to solve an eigenvalue problem, the members of the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> are called instead of the virtual functions members of the <a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a> class. In this way, all parameters and counters are automatically invoked and returned in the correct order. <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../abstract.html#classchase_1_1Chase"><span class="std std-ref">Chase</span></a></p>
+</div>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="chase::PerformanceDecoratorChase::GetConfig"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1afe24f989fe849ccc9edd03e297fbeddb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig"><span class="n"><span class="pre">ChaseConfig</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetConfig</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Return a class which contains the configuration parameters. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase11GetPerfDataEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase11GetPerfDataEv"></span><span id="chase::PerformanceDecoratorChase::GetPerfData"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a3044a3f99c106874d63b612d5477ec85"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="chase::ChasePerfData"><span class="n"><span class="pre">ChasePerfData</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetPerfData</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv" title="Link to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.4.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

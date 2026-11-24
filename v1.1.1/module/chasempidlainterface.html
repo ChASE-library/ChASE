@@ -1,0 +1,737 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ChaseMpiDLAInterface &mdash; ChASE v1.1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.1.1 documentation" href="../index.html"/>
+        <link rel="up" title="ChaseMpiDLA" href="chasempidla.html"/>
+        <link rel="next" title="ChaseMpiDLABlaslapackSeq" href="chasempidlaseq.html"/>
+        <link rel="prev" title="ChaseMpiDLA" href="chasempidla.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/"selected>
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="chasempimatrices.html">ChaseMpiMatrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempiproperties.html">ChaseMpiProperties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempi.html">ChaseMpi</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="chasempidla.html">ChaseMpiDLA</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ChaseMpiDLAInterface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaseqInplace.html">ChaseMpiDLABlaslapackSeqInplace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlacudaseq.html">ChaseMpiDLACudaSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaImpl.html">ChaseMpiDLA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../module.html">Modules</a> &raquo;</li>
+      
+        <li><a href="chasempidla.html">ChaseMpiDLA</a> &raquo;</li>
+      
+    <li>ChaseMpiDLAInterface</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/module/chasempidlainterface.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="chasempidlainterface">
+<span id="id1"></span><h1>ChaseMpiDLAInterface<a class="headerlink" href="#chasempidlainterface" title="Link to this heading">¶</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE">
+<span id="_CPPv3I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span><span id="_CPPv2I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseMpiDLAInterface</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A class to set up an interface to all the Dense Linear Algebra (<code class="docutils literal notranslate"><span class="pre">DLA</span></code>) operations required by <code class="docutils literal notranslate"><span class="pre">ChASE.</span></code></p>
+<p>In the class <a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiDLAInterface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>, the <code class="docutils literal notranslate"><span class="pre">DLA</span></code> functions are only setup as a series of <code class="docutils literal notranslate"><span class="pre">virtual</span></code> functions without direct implementation. The implementation of these <code class="docutils literal notranslate"><span class="pre">DLA</span></code> will be laterly implemented by a set of derived classes targeting different computing architectures. Currently, in <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, we provide multiple derived classes <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack</span></a>, <a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq</span></a>, <a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeqInplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace</span></a>, <a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1ChaseMpiDLACudaSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq</span></a> and <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1ChaseMpiDLAMultiGPU"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU</span></a>.</p>
+<p>This <strong>MatrixFreeInterface</strong> provides the Matrix-Matrix multiplication for use in ChASE. The core functionality is <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ae4ca8a287657a117d770aa3da82f3b44"><span class="std std-ref"><span class="pre">apply()</span></span></a></code>, which performs a <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>.<ul class="simple">
+<li><p><strong>ASSUMPTION 1</strong>: MatrixFreeInterface assumes that <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ae4ca8a287657a117d770aa3da82f3b44"><span class="std std-ref"><span class="pre">apply()</span></span></a></code> is called an even number of times. This is always the case when used with algorithm of ChASE.</p></li>
+<li><p><strong>ASSUMPTION 2</strong>: <code class="docutils literal notranslate"><span class="pre">shiftMatrix</span></code> must be called at least once before <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ae4ca8a287657a117d770aa3da82f3b44"><span class="std std-ref"><span class="pre">apply()</span></span></a></code> is called. Some implementations may use <code class="docutils literal notranslate"><span class="pre">shift()</span></code> to transfer the matrix to the GPU).</p></li>
+<li><p>The manner in which the Matrix <code class="docutils literal notranslate"><span class="pre">H</span></code> is loaded into the class is defined by the subclass. Further, the size of the vectors <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> must be known to any subclass. </p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>T</strong> – the scalar type used for the application. ChASE is templated for real and complex numbers with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p>
+</dd>
+</dl>
+<p>Subclassed by <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1ChaseMpiDLA"><span class="std std-ref">chase::mpi::ChaseMpiDLA&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeqInplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1ChaseMpiDLACudaSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1ChaseMpiDLAMultiGPU"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU&lt; T &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLAInterface::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a970c0faf911c8471b81565b741b1f41c"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shiftMatrix</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">c</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">isunshift</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function shift the diagonal of global matrix with a constant value <code class="docutils literal notranslate"><span class="pre">c</span></code>. After a call to <code class="docutils literal notranslate"><span class="pre">shiftMatrix</span></code> all subsequent calls to <code class="docutils literal notranslate"><span class="pre">apply</span></code> and <code class="docutils literal notranslate"><span class="pre">applyVec</span></code> perform the multiplication with a shift <code class="docutils literal notranslate"><span class="pre">c</span></code>. This is a virtual function, its implementation varies differently in different derived classes. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> – shift value </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::preApplication__TP.TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a41fd3abf508320a85326396478ea16a2"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">preApplication</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V1</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V2</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TP1TNSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">preApplication</span></code> prepares internal state to perform the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>: <code class="docutils literal notranslate"><span class="pre">V2</span> <span class="pre">&lt;-</span> <span class="pre">alpha</span> <span class="pre">*</span> <span class="pre">H*V1</span> <span class="pre">+</span> <span class="pre">beta*V2</span></code>. The first <code class="docutils literal notranslate"><span class="pre">locked</span></code> number of vectors of <code class="docutils literal notranslate"><span class="pre">V1</span></code> are not used in the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. In ChASE, these are the locked vectors, which are already converged with acceptable tolerance. Starting from the column <code class="docutils literal notranslate"><span class="pre">locked</span></code>, <code class="docutils literal notranslate"><span class="pre">V1</span></code> contains <code class="docutils literal notranslate"><span class="pre">block</span></code> number of vectors. This is a virtual function, its implementation varies differently in different derived classes. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V1</strong> – a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix </p></li>
+<li><p><strong>V2</strong> – a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix </p></li>
+<li><p><strong>locked</strong> – an integer indicating the number of locked (converged) eigenvectors </p></li>
+<li><p><strong>block</strong> – an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ac4d749965ee355d6c89ea7609a4dbf8f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">preApplication</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Compared to <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> defined previously, this function only populates <code class="docutils literal notranslate"><span class="pre">V1</span></code>. After a call to this function the state of V2 is undefined. This is a virtual function, its implementation varies differently in different derived classes. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V1</strong> – a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix </p></li>
+<li><p><strong>locked</strong> – an integer indicating the number of locked (converged) eigenvectors </p></li>
+<li><p><strong>block</strong> – an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::apply__T.T.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ae4ca8a287657a117d770aa3da82f3b44"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">apply</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">beta</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Performs <code class="docutils literal notranslate"><span class="pre">V2&lt;-</span> <span class="pre">alpha*V1*H</span> <span class="pre">+</span> <span class="pre">beta*V2</span></code> and <code class="docutils literal notranslate"><span class="pre">swap(V1,V2)</span></code>. </p>
+<p>The first <code class="docutils literal notranslate"><span class="pre">offset</span></code> vectors of V1 and V2 are not part of the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. The <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> uses block vectors. <code class="docutils literal notranslate"><span class="pre">block</span></code> must be smaller or equal to the block passed in <code class="docutils literal notranslate"><span class="pre">preApplication</span></code>. Including the <code class="docutils literal notranslate"><span class="pre">locked</span></code> vectors passed into apply we perform, in <code class="docutils literal notranslate"><span class="pre">MATLAB</span></code> notation: <code class="docutils literal notranslate"><span class="pre">V2[:,start:end]&lt;-alpha*V1[:,start:end]*H+beta*V2[:,start:end]</span></code>, in which <code class="docutils literal notranslate"><span class="pre">start=locked+offset</span></code> and <code class="docutils literal notranslate"><span class="pre">end=locked+offset+block</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> – a scalar times on <code class="docutils literal notranslate"><span class="pre">V1*H</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><strong>beta</strong> – a scalar times on <code class="docutils literal notranslate"><span class="pre">V2</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><strong>offset</strong> – an offset of number vectors which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starting from. </p></li>
+<li><p><strong>block</strong> – number of non-converged eigenvectors, it indicates the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> to perform <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::postApplication__TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a8e0ff5444858168b62b07742559c60f3"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">postApplication</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Copies <code class="docutils literal notranslate"><span class="pre">V2</span></code>, the result of one or more results of <code class="docutils literal notranslate"><span class="pre">apply</span></code> to <code class="docutils literal notranslate"><span class="pre">V</span></code>. </p>
+<p><code class="docutils literal notranslate"><span class="pre">block</span></code> number of vectors are copied. The first <code class="docutils literal notranslate"><span class="pre">locked</span></code> ( as supplied to <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> ) vectors are skipped. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V</strong> – the vectors which <code class="docutils literal notranslate"><span class="pre">V2</span></code> are copied to. </p></li>
+<li><p><strong>block</strong> – number of vectors to be copied to <code class="docutils literal notranslate"><span class="pre">V</span></code> from <code class="docutils literal notranslate"><span class="pre">V2</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiDLAInterface::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1aa2d8c5ced9fed1b5dace85fd86236860"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">applyVec</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">B</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">C</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Performs a Generalized Matrix Vector Multiplication (<code class="docutils literal notranslate"><span class="pre">GEMV</span></code>) with <code class="docutils literal notranslate"><span class="pre">alpha=1.0</span></code> and <code class="docutils literal notranslate"><span class="pre">beta=0.0</span></code>. </p>
+<p>The operation is <code class="docutils literal notranslate"><span class="pre">C=H*B</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>B</strong> – the vector to be multiplied on <code class="docutils literal notranslate"><span class="pre">H</span></code>. </p></li>
+<li><p><strong>C</strong> – the vector to store the product of <code class="docutils literal notranslate"><span class="pre">H</span></code> and <code class="docutils literal notranslate"><span class="pre">B</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::lange__c.std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a5dbd59a2d571d8c4d47f9b4e528ddeb1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">lange</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">norm</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">A</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lda</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Perform a <code class="docutils literal notranslate"><span class="pre">LAPACK-like</span></code> function which returns the value of the 1-norm, Frobenius norm, infinity-norm, or the largest absolute value of any element of a general rectangular matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with scalar type <code class="docutils literal notranslate"><span class="pre">T</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>norm</strong> – specifies the value to be returned in <code class="docutils literal notranslate"><span class="pre">lange</span></code>. </p></li>
+<li><p><strong>m</strong> – the number of rows of the matrix A. </p></li>
+<li><p><strong>n</strong> – the number of columns of the matrix A. </p></li>
+<li><p><strong>A</strong> – A is an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(lda,</span> <span class="pre">n)</span></code>, the <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+<li><p><strong>lda</strong> – the leading dimension of the array <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the value of a required type of norm of given matrix. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::gegqr__std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a357552bd5a6186255927ddc11fa85060"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gegqr</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nevex</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">approxV_</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">LDA</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Perform a <code class="docutils literal notranslate"><span class="pre">QR</span></code> factorization and construct explicitly the unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code>. </p>
+<p>The matrix to be factorized is given in <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> and the final constructed unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code> is stored also in <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> by overwritten previous values. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> the number of rows of the matrix <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> to be factorized. </p></li>
+<li><p><strong>nevex</strong> – <strong>[in]</strong> the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> to be factorized. </p></li>
+<li><p><strong>[in/out]</strong> – approxV_: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(LDA,</span> <span class="pre">nevex)</span></code>, the the <code class="docutils literal notranslate"><span class="pre">N</span></code> by <code class="docutils literal notranslate"><span class="pre">nevex</span></code> matrix <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> is to be factorized. </p></li>
+<li><p><strong>LDA</strong> – <strong>[in]</strong> the leading dimension of the array <code class="docutils literal notranslate"><span class="pre">approxV_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a256eb556bc4cdd76b4f195fb6ddd1d0b"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">axpy</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">y</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incy</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which performs a constant times a vector plus a vector. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>alpha</strong> – <strong>[in]</strong> a scalar times on <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">AXPY</span></code> operation. </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – y: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incy</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1aa461b0469be97c581558623dffb4c900"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">scal</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">a</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which scales a vector by a constant. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>a</strong> – <strong>[in]</strong> a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> times on vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – x: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a71e00a9969f2a9cc10452ad3fd783006"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nrm2</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which returns the euclidean norm of a vector. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. 
+
+ </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the euclidean norm of vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1af732049c63c4540ab113ae2efc4c9a25"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">dot</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">y</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incy</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the dot product of two vectors. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>y</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incy</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. 
+
+ </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the dot product of vectors <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::gemm_small__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a7cff7ede35dcab38b907c359de78fc03"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gemm_small</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">CBLAS_LAYOUT</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">Layout</span></span>, <span class="n"><span class="pre">CBLAS_TRANSPOSE</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">transa</span></span>, <span class="n"><span class="pre">CBLAS_TRANSPOSE</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">transb</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">k</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">a</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lda</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">b</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldb</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">beta</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">c</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the Generalized Matrix-Matrix production operation (<code class="docutils literal notranslate"><span class="pre">GEMM</span></code>). </p>
+<p><code class="docutils literal notranslate"><span class="pre">gemm_small</span></code> performs one of the matrix-matrix operations <code class="docutils literal notranslate"><span class="pre">C</span> <span class="pre">:=</span> <span class="pre">alpha*op(</span> <span class="pre">A</span> <span class="pre">)*op(</span> <span class="pre">B</span> <span class="pre">)</span> <span class="pre">+</span> <span class="pre">beta*C</span></code>, where <code class="docutils literal notranslate"><span class="pre">op(X)</span></code> is one of <code class="docutils literal notranslate"><span class="pre">op(X)</span> <span class="pre">=</span> <span class="pre">X</span></code> or <code class="docutils literal notranslate"><span class="pre">op(X)</span> <span class="pre">=</span> <span class="pre">X**T</span></code>. <code class="docutils literal notranslate"><span class="pre">alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">beta</span></code> are scalars, and <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">B</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code> are matrices, with <code class="docutils literal notranslate"><span class="pre">op(A)</span></code> an <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> matrix, <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> a <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> matrix and <code class="docutils literal notranslate"><span class="pre">C</span></code> an <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> matrix. This function is implemented specifically for the matrices with relatively small <code class="docutils literal notranslate"><span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">k</span></code>. In the current implementation of ChASE, this function performs a normal <code class="docutils literal notranslate"><span class="pre">gemm</span></code> without considering the sizes of matrices, but it will be improved in the later verison. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Layout</strong> – <strong>[in]</strong> layout of matrices, currently only column-major layout is supported in ChASE. </p></li>
+<li><p><strong>transa</strong> – <strong>[in]</strong> it specifies the form of <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> to be used in the matrix multiplication. If its value is 1, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">transpose</span></code> operation, if its value is 2, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">transpose</span></code> operation and if its value is <code class="docutils literal notranslate"><span class="pre">3</span></code>, we have <code class="docutils literal notranslate"><span class="pre">op</span> <span class="pre">(A)=A</span></code>. </p></li>
+<li><p><strong>transb</strong> – <strong>[in]</strong> it specifies the form of <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> to be used in the matrix multiplication. If its value is 1, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">transpose</span></code> operation, if its value is 2, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">transpose</span></code> operation and if its value is <code class="docutils literal notranslate"><span class="pre">3</span></code>, we have <code class="docutils literal notranslate"><span class="pre">op</span> <span class="pre">(B)=B</span></code>. </p></li>
+<li><p><strong>m</strong> – <strong>[in]</strong> it specifies the number of rows of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> and of the matrix <code class="docutils literal notranslate"><span class="pre">C</span></code>. </p></li>
+<li><p><strong>n</strong> – <strong>[in]</strong> it specifies the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> and the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">C</span></code>. </p></li>
+<li><p><strong>k</strong> – <strong>[in]</strong> it specifies the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> and the number of rows of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code></p></li>
+<li><p><strong>alpha</strong> – <strong>[in]</strong> it specifies the scalar <code class="docutils literal notranslate"><span class="pre">alpha</span></code>. </p></li>
+<li><p><strong>a</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">lda,</span> <span class="pre">ka</span> <span class="pre">)</span></code>, where <code class="docutils literal notranslate"><span class="pre">ka</span></code> is <code class="docutils literal notranslate"><span class="pre">k</span></code> when <code class="docutils literal notranslate"><span class="pre">transa</span> <span class="pre">=</span> <span class="pre">3</span></code>, and is <code class="docutils literal notranslate"><span class="pre">m</span></code> otherwise. Before entry with <code class="docutils literal notranslate"><span class="pre">transa</span> <span class="pre">=</span> <span class="pre">3</span></code>, the leading <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">a</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">a</span></code>, otherwise the leading <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">m</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">a</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">a</span></code>. </p></li>
+<li><p><strong>lda</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">a</span></code>. When <code class="docutils literal notranslate"><span class="pre">transa=3</span></code>, it must be at least <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">m)</span></code>, otherwise it must be at least <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">k)</span></code>. </p></li>
+<li><p><strong>b</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">ldb,</span> <span class="pre">kb</span> <span class="pre">)</span></code>, where <code class="docutils literal notranslate"><span class="pre">kb</span></code> is <code class="docutils literal notranslate"><span class="pre">n</span></code> when <code class="docutils literal notranslate"><span class="pre">transb=3</span></code>, and is <code class="docutils literal notranslate"><span class="pre">k</span></code> otherwise. Before entry with <code class="docutils literal notranslate"><span class="pre">transb=3</span></code>, the leading <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">b</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">b</span></code>, otherwise the leading <code class="docutils literal notranslate"><span class="pre">n</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">b</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">b</span></code>. </p></li>
+<li><p><strong>ldb</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">b</span></code>. When <code class="docutils literal notranslate"><span class="pre">transa=3</span></code>, it must be at least <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">k)</span></code>, otherwise it must be at least <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">n)</span></code>. </p></li>
+<li><p><strong>beta</strong> – <strong>[in]</strong> it specifies the scalar <code class="docutils literal notranslate"><span class="pre">beta</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – `c`: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">ldc,</span> <span class="pre">n</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>ldc</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">c</span></code>. It must be at least <code class="docutils literal notranslate"><span class="pre">max(1,m)</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::gemm_large__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a484c84b42f329c1b254ab6d7639f34f7"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gemm_large</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">CBLAS_LAYOUT</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">Layout</span></span>, <span class="n"><span class="pre">CBLAS_TRANSPOSE</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">transa</span></span>, <span class="n"><span class="pre">CBLAS_TRANSPOSE</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">transb</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">k</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">a</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lda</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">b</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldb</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">beta</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">c</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the Generalized Matrix-Matrix production operation (<code class="docutils literal notranslate"><span class="pre">GEMM</span></code>). </p>
+<p><code class="docutils literal notranslate"><span class="pre">gemm_large</span></code> performs one of the matrix-matrix operations <code class="docutils literal notranslate"><span class="pre">C</span> <span class="pre">:=</span> <span class="pre">alpha*op(</span> <span class="pre">A</span> <span class="pre">)*op(</span> <span class="pre">B</span> <span class="pre">)</span> <span class="pre">+</span> <span class="pre">beta*C</span></code>, where <code class="docutils literal notranslate"><span class="pre">op(X)</span></code> is one of <code class="docutils literal notranslate"><span class="pre">op(X)</span> <span class="pre">=</span> <span class="pre">X</span></code> or <code class="docutils literal notranslate"><span class="pre">op(X)</span> <span class="pre">=</span> <span class="pre">X**T</span></code>. <code class="docutils literal notranslate"><span class="pre">alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">beta</span></code> are scalars, and <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">B</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code> are matrices, with <code class="docutils literal notranslate"><span class="pre">op(A)</span></code> an <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> matrix, <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> a <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> matrix and <code class="docutils literal notranslate"><span class="pre">C</span></code> an <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> matrix. This function is implemented specifically for the matrices with relatively large <code class="docutils literal notranslate"><span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">k</span></code>. In the current implementation of ChASE, this function performs a normal <code class="docutils literal notranslate"><span class="pre">gemm</span></code> without considering the sizes of matrices, but it will be improved in the later verison. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Layout</strong> – <strong>[in]</strong> layout of matrices, currently only column-major layout is supported in ChASE. </p></li>
+<li><p><strong>transa</strong> – <strong>[in]</strong> it specifies the form of <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> to be used in the matrix multiplication. If its value is 1, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">transpose</span></code> operation, if its value is 2, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">transpose</span></code> operation and if its value is <code class="docutils literal notranslate"><span class="pre">3</span></code>, we have <code class="docutils literal notranslate"><span class="pre">op</span> <span class="pre">(A)=A</span></code>. </p></li>
+<li><p><strong>transb</strong> – <strong>[in]</strong> it specifies the form of <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> to be used in the matrix multiplication. If its value is 1, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">transpose</span></code> operation, if its value is 2, the <code class="docutils literal notranslate"><span class="pre">op</span></code> is <code class="docutils literal notranslate"><span class="pre">transpose</span></code> operation and if its value is <code class="docutils literal notranslate"><span class="pre">3</span></code>, we have <code class="docutils literal notranslate"><span class="pre">op</span> <span class="pre">(B)=B</span></code>. </p></li>
+<li><p><strong>m</strong> – <strong>[in]</strong> it specifies the number of rows of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> and of the matrix <code class="docutils literal notranslate"><span class="pre">C</span></code>. </p></li>
+<li><p><strong>n</strong> – <strong>[in]</strong> it specifies the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code> and the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">C</span></code>. </p></li>
+<li><p><strong>k</strong> – <strong>[in]</strong> it specifies the number of columns of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">A</span> <span class="pre">)</span></code> and the number of rows of the matrix <code class="docutils literal notranslate"><span class="pre">op(</span> <span class="pre">B</span> <span class="pre">)</span></code></p></li>
+<li><p><strong>alpha</strong> – <strong>[in]</strong> it specifies the scalar <code class="docutils literal notranslate"><span class="pre">alpha</span></code>. </p></li>
+<li><p><strong>a</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">lda,</span> <span class="pre">ka</span> <span class="pre">)</span></code>, where <code class="docutils literal notranslate"><span class="pre">ka</span></code> is <code class="docutils literal notranslate"><span class="pre">k</span></code> when <code class="docutils literal notranslate"><span class="pre">transa</span> <span class="pre">=</span> <span class="pre">3</span></code>, and is <code class="docutils literal notranslate"><span class="pre">m</span></code> otherwise. Before entry with <code class="docutils literal notranslate"><span class="pre">transa</span> <span class="pre">=</span> <span class="pre">3</span></code>, the leading <code class="docutils literal notranslate"><span class="pre">m</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">a</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">a</span></code>, otherwise the leading <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">m</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">a</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">a</span></code>. </p></li>
+<li><p><strong>lda</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">a</span></code>. When <code class="docutils literal notranslate"><span class="pre">transa=3</span></code>, it must be at least <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">m)</span></code>, otherwise it must be at least <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">k)</span></code>. </p></li>
+<li><p><strong>b</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">ldb,</span> <span class="pre">kb</span> <span class="pre">)</span></code>, where <code class="docutils literal notranslate"><span class="pre">kb</span></code> is <code class="docutils literal notranslate"><span class="pre">n</span></code> when <code class="docutils literal notranslate"><span class="pre">transb=3</span></code>, and is <code class="docutils literal notranslate"><span class="pre">k</span></code> otherwise. Before entry with <code class="docutils literal notranslate"><span class="pre">transb=3</span></code>, the leading <code class="docutils literal notranslate"><span class="pre">k</span></code> by <code class="docutils literal notranslate"><span class="pre">n</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">b</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">b</span></code>, otherwise the leading <code class="docutils literal notranslate"><span class="pre">n</span></code> by <code class="docutils literal notranslate"><span class="pre">k</span></code> part of the array <code class="docutils literal notranslate"><span class="pre">b</span></code> must contain the matrix <code class="docutils literal notranslate"><span class="pre">b</span></code>. </p></li>
+<li><p><strong>ldb</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">b</span></code>. When <code class="docutils literal notranslate"><span class="pre">transa=3</span></code>, it must be at least <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">k)</span></code>, otherwise it must be at least <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">n)</span></code>. </p></li>
+<li><p><strong>beta</strong> – <strong>[in]</strong> it specifies the scalar <code class="docutils literal notranslate"><span class="pre">beta</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – `c`: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">ldc,</span> <span class="pre">n</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>ldc</strong> – <strong>[in]</strong> it specifies the first dimension of <code class="docutils literal notranslate"><span class="pre">c</span></code>. It must be at least <code class="docutils literal notranslate"><span class="pre">max(1,m)</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLAInterface::stemr__i.c.c.std::s.doubleP.doubleP.double.double.std::s.std::s.iP.doubleP.doubleP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a1e49156ce0317a1d45912fdb71548599"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stemr</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">matrix_layout</span></span>, <span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">jobz</span></span>, <span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">range</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">d</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">e</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">vl</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">vu</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">il</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">iu</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">m</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">w</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">z</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldz</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nzc</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">isuppz</span></span>, <span class="n"><span class="pre">lapack_logical</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">tryrac</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">LAPACK-like</span></code> function which computes selected eigenvalues and eigenvectors of a real symmetric tridiagonal matrix of <strong>DOUBLE PRECISION</strong>. </p>
+<p>The routine computes selected eigenvalues and, optionally, eigenvectors of a real symmetric tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. Any such unreduced matrix has a well defined set of pairwise different real eigenvalues, the corresponding real eigenvectors are pairwise orthogonal. The spectrum may be computed either completely or partially by specifying either an interval <code class="docutils literal notranslate"><span class="pre">(vl,vu]</span></code> or a range of indices <code class="docutils literal notranslate"><span class="pre">il:iu</span></code> for the desired eigenvalues. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matrix_layout</strong> – <strong>[in]</strong> layout of matrices, currently only column-major layout is supported in ChASE. </p></li>
+<li><p><strong>jobz</strong> – <strong>[in]</strong> Must be <code class="docutils literal notranslate"><span class="pre">N</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">N</span></code>, then only eigenvalues are computed, else if <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, then eigenvalues and eigenvectors are computed. </p></li>
+<li><p><strong>range</strong> – <strong>[in]</strong> Must be <code class="docutils literal notranslate"><span class="pre">A</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code> or <code class="docutils literal notranslate"><span class="pre">I</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, the routine computes all eigenvalues. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, the routine computes all eigenvalues in the half-open interval: <code class="docutils literal notranslate"><span class="pre">(vl,</span> <span class="pre">vu]</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, the routine computes eigenvalues with indices <code class="docutils literal notranslate"><span class="pre">il</span></code> to <code class="docutils literal notranslate"><span class="pre">iu</span></code>. </p></li>
+<li><p><strong>n</strong> – <strong>[in]</strong> The order of the matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – d: array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. It contains <code class="docutils literal notranslate"><span class="pre">n</span></code> diagonal elements of the tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. On exit, the array d is overwritten. </p></li>
+<li><p><strong>[in/out]</strong> – e: array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. It Contains <code class="docutils literal notranslate"><span class="pre">(n-1)</span></code> off-diagonal elements of the tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code> in elements <code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">n-2</span></code> of <code class="docutils literal notranslate"><span class="pre">e</span></code>. On exit, the array d is overwritten. </p></li>
+<li><p><strong>vl&amp;vu</strong> – <strong>[in]</strong> If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, the lower and upper bounds of the interval to be searched for eigenvalues. Constraint: <code class="docutils literal notranslate"><span class="pre">vl&lt;vu</span></code>. </p></li>
+<li><p><strong>il&amp;iu</strong> – <strong>[in]</strong> If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, the indices in ascending order of the smallest and largest eigenvalues to be returned. Constraint: <code class="docutils literal notranslate"><span class="pre">1≤il≤iu≤n</span></code>, if <code class="docutils literal notranslate"><span class="pre">n&gt;0</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code>, <code class="docutils literal notranslate"><span class="pre">il</span></code> and <code class="docutils literal notranslate"><span class="pre">iu</span></code> are not referenced. </p></li>
+<li><p><strong>m</strong> – <strong>[out]</strong> The total number of eigenvalues found, <code class="docutils literal notranslate"><span class="pre">0≤m≤n</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, then <code class="docutils literal notranslate"><span class="pre">m=n</span></code>, and if <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, then <code class="docutils literal notranslate"><span class="pre">m=iu-il+1</span></code>. </p></li>
+<li><p><strong>w</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. The first <code class="docutils literal notranslate"><span class="pre">m</span></code> elements contain the selected eigenvalues in ascending order. </p></li>
+<li><p><strong>z</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">ldz*m)</span></code> for column major layout. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, and <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">=</span> <span class="pre">0</span></code>, then the first <code class="docutils literal notranslate"><span class="pre">m</span></code> columns of <code class="docutils literal notranslate"><span class="pre">z</span></code> contain the orthonormal eigenvectors of the matrix <code class="docutils literal notranslate"><span class="pre">T</span></code> corresponding to the selected eigenvalues, with the <code class="docutils literal notranslate"><span class="pre">i-th</span></code> column of <code class="docutils literal notranslate"><span class="pre">z</span></code> holding the eigenvector associated with <code class="docutils literal notranslate"><span class="pre">w(i)</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">N</span></code>, then z is not referenced. </p></li>
+<li><p><strong>ldz</strong> – <strong>[in]</strong> The leading dimension of the output array <code class="docutils literal notranslate"><span class="pre">z</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, then <code class="docutils literal notranslate"><span class="pre">ldz</span> <span class="pre">≥</span> <span class="pre">max(1,</span> <span class="pre">n)</span></code> for column major layout; <code class="docutils literal notranslate"><span class="pre">ldz</span> <span class="pre">≥</span> <span class="pre">1</span></code> otherwise. </p></li>
+<li><p><strong>nzc</strong> – <strong>[in]</strong> The number of eigenvectors to be held in the array <code class="docutils literal notranslate"><span class="pre">z</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc≥max(1,</span> <span class="pre">n)</span></code>; If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc</span></code> is greater than or equal to the number of eigenvalues in the half-open interval: <code class="docutils literal notranslate"><span class="pre">(vl,</span> <span class="pre">vu]</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc≥iu-il+1</span></code>. If <code class="docutils literal notranslate"><span class="pre">nzc</span> <span class="pre">=</span> <span class="pre">-1</span></code>, then a workspace query is assumed; the routine calculates the number of columns of the array <code class="docutils literal notranslate"><span class="pre">z</span></code> that are needed to hold the eigenvectors. </p></li>
+<li><p><strong>isuppz</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">(2*max(1,</span> <span class="pre">m))</span></code>. The support of the eigenvectors in <code class="docutils literal notranslate"><span class="pre">z</span></code>, that is the indices indicating the nonzero elements in <code class="docutils literal notranslate"><span class="pre">z</span></code>. The <code class="docutils literal notranslate"><span class="pre">i-th</span></code> computed eigenvector is nonzero only in elements <code class="docutils literal notranslate"><span class="pre">isuppz[2*i</span> <span class="pre">-</span> <span class="pre">2]</span></code> through <code class="docutils literal notranslate"><span class="pre">isuppz[2*i</span> <span class="pre">-</span> <span class="pre">1]</span></code>. This is relevant in the case when the matrix is split. <code class="docutils literal notranslate"><span class="pre">isuppz</span></code> is only accessed when <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code> and <code class="docutils literal notranslate"><span class="pre">n&gt;0</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – tryrac: On entry, If <code class="docutils literal notranslate"><span class="pre">tryrac</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>, it indicates that the code should check whether the tridiagonal matrix defines its eigenvalues to high relative accuracy. On exit, set to <code class="docutils literal notranslate"><span class="pre">true</span></code>. <code class="docutils literal notranslate"><span class="pre">tryrac</span></code> is set to <code class="docutils literal notranslate"><span class="pre">false</span></code> if the matrix does not define its eigenvalues to high relative accuracy. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLAInterface::stemr__i.c.c.std::s.floatP.floatP.float.float.std::s.std::s.iP.floatP.floatP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a9f3a9340ccbd310bdb0b2d6060cc853e"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stemr</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">matrix_layout</span></span>, <span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">jobz</span></span>, <span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">range</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">d</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">e</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">vl</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">vu</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">il</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">iu</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">m</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">w</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">z</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ldz</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nzc</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">isuppz</span></span>, <span class="n"><span class="pre">lapack_logical</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">tryrac</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical" title="Link to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">LAPACK-like</span></code> function which computes selected eigenvalues and eigenvectors of a real symmetric tridiagonal matrix of <strong>SINGLE PRECISION</strong>. </p>
+<p>The routine computes selected eigenvalues and, optionally, eigenvectors of a real symmetric tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. Any such unreduced matrix has a well defined set of pairwise different real eigenvalues, the corresponding real eigenvectors are pairwise orthogonal. The spectrum may be computed either completely or partially by specifying either an interval <code class="docutils literal notranslate"><span class="pre">(vl,vu]</span></code> or a range of indices <code class="docutils literal notranslate"><span class="pre">il:iu</span></code> for the desired eigenvalues. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matrix_layout</strong> – <strong>[in]</strong> layout of matrices, currently only column-major layout is supported in ChASE. </p></li>
+<li><p><strong>jobz</strong> – <strong>[in]</strong> Must be <code class="docutils literal notranslate"><span class="pre">N</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">N</span></code>, then only eigenvalues are computed, else if <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, then eigenvalues and eigenvectors are computed. </p></li>
+<li><p><strong>range</strong> – <strong>[in]</strong> Must be <code class="docutils literal notranslate"><span class="pre">A</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code> or <code class="docutils literal notranslate"><span class="pre">I</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, the routine computes all eigenvalues. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, the routine computes all eigenvalues in the half-open interval: <code class="docutils literal notranslate"><span class="pre">(vl,</span> <span class="pre">vu]</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, the routine computes eigenvalues with indices <code class="docutils literal notranslate"><span class="pre">il</span></code> to <code class="docutils literal notranslate"><span class="pre">iu</span></code>. </p></li>
+<li><p><strong>n</strong> – <strong>[in]</strong> The order of the matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – d: array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. It contains <code class="docutils literal notranslate"><span class="pre">n</span></code> diagonal elements of the tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code>. On exit, the array d is overwritten. </p></li>
+<li><p><strong>[in/out]</strong> – e: array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. It Contains <code class="docutils literal notranslate"><span class="pre">(n-1)</span></code> off-diagonal elements of the tridiagonal matrix <code class="docutils literal notranslate"><span class="pre">T</span></code> in elements <code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">n-2</span></code> of <code class="docutils literal notranslate"><span class="pre">e</span></code>. On exit, the array d is overwritten. </p></li>
+<li><p><strong>vl&amp;vu</strong> – <strong>[in]</strong> If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, the lower and upper bounds of the interval to be searched for eigenvalues. Constraint: <code class="docutils literal notranslate"><span class="pre">vl&lt;vu</span></code>. </p></li>
+<li><p><strong>il&amp;iu</strong> – <strong>[in]</strong> If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, the indices in ascending order of the smallest and largest eigenvalues to be returned. Constraint: <code class="docutils literal notranslate"><span class="pre">1≤il≤iu≤n</span></code>, if <code class="docutils literal notranslate"><span class="pre">n&gt;0</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code> or <code class="docutils literal notranslate"><span class="pre">V</span></code>, <code class="docutils literal notranslate"><span class="pre">il</span></code> and <code class="docutils literal notranslate"><span class="pre">iu</span></code> are not referenced. </p></li>
+<li><p><strong>m</strong> – <strong>[out]</strong> The total number of eigenvalues found, <code class="docutils literal notranslate"><span class="pre">0≤m≤n</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, then <code class="docutils literal notranslate"><span class="pre">m=n</span></code>, and if <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, then <code class="docutils literal notranslate"><span class="pre">m=iu-il+1</span></code>. </p></li>
+<li><p><strong>w</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">n</span></code>. The first <code class="docutils literal notranslate"><span class="pre">m</span></code> elements contain the selected eigenvalues in ascending order. </p></li>
+<li><p><strong>z</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">ldz*m)</span></code> for column major layout. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, and <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">=</span> <span class="pre">0</span></code>, then the first <code class="docutils literal notranslate"><span class="pre">m</span></code> columns of <code class="docutils literal notranslate"><span class="pre">z</span></code> contain the orthonormal eigenvectors of the matrix <code class="docutils literal notranslate"><span class="pre">T</span></code> corresponding to the selected eigenvalues, with the <code class="docutils literal notranslate"><span class="pre">i-th</span></code> column of <code class="docutils literal notranslate"><span class="pre">z</span></code> holding the eigenvector associated with <code class="docutils literal notranslate"><span class="pre">w(i)</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">N</span></code>, then z is not referenced. </p></li>
+<li><p><strong>ldz</strong> – <strong>[in]</strong> The leading dimension of the output array <code class="docutils literal notranslate"><span class="pre">z</span></code>. If <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code>, then <code class="docutils literal notranslate"><span class="pre">ldz</span> <span class="pre">≥</span> <span class="pre">max(1,</span> <span class="pre">n)</span></code> for column major layout; <code class="docutils literal notranslate"><span class="pre">ldz</span> <span class="pre">≥</span> <span class="pre">1</span></code> otherwise. </p></li>
+<li><p><strong>nzc</strong> – <strong>[in]</strong> The number of eigenvectors to be held in the array <code class="docutils literal notranslate"><span class="pre">z</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">A</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc≥max(1,</span> <span class="pre">n)</span></code>; If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">V</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc</span></code> is greater than or equal to the number of eigenvalues in the half-open interval: <code class="docutils literal notranslate"><span class="pre">(vl,</span> <span class="pre">vu]</span></code>. If <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">=</span> <span class="pre">I</span></code>, then <code class="docutils literal notranslate"><span class="pre">nzc≥iu-il+1</span></code>. If <code class="docutils literal notranslate"><span class="pre">nzc</span> <span class="pre">=</span> <span class="pre">-1</span></code>, then a workspace query is assumed; the routine calculates the number of columns of the array <code class="docutils literal notranslate"><span class="pre">z</span></code> that are needed to hold the eigenvectors. </p></li>
+<li><p><strong>isuppz</strong> – <strong>[out]</strong> Array, size <code class="docutils literal notranslate"><span class="pre">(2*max(1,</span> <span class="pre">m))</span></code>. The support of the eigenvectors in <code class="docutils literal notranslate"><span class="pre">z</span></code>, that is the indices indicating the nonzero elements in <code class="docutils literal notranslate"><span class="pre">z</span></code>. The <code class="docutils literal notranslate"><span class="pre">i-th</span></code> computed eigenvector is nonzero only in elements <code class="docutils literal notranslate"><span class="pre">isuppz[2*i</span> <span class="pre">-</span> <span class="pre">2]</span></code> through <code class="docutils literal notranslate"><span class="pre">isuppz[2*i</span> <span class="pre">-</span> <span class="pre">1]</span></code>. This is relevant in the case when the matrix is split. <code class="docutils literal notranslate"><span class="pre">isuppz</span></code> is only accessed when <code class="docutils literal notranslate"><span class="pre">jobz</span> <span class="pre">=</span> <span class="pre">V</span></code> and <code class="docutils literal notranslate"><span class="pre">n&gt;0</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – tryrac: On entry, If <code class="docutils literal notranslate"><span class="pre">tryrac</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>, it indicates that the code should check whether the tridiagonal matrix defines its eigenvalues to high relative accuracy. On exit, set to <code class="docutils literal notranslate"><span class="pre">true</span></code>. <code class="docutils literal notranslate"><span class="pre">tryrac</span></code> is set to <code class="docutils literal notranslate"><span class="pre">false</span></code> if the matrix does not define its eigenvalues to high relative accuracy. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiDLAInterface::RR_kernel__std::s.std::s.TP.std::s.TP.T.T.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a8bb97ef843ac572d510de02958212fc3"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR_kernel</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">approxV</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">workspace</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">One</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">Zero</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function implements the kernel of <strong>Rayleigh-Ritz</strong> (short as <code class="docutils literal notranslate"><span class="pre">RR</span></code>) step of ChASE. </p>
+<p><ol class="lowerroman simple">
+<li><p>It performs <code class="docutils literal notranslate"><span class="pre">A&lt;-approxV^T</span> <span class="pre">*</span> <span class="pre">workspace</span></code>, for both <code class="docutils literal notranslate"><span class="pre">approxV^T</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace</span></code>, this operation starts from its column of numbering <code class="docutils literal notranslate"><span class="pre">locked</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> is of size <code class="docutils literal notranslate"><span class="pre">block*block</span></code>.</p></li>
+<li><p>It computes the eigenpairs of <code class="docutils literal notranslate"><span class="pre">A</span></code>, the eigenvalues are stored in <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, and the eigenvectors are overwritten into <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p></li>
+<li><p>It performs <code class="docutils literal notranslate"><span class="pre">workspace=A*approxV</span></code>, for both <code class="docutils literal notranslate"><span class="pre">approxV^T</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace</span></code>, this operation starts from its column of numbering <code class="docutils literal notranslate"><span class="pre">locked</span></code>. </p></li>
+</ol>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> the row number of <code class="docutils literal notranslate"><span class="pre">approxV^T</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace</span></code>. </p></li>
+<li><p><strong>block</strong> – <strong>[in]</strong> the number of vectors are used for these operations within <code class="docutils literal notranslate"><span class="pre">approxV^T</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace</span></code>. </p></li>
+<li><p><strong>approxV</strong> – <strong>[in]</strong> On entry, a <code class="docutils literal notranslate"><span class="pre">N*max_block_</span></code> rectangular matrix of type <code class="docutils literal notranslate"><span class="pre">T</span></code>. </p></li>
+<li><p><strong>locked</strong> – <strong>[in]</strong> number of converged eigenvectors, which are not considered for these operations. All the computation in the kernel related to <code class="docutils literal notranslate"><span class="pre">approxV^T</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace</span></code> start from the offset <code class="docutils literal notranslate"><span class="pre">locked</span> <span class="pre">*</span> <span class="pre">N</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – workspace: On entry, a <code class="docutils literal notranslate"><span class="pre">N*max_block_</span></code> rectangular matrix of type <code class="docutils literal notranslate"><span class="pre">T</span></code>. On exit, overwritten by <code class="docutils literal notranslate"><span class="pre">A*approxV</span></code>. </p></li>
+<li><p><strong>One</strong> – <strong>[in]</strong> scalar <code class="docutils literal notranslate"><span class="pre">T(1)</span></code>. </p></li>
+<li><p><strong>Zero</strong> – <strong>[in]</strong> scalar <code class="docutils literal notranslate"><span class="pre">T(0)</span></code>. </p></li>
+<li><p><strong>ritzv</strong> – <strong>[out]</strong> a real vector which stores the computed eigenvalues. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="chasempidlaseq.html" class="btn btn-neutral float-right" title="ChaseMpiDLABlaslapackSeq" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="chasempidla.html" class="btn btn-neutral" title="ChaseMpiDLA" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

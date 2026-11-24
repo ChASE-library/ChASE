@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Classes &mdash; ChASE v1.3.0 documentation</title>
+  <title>Classes &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="../index.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -57,13 +56,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="../index.html">
-          
 
           
-            
-            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -71,7 +68,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -86,20 +83,141 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -108,7 +226,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -157,10 +275,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="classes">
-<h1>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="chase-chase">
-<h2>chase::Chase<a class="headerlink" href="#chase-chase" title="Permalink to this headline">¶</a></h2>
+  <section id="classes">
+<h1>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h1>
+<section id="chase-chase">
+<h2>chase::Chase<a class="headerlink" href="#chase-chase" title="Link to this heading">¶</a></h2>
 <p>This class defines the <cite>virtual kernels</cite> as the virtual functions
 defined in the abstract class that correspond to calls to numerical
 kernels required by ChASE. It includes the
@@ -187,9 +305,9 @@ please refer to <a class="reference internal" href="../abstract.html#virtual-abs
 Different parallel implementations of these virtual kernels
 can also be found <a class="reference internal" href="../parallel.html#parallel-implementations"><span class="std std-ref">Parallel implementations</span></a>.</p>
 </div>
-</div>
-<div class="section" id="chase-algorithm">
-<h2>chase::Algorithm<a class="headerlink" href="#chase-algorithm" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="chase-algorithm">
+<h2>chase::Algorithm<a class="headerlink" href="#chase-algorithm" title="Link to this heading">¶</a></h2>
 <p>This class defines algoritmic implementation of ChASE using the
 defined virtual kernels. It includes the
 functionalties:</p>
@@ -207,18 +325,18 @@ functionalties:</p>
 <p>The details of this class are only provided in the developer documentation,
 please refer to <a class="reference internal" href="../algorithm.html#algorithmic-structure"><span class="std std-ref">General algorithm</span></a>.</p>
 </div>
-</div>
-<div class="section" id="chase-chaseconfig">
-<h2>chase::ChaseConfig<a class="headerlink" href="#chase-chaseconfig" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="chase-chaseconfig">
+<h2>chase::ChaseConfig<a class="headerlink" href="#chase-chaseconfig" title="Link to this heading">¶</a></h2>
 <p>This class defines the functions to set different parameters of ChASE.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more details of all available functions, please refer to
 <a class="reference internal" href="config.html#configuration-object"><span class="std std-ref">Configuration</span></a>.</p>
 </div>
-</div>
-<div class="section" id="chase-chaseperfdata">
-<h2>chase::ChasePerfData<a class="headerlink" href="#chase-chaseperfdata" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="chase-chaseperfdata">
+<h2>chase::ChasePerfData<a class="headerlink" href="#chase-chaseperfdata" title="Link to this heading">¶</a></h2>
 <p>This class defines the performance data for different algorithm and numerical
 kernels of ChASE, e.g., the floating operations of ChASE for given size of matrix
 and a required number of eigenpairs to be computed.</p>
@@ -227,9 +345,9 @@ and a required number of eigenpairs to be computed.</p>
 <p>For more details of all available functions, please refer to
 <a class="reference internal" href="perf.html#performance"><span class="std std-ref">Performance</span></a>.</p>
 </div>
-</div>
-<div class="section" id="chase-performancedecoratorchase">
-<h2>chase::PerformanceDecoratorChase<a class="headerlink" href="#chase-performancedecoratorchase" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="chase-performancedecoratorchase">
+<h2>chase::PerformanceDecoratorChase<a class="headerlink" href="#chase-performancedecoratorchase" title="Link to this heading">¶</a></h2>
 <p>This class is implemented based on <code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code> which decorate different
 numerical operations in ChASE, to mesure their performance (cost time, flop/s, etc).</p>
 <div class="admonition note">
@@ -237,16 +355,16 @@ numerical operations in ChASE, to mesure their performance (cost time, flop/s, e
 <p>For more details of all available functions, please refer to
 <a class="reference internal" href="perf.html#performance"><span class="std std-ref">Performance</span></a>.</p>
 </div>
-</div>
-</div>
-<div class="section" id="functions">
-<h1>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="chase-solve">
-<h2>chase::Solve<a class="headerlink" href="#chase-solve" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="functions">
+<h1>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h1>
+<section id="chase-solve">
+<h2>chase::Solve<a class="headerlink" href="#chase-solve" title="Link to this heading">¶</a></h2>
 <p>This function provides the implementation of ChASE algorithm by assembling the algorithms and
 numerical kernels implemented in <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code>.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -280,17 +398,15 @@ numerical kernels implemented in <code class="docutils literal notranslate"><spa
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="../_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
 
   
 

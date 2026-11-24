@@ -5,15 +5,14 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChaseMpiDLAInterface &mdash; ChASE v1.3.0 documentation</title>
+  <title>ChaseMpiDLAInterface &mdash; ChASE v1.5.0 documentation</title>
   
 
   
-  
-    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
   
 
   
@@ -37,7 +36,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link rel="top" title="ChASE v1.5.0 documentation" href="../index.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -57,13 +56,11 @@
         <div class="wy-side-nav-search">
           
 
-          
-            <a href="../index.html">
-          
 
           
-            
-            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+            <a href="../index.html" class="icon icon-home"> ChASE
+          
+
           
           </a>
 
@@ -71,7 +68,7 @@
             
             
               <div class="version">
-                v1.3.0
+                v1.5.0
               </div>
             
           
@@ -86,20 +83,141 @@
 </div>
 
           
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/"selected>
+      v1.5.0
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
         </div>
 
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
 </ul>
-<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
@@ -108,7 +226,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
-<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<p class="caption" role="heading"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
@@ -157,181 +275,173 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="chasempidlainterface">
-<span id="id1"></span><h1>ChaseMpiDLAInterface<a class="headerlink" href="#chasempidlainterface" title="Permalink to this headline">¶</a></h1>
+  <section id="chasempidlainterface">
+<span id="id1"></span><h1>ChaseMpiDLAInterface<a class="headerlink" href="#chasempidlainterface" title="Link to this heading">¶</a></h1>
 <dl class="cpp class">
-<dt id="_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE">
-<span id="_CPPv3I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span><span id="_CPPv2I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLAInterface</code><a class="headerlink" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE">
+<span id="_CPPv3I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span><span id="_CPPv2I0EN5chase3mpi20ChaseMpiDLAInterfaceE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseMpiDLAInterface</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>A class to set up an interface to all the Dense Linear Algebra (<code class="docutils literal notranslate"><span class="pre">DLA</span></code>) operations required by ChASE. </p>
-<p>In the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>, the <code class="docutils literal notranslate"><span class="pre">DLA</span></code> functions are only setup as a series of <code class="docutils literal notranslate"><span class="pre">virtual</span></code> functions without direct implementation. The implementation of these <code class="docutils literal notranslate"><span class="pre">DLA</span></code> will be laterly implemented by a set of derived classes targeting different computing architectures. Currently, in <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, we provide multiple derived classes<ul>
-<li><p><a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq</span></a>: implementing ChASE targeting shared-memory architectures with only CPUs available.</p></li>
-<li><p><a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq_inplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace</span></a>: implementing ChASE targeting shared-memory architectures with only CPUs available, with a inplace mode, in which the buffer of rectangular matrices are swapped and reused. This reduces the required memory to be allocted.</p></li>
-<li><p><a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq</span></a>: implementing ChASE targeting shared-memory architectures, most computation tasks are offloaded to one single GPU card.</p></li>
-<li><p><a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">chase::mpi::ChaseMpiDLA</span></a>: implementing mostly the MPI collective communications part of distributed-memory ChASE targeting the systems with or w/o GPUs.</p></li>
-<li><p><a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack</span></a>: implementing the inter-node computation for a pure-CPU MPI-based implementation of ChASE.</p></li>
-<li><p><a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU</span></a>: implementing the inter-node computation for a multi-GPU MPI-based implementation of ChASE.</p>
-<p><dl class="simple">
-<dt><strong>Template Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: the scalar type used for the application. ChASE is templated for real and complex numbers with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
+<p>In the class <a class="reference internal" href="#classchase_1_1mpi_1_1ChaseMpiDLAInterface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>, the <code class="docutils literal notranslate"><span class="pre">DLA</span></code> functions are only setup as a series of <code class="docutils literal notranslate"><span class="pre">virtual</span></code> functions without direct implementation. The implementation of these <code class="docutils literal notranslate"><span class="pre">DLA</span></code> will be laterly implemented by a set of derived classes targeting different computing architectures. Currently, in <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, we provide multiple derived classes<ul>
+<li><p><a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq</span></a>: implementing ChASE targeting shared-memory architectures with only CPUs available.</p></li>
+<li><p><a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeqInplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace</span></a>: implementing ChASE targeting shared-memory architectures with only CPUs available, with a inplace mode, in which the buffer of rectangular matrices are swapped and reused. This reduces the required memory to be allocted.</p></li>
+<li><p><a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1ChaseMpiDLACudaSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq</span></a>: implementing ChASE targeting shared-memory architectures, most computation tasks are offloaded to one single GPU card.</p></li>
+<li><p><a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1ChaseMpiDLA"><span class="std std-ref">chase::mpi::ChaseMpiDLA</span></a>: implementing mostly the MPI collective communications part of distributed-memory ChASE targeting the systems with or w/o GPUs.</p></li>
+<li><p><a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack</span></a>: implementing the inter-node computation for a pure-CPU MPI-based implementation of ChASE.</p></li>
+<li><p><a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1ChaseMpiDLAMultiGPU"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU</span></a>: implementing the inter-node computation for a multi-GPU MPI-based implementation of ChASE.</p>
+<p></p>
 </li>
 </ul>
 </p>
-<p>Subclassed by <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">chase::mpi::ChaseMpiDLA&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq_inplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU&lt; T &gt;</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>T</strong> – the scalar type used for the application. ChASE is templated for real and complex numbers with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p>
+</dd>
+</dl>
+<p>Subclassed by MockChaseMpiDLA&lt; T &gt;, <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1ChaseMpiDLA"><span class="std std-ref">chase::mpi::ChaseMpiDLA&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapack"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapack&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1ChaseMpiDLABlaslapackSeqInplace"><span class="std std-ref">chase::mpi::ChaseMpiDLABlaslapackSeqInplace&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1ChaseMpiDLACudaSeq"><span class="std std-ref">chase::mpi::ChaseMpiDLACudaSeq&lt; T &gt;</span></a>, <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1ChaseMpiDLAMultiGPU"><span class="std std-ref">chase::mpi::ChaseMpiDLAMultiGPU&lt; T &gt;</span></a></p>
 <div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLAInterface::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1a970c0faf911c8471b81565b741b1f41c"></span>void <code class="sig-name descname">shiftMatrix</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This function shifts the diagonal of global matrix with a constant value <code class="docutils literal notranslate"><span class="pre">c</span></code>. <dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">c</span></code>: shift value </p></li>
-</ul>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLAInterface::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a970c0faf911c8471b81565b741b1f41c"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shiftMatrix</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">c</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">isunshift</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface11shiftMatrixE1Tb" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function shifts the diagonal of global matrix with a constant value <code class="docutils literal notranslate"><span class="pre">c</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> – shift value </p>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1ac4d749965ee355d6c89ea7609a4dbf8f"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>V1</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This function is for some pre-application steps for the distributed HEMM in ChASE. These steps may vary in different implementations targetting different architectures. These steps can be backup of some buffers, copy data from CPU to GPU, etc. <dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a matrix </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: an integer indicating the number of locked (converged) eigenvectors </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ac4d749965ee355d6c89ea7609a4dbf8f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">preApplication</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">V1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface14preApplicationEP1TNSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>This function is for some pre-application steps for the distributed HEMM in ChASE. These steps may vary in different implementations targetting different architectures. These steps can be backup of some buffers, copy data from CPU to GPU, etc. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V1</strong> – a pointer to a matrix </p></li>
+<li><p><strong>locked</strong> – an integer indicating the number of locked (converged) eigenvectors </p></li>
+<li><p><strong>block</strong> – an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
 </ul>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::apply__T.T.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1aad5c57a4e98ed4c5457c30a95d27b8c0"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::apply__T.T.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1aad5c57a4e98ed4c5457c30a95d27b8c0"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">apply</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">beta</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Performs <span class="math notranslate nohighlight">\(V_2&lt;- \alpha V1H + \beta V_2\)</span> and <code class="docutils literal notranslate"><span class="pre">swap</span></code> <span class="math notranslate nohighlight">\((V_1,V_2)\)</span>. </p>
 <p>The first <code class="docutils literal notranslate"><span class="pre">offset</span></code> vectors of V1 and V2 are not part of the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. The number of vectors performed in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> is <code class="docutils literal notranslate"><span class="pre">block</span></code> In <code class="docutils literal notranslate"><span class="pre">MATLAB</span></code> notation, this operation performs:</p>
 <p><code class="docutils literal notranslate"><span class="pre">V2[:,start:end]&lt;-alpha*V1[:,start:end]*H+beta*V2[:,start:end]</span></code>,</p>
 <p>in which <code class="docutils literal notranslate"><span class="pre">start=locked+offset</span></code> and <code class="docutils literal notranslate"><span class="pre">end=locked+offset+block</span></code>.</p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">V1*H</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">V2</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: an offset of number vectors which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starting from. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of non-converged eigenvectors, it indicates the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> to perform <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: number of converged eigenvectors. </p></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> – a scalar times on <code class="docutils literal notranslate"><span class="pre">V1*H</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><strong>beta</strong> – a scalar times on <code class="docutils literal notranslate"><span class="pre">V2</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><strong>offset</strong> – an offset of number vectors which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starting from. </p></li>
+<li><p><strong>block</strong> – number of non-converged eigenvectors, it indicates the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> to perform <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p></li>
+<li><p><strong>locked</strong> – number of converged eigenvectors. </p></li>
 </ul>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::postApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1aecddec44647c83e5138ce7af21d180fc"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>V</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface15postApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Copy from buffer rectangular matrix <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code>. For the implementation of distributed-memory ChASE, this operation performs a <code class="docutils literal notranslate"><span class="pre">copy</span></code> from a matrix distributed within each column communicator and redundant among different column communicators to a matrix redundantly distributed across all MPI procs. Then in the next iteration of ChASE-MPI, this operation takes places in the row communicator…</p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">V</span></code>: the target buff </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of columns to copy from <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code> </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: number of converged eigenvectors. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiDLAInterface::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1aa2d8c5ced9fed1b5dace85fd86236860"></span>void <code class="sig-name descname">applyVec</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>B</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>C</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1T" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::applyVec__TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1ad953dbf27b9f1ad95061b73962cbead9"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">applyVec</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">B</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">C</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP1TP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>Performs a Generalized Matrix Vector Multiplication (<code class="docutils literal notranslate"><span class="pre">GEMV</span></code>) with <code class="docutils literal notranslate"><span class="pre">alpha=1.0</span></code> and <code class="docutils literal notranslate"><span class="pre">beta=0.0</span></code>.</p>
-<p>The operation is <code class="docutils literal notranslate"><span class="pre">C=H*B</span></code>. <dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">B</span></code>: the vector to be multiplied on <code class="docutils literal notranslate"><span class="pre">H</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">C</span></code>: the vector to store the product of <code class="docutils literal notranslate"><span class="pre">H</span></code> and <code class="docutils literal notranslate"><span class="pre">B</span></code>. </p></li>
+<p>The operation is <code class="docutils literal notranslate"><span class="pre">C=H*B</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>B</strong> – the vector to be multiplied on <code class="docutils literal notranslate"><span class="pre">H</span></code>. </p></li>
+<li><p><strong>C</strong> – the vector to store the product of <code class="docutils literal notranslate"><span class="pre">H</span></code> and <code class="docutils literal notranslate"><span class="pre">B</span></code>. </p></li>
 </ul>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1a256eb556bc4cdd76b4f195fb6ddd1d0b"></span>void <code class="sig-name descname">axpy</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a256eb556bc4cdd76b4f195fb6ddd1d0b"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">axpy</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">y</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incy</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which performs a constant times a vector plus a vector.</p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">alpha</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">AXPY</span></code> operation. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: y: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>alpha</strong> – <strong>[in]</strong> a scalar times on <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">AXPY</span></code> operation. </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – y: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incy</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
 </ul>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1aa461b0469be97c581558623dffb4c900"></span>void <code class="sig-name descname">scal</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>a</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1aa461b0469be97c581558623dffb4c900"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">scal</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">a</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4scalENSt6size_tEP1TP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which scales a vector by a constant. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">a</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> times on vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: x: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>a</strong> – <strong>[in]</strong> a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> times on vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>[in/out]</strong> – x: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
 </ul>
 </dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1aed7da8c853f7533fa09666bd9293be14"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a>&gt; <code class="sig-name descname">nrm2</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1a71e00a9969f2a9cc10452ad3fd783006"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nrm2</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface4nrm2ENSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which returns the euclidean norm of a vector. </p>
-<p><dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>the euclidean norm of vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p>
-</dd>
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the euclidean norm of vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p>
+</dd>
 </dl>
-</p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface_1af732049c63c4540ab113ae2efc4c9a25"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> <code class="sig-name descname">dot</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1af732049c63c4540ab113ae2efc4c9a25"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">dot</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incx</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">y</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">incy</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Link to this definition">¶</a><br /></dt>
 <dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the dot product of two vectors. </p>
-<p><dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>the dot product of vectors <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p>
-</dd>
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">y</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – <strong>[in]</strong> number of elements in input vector(s). </p></li>
+<li><p><strong>x</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incx</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><strong>y</strong> – <strong>[in]</strong> an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><strong>incy</strong> – <strong>[in]</strong> storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the dot product of vectors <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p>
+</dd>
 </dl>
-</p>
 </dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP6MatrixI1TEP6MatrixI1TENSt6size_tE">
+<span id="_CPPv3N5chase3mpi20ChaseMpiDLAInterface8applyVecEP6MatrixI1TEP6MatrixI1TENSt6size_tE"></span><span id="_CPPv2N5chase3mpi20ChaseMpiDLAInterface8applyVecEP6MatrixI1TEP6MatrixI1TENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAInterface::applyVec__Matrix:T:P.Matrix:T:P.std::s"></span><span class="target" id="classchase_1_1mpi_1_1ChaseMpiDLAInterface_1aa1d4da0d8b9fd94ff17e9103363a0532"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">applyVec</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Matrix</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">v</span></span>, <span class="n"><span class="pre">Matrix</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">w</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase3mpi20ChaseMpiDLAInterface8applyVecEP6MatrixI1TEP6MatrixI1TENSt6size_tE" title="Link to this definition">¶</a><br /></dt>
+<dd></dd></dl>
 
 </div>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>
@@ -365,17 +475,16 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.3.0',
+            VERSION:'v1.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="../_static/language_data.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="../https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   
 
