@@ -6,21 +6,21 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. API Reference &mdash; ChASE v1.7.5 documentation</title>
+  <title>1. API Reference &mdash; ChASE v1.8.0 documentation</title>
       <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=a0b0b767"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="1.1.1. chase::ChaseBase" href="chasebase.html" />
-    <link rel="prev" title="6. Examples" href="../example.html" />
+    <link rel="prev" title="7. Enabling GEMM emulation in ChASE" href="../emulated-gemm.html" />
      
     <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -56,38 +56,40 @@
       changelog
     </option><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.0.0/">
-      v1.0.0
-    </option><option value="/ChASE/v1.1.0/">
-      v1.1.0
-    </option><option value="/ChASE/v1.1.1/">
-      v1.1.1
-    </option><option value="/ChASE/v1.2.0/">
-      v1.2.0
-    </option><option value="/ChASE/v1.2.1/">
-      v1.2.1
-    </option><option value="/ChASE/v1.3.0/">
-      v1.3.0
-    </option><option value="/ChASE/v1.3.1/">
-      v1.3.1
-    </option><option value="/ChASE/v1.4.0/">
-      v1.4.0
-    </option><option value="/ChASE/v1.4.1/">
-      v1.4.1
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
-    </option><option value="/ChASE/v1.7.1/">
-      v1.7.1
-    </option><option value="/ChASE/v1.7.2/">
-      v1.7.2
-    </option><option value="/ChASE/v1.7.3/">
-      v1.7.3
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
     </option><option value="/ChASE/v1.7.4/">
       v1.7.4
-    </option><option value="/ChASE/v1.7.5/"selected>
-      v1.7.5
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -171,14 +173,15 @@ function switchVersion(url) {
 </style>
 
 
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
-<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -188,6 +191,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../emulated-gemm.html">7. Enabling GEMM emulation in ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
 <ul class="current">
@@ -256,18 +260,9 @@ into Sphinx using Breathe.</p>
 <h2><span class="section-number">1.1. </span>Core Algorithm<a class="headerlink" href="#core-algorithm" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chasebase.html#_CPPv4I0EN5chase9ChaseBaseE"><code class="docutils literal notranslate"><span class="pre">chase::ChaseBase</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="algorithm.html#_CPPv4I0EN5chase9AlgorithmE"><code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chaseconfig.html#_CPPv4I0EN5chase11ChaseConfigE"><code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a></li>
 <li class="toctree-l1"><a class="reference internal" href="performance.html">1.1.4. Performance Classes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="performance.html#chase-chaseperfdata">1.1.4.1. chase::ChasePerfData</a></li>
 <li class="toctree-l2"><a class="reference internal" href="performance.html#chase-performancedecoratorchase">1.1.4.2. chase::PerformanceDecoratorChase</a></li>
@@ -357,7 +352,7 @@ into Sphinx using Breathe.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../example.html" class="btn btn-neutral float-left" title="6. Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../emulated-gemm.html" class="btn btn-neutral float-left" title="7. Enabling GEMM emulation in ChASE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="chasebase.html" class="btn btn-neutral float-right" title="1.1.1. chase::ChaseBase" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

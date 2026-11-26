@@ -1,0 +1,508 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7. Enabling GEMM emulation in ChASE &mdash; ChASE v1.8.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. API Reference" href="api/index.html" />
+    <link rel="prev" title="6. Examples" href="example.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Enabling GEMM emulation in ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#emulation-with-gemmul8">7.1. Emulation with GEMMul8</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configure">7.1.1. Configure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fetching-gemmul8">7.1.2. Fetching GEMMul8</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#runtime-controls">7.1.3. Runtime controls</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flexible-mode-for-double-precision-hermitian-matrices">7.1.4. Flexible mode for double-precision Hermitian matrices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#emulation-with-cublas">7.2. Emulation with cuBLAS</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">7.2.1. Configure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">7.2.2. Runtime controls</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">7. </span>Enabling GEMM emulation in ChASE</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/emulated-gemm.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="enabling-gemm-emulation-in-chase">
+<h1><span class="section-number">7. </span>Enabling GEMM emulation in ChASE<a class="headerlink" href="#enabling-gemm-emulation-in-chase" title="Link to this heading"></a></h1>
+<p>On NVIDIA GPUs, ChASE can replace the matrix products inside the filter by an
+emulated GEMM via the <a class="reference external" href="https://journals.sagepub.com/doi/full/10.1177/10943420261467787">Ozaki-II scheme</a>.
+Experiments report an excellent speed-up of ChASE with emulation on NVIDIA H100
+GPUs and newer. When the arithmetic intensity is high enough, that speed-up
+reaches a factor of 2 or more.</p>
+<section id="emulation-with-gemmul8">
+<h2><span class="section-number">7.1. </span>Emulation with GEMMul8<a class="headerlink" href="#emulation-with-gemmul8" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://github.com/RIKEN-RCCS/GEMMul8">GEMMul8</a>, from RIKEN R-CCS, implements
+the Ozaki-II scheme. The product is split into <span class="math notranslate nohighlight">\(s\)</span> INT8 slices, one per
+coprime modulus, and those slices are summed back into the working precision.
+A larger <span class="math notranslate nohighlight">\(s\)</span> costs more time and gives a tighter error.</p>
+<p>This path is available in the GPU builds. The CPU builds keep the ordinary GEMM.</p>
+<section id="configure">
+<h3><span class="section-number">7.1.1. </span>Configure<a class="headerlink" href="#configure" title="Link to this heading"></a></h3>
+<p>Turn emulation on when you configure ChASE, where <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">GEMMUL8</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>..<span class="w"> </span>-DCHASE_ENABLE_OZAKI<span class="o">=</span>ON
+</pre></div>
+</div>
+</section>
+<section id="fetching-gemmul8">
+<h3><span class="section-number">7.1.2. </span>Fetching GEMMul8<a class="headerlink" href="#fetching-gemmul8" title="Link to this heading"></a></h3>
+<p>With <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code> left empty, ChASE downloads GEMMul8 on its own.
+<code class="docutils literal notranslate"><span class="pre">CHASE_FETCH_GEMMUL8</span></code> is on by default. The first configure clones tag
+<code class="docutils literal notranslate"><span class="pre">v3.4.4</span></code> from <code class="docutils literal notranslate"><span class="pre">https://github.com/RIKEN-RCCS/GEMMul8.git</span></code> into the build
+tree and compiles the GEMM-only INT8 library. A later configure reuses that
+clone when the tag is unchanged.</p>
+<p>To use a GEMMul8 you already built, point ChASE at its prefix. The prefix
+must contain <code class="docutils literal notranslate"><span class="pre">include/gemmul8.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/libgemmul8.so</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">lib64/libgemmul8.so</span></code>):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>..<span class="w"> </span>-DCHASE_ENABLE_OZAKI<span class="o">=</span>ON<span class="w"> </span>-DGEMMUL8_ROOT<span class="o">=</span>/path/to/GEMMul8
+</pre></div>
+</div>
+<p>The same prefix is read from the environment variable <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code> when
+the CMake variable is empty.</p>
+</section>
+<section id="runtime-controls">
+<h3><span class="section-number">7.1.3. </span>Runtime controls<a class="headerlink" href="#runtime-controls" title="Link to this heading"></a></h3>
+<p>These variables are read when a solve starts. Changing them does not require
+a rebuild.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI</span></code></dt><dd><p>Set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to skip emulation and use the ordinary GEMM for that run.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_NUM_MODULI</span></code></dt><dd><p>Fix <span class="math notranslate nohighlight">\(s\)</span>, the number of coprime moduli, for the whole solve.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_WORKSPACE_GB</span></code></dt><dd><p>Device workspace GEMMul8 may use. Memory saving is a GEMMul8 feature: it
+reduces the memory cost by paneling the Ozaki-II algorithm, so the product
+runs in several passes inside a workspace cap.</p>
+<ul class="simple">
+<li><p>Unset: the cap is 12 GiB, and memory saving is on.</p></li>
+<li><p>A positive number, for example <code class="docutils literal notranslate"><span class="pre">8</span></code>: the cap is 8 GiB, and memory saving
+stays on.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MAX</span></code>: ChASE allocates the full workspace for the <span class="math notranslate nohighlight">\(s\)</span> of this
+solve, and memory saving is off.</p></li>
+</ul>
+<p>If that allocation fails, ChASE logs the CUDA error and continues the solve
+with the ordinary GEMM.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK</span></code></dt><dd><p>Used by the flexible mode described below. Set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to allow a switch
+to the ordinary double-precision GEMM when at least one residual stagnation
+is detected and no <span class="math notranslate nohighlight">\(s\)</span> satisfies the conservative bound (see below).</p>
+</dd>
+</dl>
+<p>Build with <code class="docutils literal notranslate"><span class="pre">-DCHASE_OUTPUT=ON</span></code> to print <span class="math notranslate nohighlight">\(s\)</span>, the workspace size, and
+whether memory saving is on.</p>
+</section>
+<section id="flexible-mode-for-double-precision-hermitian-matrices">
+<h3><span class="section-number">7.1.4. </span>Flexible mode for double-precision Hermitian matrices<a class="headerlink" href="#flexible-mode-for-double-precision-hermitian-matrices" title="Link to this heading"></a></h3>
+<p>For a double-precision Hermitian eigenproblem, a flexible accuracy based on
+the prescribed tolerance is enabled by default, unless <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_NUM_MODULI</span></code>
+is set. ChASE keeps the smallest <span class="math notranslate nohighlight">\(s\)</span> in 7 to 16 whose loose bound
+is below the solver tolerance:</p>
+<div class="math notranslate nohighlight">
+\[\boxed{\beta^{(0)}_{s} &lt; \mathrm{tol}.}\]</div>
+<p>The advantage is that the filter FLOP/s then follows the accuracy you
+request. For an intermediate tolerance, FP64 or <span class="math notranslate nohighlight">\(s = 16\)</span> is not always
+the best choice.</p>
+<p><span class="math notranslate nohighlight">\(\beta^{(0)}_{s}\)</span> bounds the error of one emulated product on the initial
+vectors, for a sequential real matrix. With <span class="math notranslate nohighlight">\(\bar{A} = (A - cI)/e\)</span>
+and <span class="math notranslate nohighlight">\(\mathcal{P}_s\)</span> the product of the <span class="math notranslate nohighlight">\(s\)</span> moduli,</p>
+<div class="math notranslate nohighlight">
+\[\beta^{(0)}_{s}
+= t_s\sqrt{n}\,\|\bar{A}\|_\infty \max 2^{\beta'}
++ t_s\sqrt{n}\,\|2^{\alpha'}\|_2
++ t_s^2 (n + r_s)\,\|2^{\alpha'}\|_2 \max 2^{\beta'},\]</div>
+<p>where <span class="math notranslate nohighlight">\(t_s = 1/\sqrt{32(\mathcal{P}_s - 1)}\)</span>. The exponents
+<span class="math notranslate nohighlight">\(\alpha'\)</span> and <span class="math notranslate nohighlight">\(\beta'\)</span> are the Ozaki-II scalings of <span class="math notranslate nohighlight">\(\bar{A}\)</span>
+and of the initial subspace <span class="math notranslate nohighlight">\(V^{(0)}\)</span>, and <span class="math notranslate nohighlight">\(r_s\)</span> is the accumulation term for that
+<span class="math notranslate nohighlight">\(s\)</span>. This formula is derived from the error analysis in
+<a class="reference external" href="https://arxiv.org/pdf/2602.02549">Error Analysis of Matrix Multiplication Emulation Using Ozaki-II Scheme</a>.
+In parallel, the FP64 reduction error is assumed exact. In the complex case,
+<span class="math notranslate nohighlight">\(\beta^{(0)}_{s}\)</span> is multiplied by 2 to account for the imaginary part
+(see Section 4 of
+<a class="reference external" href="https://arxiv.org/pdf/2609.05419">The 2M Multiplication Algorithm for Complex Matrices</a>).
+Theoretical work is under way to validate these assumptions.</p>
+<p>ChASE also stores a second value of <span class="math notranslate nohighlight">\(s\)</span>: the smallest one whose
+propagated residual, the conservative bound, is below the solver tolerance.
+The conservative bound is</p>
+<div class="math notranslate nohighlight">
+\[\boxed{\xi^{(\mathrm{deg})}_{s}\,|\lambda_n - \lambda_1| &lt; \mathrm{tol},}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathrm{deg}\)</span> is the degree of the filter and</p>
+<div class="math notranslate nohighlight">
+\[\xi^{(\mathrm{deg})}_{s}
+= \beta^{(0)}_{s}
+\sum_{j=0}^{\mathrm{deg}-1}
+\left|
+\omega_j
+\frac{\eta_j \, \nu_{\mathrm{deg}-j-1}}{\eta_{\mathrm{deg}}}
+\right|.\]</div>
+<p>The scale <span class="math notranslate nohighlight">\(\eta\)</span> is the Chebyshev polynomial of the first kind, evaluated
+at the left end of the filtered interval. Here <span class="math notranslate nohighlight">\(\mu_n\)</span> is an estimation of
+<span class="math notranslate nohighlight">\(\lambda_n\)</span> and <span class="math notranslate nohighlight">\(\mu_{\mathrm{nevex}}\)</span> is an estimation of
+<span class="math notranslate nohighlight">\(\lambda_{\mathrm{nevex}}\)</span>. Both are estimated before the ChASE iteration
+by a cheap Lanczos run.</p>
+<p>If at least one residual stagnation is detected and an <span class="math notranslate nohighlight">\(s\)</span> meets the
+conservative bound, ChASE moves to that <span class="math notranslate nohighlight">\(s\)</span>. If no <span class="math notranslate nohighlight">\(s\)</span> meets the
+conservative bound, the fallback is <span class="math notranslate nohighlight">\(s = 16\)</span>.
+Set <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK=1</span></code> to use the ordinary double-precision GEMM
+instead of that fallback.</p>
+<p>The loose bound and the conservative bound are upper bounds on the emulation
+error. An <span class="math notranslate nohighlight">\(s\)</span> that falls under the tolerance therefore comes with a
+guarantee. ChASE can still converge even though these estimators provide no
+theoretical guarantee when no <span class="math notranslate nohighlight">\(s\)</span> falls under the tolerance.</p>
+<table class="docutils align-center">
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><a class="reference internal image-reference" href="_images/ozaki_moduli_phi0_n4096.png"><img alt="_images/ozaki_moduli_phi0_n4096.png" class="align-center" src="_images/ozaki_moduli_phi0_n4096.png" style="width: 80%;" />
+</a>
+</td>
+<td><a class="reference internal image-reference" href="_images/ozaki_moduli_phi2_n10000.png"><img alt="_images/ozaki_moduli_phi2_n10000.png" class="align-center" src="_images/ozaki_moduli_phi2_n10000.png" style="width: 80%;" />
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The parameter <span class="math notranslate nohighlight">\(\phi\)</span> controls the dynamic range of the matrices, so
+<span class="math notranslate nohighlight">\(\phi = 0\)</span> is an easier matrix than <span class="math notranslate nohighlight">\(\phi = 2\)</span>. The matrix size
+also affects the bounds, and the right-hand figure is the more difficult case:
+a larger matrix together with <span class="math notranslate nohighlight">\(\phi = 2\)</span>.</p>
+<p>On the left, <span class="math notranslate nohighlight">\(\phi = 0\)</span>. For <span class="math notranslate nohighlight">\(\mathrm{tol} = 10^{-4}\)</span> the loose
+bound selects <span class="math notranslate nohighlight">\(s = 8\)</span> and the conservative bound selects <span class="math notranslate nohighlight">\(s = 10\)</span>.
+For <span class="math notranslate nohighlight">\(\mathrm{tol} = 10^{-10}\)</span> they select <span class="math notranslate nohighlight">\(s = 13\)</span> and
+<span class="math notranslate nohighlight">\(s = 16\)</span>. On the right, the loose bound still selects <span class="math notranslate nohighlight">\(s = 8\)</span> and
+<span class="math notranslate nohighlight">\(s = 13\)</span> for those two tolerances. For <span class="math notranslate nohighlight">\(\mathrm{tol} = 10^{-10}\)</span>,
+no <span class="math notranslate nohighlight">\(s\)</span> meets the conservative bound, so the fallback <span class="math notranslate nohighlight">\(s = 16\)</span> is
+activated, or the ordinary double-precision GEMM when
+<code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK=1</span></code>.</p>
+<p>The search is limited to double-precision Hermitian matrices. A single-precision
+solve stays at <span class="math notranslate nohighlight">\(s = 12\)</span>. A pseudo-Hermitian solve stays at
+<span class="math notranslate nohighlight">\(s = 16\)</span> in double precision and at <span class="math notranslate nohighlight">\(s = 12\)</span> in single precision.
+Setting <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_NUM_MODULI</span></code> also turns the search off and uses the
+<span class="math notranslate nohighlight">\(s\)</span> you gave, for any of these problems.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">-DCHASE_OUTPUT=ON</span></code>, the flexible mode prints the error bound at each
+<span class="math notranslate nohighlight">\(s\)</span> next to the settings above. For <span class="math notranslate nohighlight">\(n = 10000\)</span>, <span class="math notranslate nohighlight">\(\phi = 0\)</span>,
+and <span class="math notranslate nohighlight">\(\mathrm{tol} = 10^{-8}\)</span> the print is</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>+-----------------+-----------+
+| boost_moduli    | 12        |
+| safe_moduli     | 15        |
+| fp64_fallback   | OFF       |
+| oz16_fallback   | OFF       |
+| save_memory     | ON        |
+| workspace       | 12.00 GiB |
++-----------------+-----------+
++------------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+
+| num_moduli |        7 |        8 |        9 |       10 |       11 |       12 |       13 |       14 |       15 |       16 |     FP64 |
++------------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+
+| ||E^f||  &lt; | 5.95e-04 | 3.90e-05 | 2.58e-06 | 1.71e-07 | 1.15e-08 | 7.78e-10 | 5.39e-11 | 4.19e-12 | 6.69e-13 | 4.18e-13 | 4.33e-11 |
+| ||E^p||  &lt; | 2.12e-02 | 1.39e-03 | 9.18e-05 | 6.09e-06 | 4.08e-07 | 2.77e-08 | 1.92e-09 | 1.49e-10 | 2.38e-11 | 1.49e-11 | 1.54e-09 |
+| Safe Res &lt; | 2.16e+00 | 1.42e-01 | 9.36e-03 | 6.21e-04 | 4.16e-05 | 2.82e-06 | 1.96e-07 | 1.52e-08 | 2.43e-09 | 1.52e-09 | 1.57e-07 |
++------------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">boost_moduli</span></code> is the loose bound <span class="math notranslate nohighlight">\(\|E^{f}\|\)</span>: the smallest
+<span class="math notranslate nohighlight">\(s\)</span> under <span class="math notranslate nohighlight">\(10^{-8}\)</span> is 12. <code class="docutils literal notranslate"><span class="pre">safe_moduli</span></code> is the conservative
+bound, the Safe Res row: the smallest <span class="math notranslate nohighlight">\(s\)</span> under that tolerance is 15.
+Both fallbacks stay off because the conservative bound is satisfied. For
+<span class="math notranslate nohighlight">\(\mathrm{tol} = 10^{-10}\)</span>, no <span class="math notranslate nohighlight">\(s\)</span> satisfies the conservative
+bound, so <code class="docutils literal notranslate"><span class="pre">oz16_fallback</span></code> is ON and <code class="docutils literal notranslate"><span class="pre">fp64_fallback</span></code> is OFF. Setting
+<code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK=1</span></code> turns <code class="docutils literal notranslate"><span class="pre">fp64_fallback</span></code> ON and
+<code class="docutils literal notranslate"><span class="pre">oz16_fallback</span></code> OFF instead.</p>
+<p>Extending the flexible-accuracy mode to the pseudo-Hermitian case, and to
+single precision, is a topic of further research.</p>
+</section>
+</section>
+<section id="emulation-with-cublas">
+<h2><span class="section-number">7.2. </span>Emulation with cuBLAS<a class="headerlink" href="#emulation-with-cublas" title="Link to this heading"></a></h2>
+<p>CUDA 13.5 and newer ship a cuBLAS mode that emulates a double-precision GEMM
+with fixed-point arithmetic. ChASE can use that mode for the filter products.
+The accuracy knob is the number of mantissa bits, which replaces the coprime
+moduli count <span class="math notranslate nohighlight">\(s\)</span> of GEMMul8. This backend uses the CUDA toolkit and does
+not build GEMMul8.</p>
+<section id="id1">
+<h3><span class="section-number">7.2.1. </span>Configure<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>The CUDA toolkit must be 13.5 or newer. Select the cuBLAS backend when you
+turn emulation on:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>..<span class="w"> </span>-DCHASE_ENABLE_OZAKI<span class="o">=</span>ON<span class="w"> </span>-DCHASE_OZAKI_BACKEND<span class="o">=</span>CUBLAS
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><span class="section-number">7.2.2. </span>Runtime controls<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>These variables are read when a solve starts. Changing them does not require
+a rebuild.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI</span></code></dt><dd><p>Set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to skip emulation and use the ordinary GEMM for that run.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_BITS</span></code></dt><dd><p>Mantissa bits kept by the emulated product. Unset, this is 32.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_CONTROL</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">fixed</span></code> when unset: the product keeps the bit count from
+<code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_BITS</span></code>. <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>: cuBLAS computes the bit count
+at runtime so the emulated product is at least as accurate as double
+precision.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_EMULATION_STRATEGY</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">eager</span></code> when unset: cuBLAS uses emulation whenever it can.
+<code class="docutils literal notranslate"><span class="pre">performant</span></code>: cuBLAS uses emulation only when that is faster.
+<code class="docutils literal notranslate"><span class="pre">default</span></code>: the cuBLAS default, which is <code class="docutils literal notranslate"><span class="pre">performant</span></code> unless the
+environment variable <code class="docutils literal notranslate"><span class="pre">CUBLAS_EMULATION_STRATEGY</span></code> is set.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_WORKSPACE_MB</span></code></dt><dd><p>Device workspace for the emulated GEMM, in MiB. Unset, this is 64. If that
+allocation fails, ChASE continues the solve with the ordinary GEMM.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_DISABLE_FALLBACK</span></code></dt><dd><p>Set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to keep the emulated product after a residual stagnation.
+Unset, a stagnation switches that product to the ordinary double-precision
+GEMM.</p>
+</dd>
+</dl>
+<p>The mantissa bit count stays at <code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_BITS</span></code> for the whole
+solve. Choosing that count from the solver tolerance, as the flexible-accuracy
+mode does for <span class="math notranslate nohighlight">\(s\)</span>, is a topic of further research.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="example.html" class="btn btn-neutral float-left" title="6. Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/index.html" class="btn btn-neutral float-right" title="1. API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

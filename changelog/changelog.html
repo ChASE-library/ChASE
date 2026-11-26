@@ -6,20 +6,22 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Changelog &mdash; ChASE v1.7.5 documentation</title>
+  <title>Changelog &mdash; ChASE v1.8.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a0b0b767"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="prev" title="Contributing to ChASE" href="contribution.html" />
      
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -35,7 +37,7 @@
 
           
           
-          <a href="#">
+          <a href="index.html">
             
               <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
           </a>
@@ -55,7 +57,9 @@
       changelog
     </option><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.7.5/"selected>
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
       v1.7.5
     </option><option value="/ChASE/v1.7.4/">
       v1.7.4
@@ -170,14 +174,36 @@ function switchVersion(url) {
 </style>
 
 
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
-<ul>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/reference.html">References and Contributors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/contribution.html">Contributing to ChASE</a></li>
-<li class="toctree-l1 current"><a class="reference internal current" href="/ChASE/changelog/">Changelog</a></li>
+<li class="toctree-l1 current"><a class="reference internal current" href="/ChASE/changelog/">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#v1-8-0">v1.8.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-5">v1.7.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-4">v1.7.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-3">v1.7.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-2">v1.7.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-1">v1.7.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-0">v1.7.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-0-rc1">v1.7.0-rc1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-6-0">v1.6.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-5-0">v1.5.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-4-1">v1.4.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-4-0">v1.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-3-1">v1.3.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-3-0">v1.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-2-1">v1.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-2-0">v1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-1-1">v1.1.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-1-0">v1.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-0-0">v1.0.0</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -187,6 +213,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/parameters.html">4. Parameters and Configurations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/example.html">6. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="/ChASE/latest/emulated-gemm.html">7. Enabling GEMM emulation in ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
 <ul>
@@ -199,14 +226,14 @@ function switchVersion(url) {
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">ChASE</a>
+          <a href="index.html">ChASE</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Changelog</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
@@ -221,6 +248,65 @@ function switchVersion(url) {
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
 <p>Each section is the published GitHub release note for that version.
 This page does not list individual commits.</p>
+<section id="v1-8-0">
+<h2>v1.8.0<a class="headerlink" href="#v1-8-0" title="Link to this heading"></a></h2>
+<p>Published 2026-11-24.</p>
+<p><a class="reference external" href="/ChASE/v1.8.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.8.0">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
+<p class="rubric">v1.8.0 (compared to v1.7.5)</p>
+<p class="rubric">Overview</p>
+<p>This release completes the adaptive Ozaki-II emulated GEMM for the Chebyshev filter deployed on NVIDIA GPUs. v1.7.4 shipped an experimental GEMMul8 path and left the adaptive modulus selection out. v1.8.0 selects the number of coprime moduli from the solver tolerance for double-precision Hermitian problems, adds a cuBLAS fixed-point backend for CUDA 13.5 and newer, and uses Ozaki-II for the pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter at a fixed modulus count. The CMake project version is now 1.8.0.</p>
+<p>Emulation stays off unless <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI=ON</span></code>. CPU builds and AMD builds keep the ordinary GEMM. Single precision and pseudo-Hermitian problems do not run the flexible search.</p>
+<p class="rubric">🎯 Main Changes</p>
+<p class="rubric">1. Adaptive GEMMul8 modulus selection</p>
+<p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI=ON</span></code> enables precision emulation in the filter. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">GEMMUL8</span></code>. With <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code> empty, ChASE clones GEMMul8 tag <code class="docutils literal notranslate"><span class="pre">v3.4.4</span></code> and builds the GEMM-only INT8 library for the same single CUDA architecture as the rest of ChASE.</p>
+<p>For a double-precision Hermitian eigenproblem, ChASE keeps the smallest <span class="math notranslate nohighlight">\(s\)</span> in 7 to 16 whose loose bound is below the solver tolerance. If a residual stagnates, it moves to the smallest <span class="math notranslate nohighlight">\(s\)</span> whose conservative bound is below that tolerance. If no such <span class="math notranslate nohighlight">\(s\)</span> exists, the fallback is <span class="math notranslate nohighlight">\(s = 16\)</span>. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK=1</span></code> uses the ordinary double-precision GEMM instead. The same selection is used on one GPU and on several GPUs. In parallel, the bound takes the number of ranks times the worst local block, and the FP64 reduction error is treated as exact. The complex bound is twice the real bound.</p>
+<ul class="simple">
+<li><p>A single-precision solve stays at <span class="math notranslate nohighlight">\(s = 12\)</span>.</p></li>
+<li><p>A pseudo-Hermitian solve stays at <span class="math notranslate nohighlight">\(s = 16\)</span> in double precision and at <span class="math notranslate nohighlight">\(s = 12\)</span> in single precision.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_NUM_MODULI</span></code> pins <span class="math notranslate nohighlight">\(s\)</span> for any of these problems and turns the search off.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI=1</span></code> keeps the Ozaki build and uses the ordinary GEMM for that run.</p></li>
+<li><p>The device workspace defaults to 12 GiB with memory saving on. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_WORKSPACE_GB</span></code> sets another cap. <code class="docutils literal notranslate"><span class="pre">MAX</span></code> turns memory saving off and allocates the full workspace for the chosen <span class="math notranslate nohighlight">\(s\)</span>. If that allocation fails, ChASE logs the CUDA error and continues with the ordinary GEMM.</p></li>
+</ul>
+<p class="rubric">2. cuBLAS fixed-point backend</p>
+<p>CUDA 13.5 and newer can emulate a double-precision GEMM with fixed-point arithmetic. Select it with <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND=CUBLAS</span></code>. This backend uses the CUDA toolkit and does not build GEMMul8. The accuracy knob is the number of mantissa bits, which replaces the coprime modulus count <span class="math notranslate nohighlight">\(s\)</span>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_BITS</span></code> defaults to 32 and is kept for the whole solve.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_CONTROL=dynamic</span></code> lets cuBLAS choose the bit count so the product is at least as accurate as double precision. Unset, the control is <code class="docutils literal notranslate"><span class="pre">fixed</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_EMULATION_STRATEGY</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">eager</span></code>. <code class="docutils literal notranslate"><span class="pre">performant</span></code> uses emulation only when it is faster.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_WORKSPACE_MB</span></code> defaults to 64. A failed allocation continues the solve with the ordinary GEMM.</p></li>
+<li><p>After a residual stagnation, the product switches to the ordinary double-precision GEMM. <code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_DISABLE_FALLBACK=1</span></code> keeps the emulated product.</p></li>
+<li><p>Choosing the bit count from the solver tolerance is not part of this release.</p></li>
+</ul>
+<p class="rubric">3. Pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter</p>
+<p>When Ozaki-II is enabled, the pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter uses it on one GPU and on several GPUs, unless the solve is already on the ordinary GEMM. CPU backends still call the ordinary <span class="math notranslate nohighlight">\(H^2\)</span> product. The pseudo-Hermitian solve initializes Ozaki-II and stays at the fixed modulus count above. It does not run the flexible search.</p>
+<p class="rubric">📦 Additional Changes</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SetOzakiNumModuli</span></code> and <code class="docutils literal notranslate"><span class="pre">SetOzakiMantissaBits</span></code> set the GEMMul8 modulus count and the cuBLAS mantissa width on the GPU interface.</p></li>
+<li><p>Example 5 accepts <code class="docutils literal notranslate"><span class="pre">--double</span></code> and <code class="docutils literal notranslate"><span class="pre">--complex</span></code>, selecting <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">complex&lt;float&gt;</span></code>, or <code class="docutils literal notranslate"><span class="pre">complex&lt;double&gt;</span></code>.</p></li>
+<li><p>With early locking disabled, a pseudo-Hermitian convergence update is no longer skipped.</p></li>
+<li><p>The user guide documents both emulated GEMM backends.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">project(...</span> <span class="pre">VERSION</span> <span class="pre">...)</span></code> is now 1.8.0. After configuration, <code class="docutils literal notranslate"><span class="pre">CHASE_VERSION</span></code> in <code class="docutils literal notranslate"><span class="pre">chase_config.h</span></code> and <code class="docutils literal notranslate"><span class="pre">Version</span></code> in <code class="docutils literal notranslate"><span class="pre">chase.pc</span></code> follow that number. The README checkout example is <code class="docutils literal notranslate"><span class="pre">v1.8.0</span></code>.</p></li>
+</ul>
+<p class="rubric">Minor</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code> tag publishes that version of the documentation. The changelog lists one section per release.</p></li>
+</ul>
+<p class="rubric">📌 Migration Notes</p>
+<ul class="simple">
+<li><p>Existing configurations stay unchanged. <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI</span></code> remains <code class="docutils literal notranslate"><span class="pre">OFF</span></code>.</p></li>
+<li><p>GEMMul8 is enabled with <code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_OZAKI=ON</span></code>. The first configure needs either a network fetch or <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code>. <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> must be a single architecture.</p></li>
+<li><p>The cuBLAS backend needs CUDA 13.5 or newer: <code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_OZAKI=ON</span> <span class="pre">-DCHASE_OZAKI_BACKEND=CUBLAS</span></code>.</p></li>
+<li><p>The flexible search applies only to double-precision Hermitian problems. Single-precision and pseudo-Hermitian solves keep the fixed modulus counts above.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI=1</span></code> turns emulation off for one run without rebuilding.</p></li>
+</ul>
+<p class="rubric">👥 Contributors</p>
+<ul class="simple">
+<li><p>Clément Richefort</p></li>
+<li><p>Xinzhe Wu</p></li>
+</ul>
+</section>
 <section id="v1-7-5">
 <h2>v1.7.5<a class="headerlink" href="#v1-7-5" title="Link to this heading"></a></h2>
 <p>Published 2026-11-17.</p>
@@ -730,7 +816,10 @@ yet be considered the complete adaptive implementation.</p></li>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="contribution.html" class="btn btn-neutral float-left" title="Contributing to ChASE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

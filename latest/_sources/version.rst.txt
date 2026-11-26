@@ -31,7 +31,8 @@ Sequential Implementations
      for single-GPU execution with GPU acceleration. Depending on the build
      backend, it uses CUDA libraries on NVIDIA systems or HIP libraries on
      AMD/ROCm systems. It supports both Hermitian and pseudo-Hermitian
-     matrices.
+     matrices. On NVIDIA GPUs the filter can use an emulated GEMM; see
+     :doc:`emulated-gemm`.
 
 Parallel Implementations
 ------------------------
@@ -47,6 +48,7 @@ Parallel Implementations
      communication backends include MPI and NCCL on NVIDIA platforms, and MPI
      and RCCL on AMD/ROCm platforms. Current usage is one GPU per MPI rank.
      This configuration is suitable for heterogeneous multi-GPU clusters.
+     On NVIDIA GPUs the filter can use the same emulated GEMM as ChASEGPU.
 
 Matrix Types
 ============

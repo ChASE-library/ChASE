@@ -11,6 +11,7 @@ ChASE's Documentation
    license
    reference
    contribution
+   changelog
 
 .. toctree::
    :maxdepth: 2
@@ -23,6 +24,7 @@ ChASE's Documentation
    parameters
    module
    example
+   emulated-gemm
 
 .. toctree::
    :maxdepth: 2

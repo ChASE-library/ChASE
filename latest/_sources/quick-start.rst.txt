@@ -28,9 +28,7 @@ It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout v1.7.0
-
-
+    git checkout v1.8.0
 Dependencies
 ============
 
@@ -38,7 +36,7 @@ ChASE has the following dependencies:
 
 **Required Dependencies:**
    * A ``C++`` compiler with C++17 support (e.g., GCC 7+, Clang 5+, or MSVC 2017+)
-   * `CMake <http://www.cmake.org/>`__ version 3.8 or higher
+   * `CMake <http://www.cmake.org/>`__ version 3.18 or higher
    * `BLAS <http://netlib.org/blas>`__ (Basic Linear Algebra Subprograms)
    * `LAPACK <http://netlib.org/lapack>`__ (Linear Algebra PACKage)
 
@@ -47,7 +45,11 @@ ChASE has the following dependencies:
    * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)
    * `ROCm/HIP <https://rocm.docs.amd.com>`__ - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)
    * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
-   * `NCCL <https://developer.nvidia.com/nccl>`__ or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU
+   * `NCCL <https://developer.nvidia.com/nccl>`__ or `RCCL <https://github.com/ROCm/rccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+   * Ozaki-II emulated GEMM - Optional, for the filter on NVIDIA GPUs. See :doc:`emulated-gemm`.
+
+     * `GEMMul8 <https://github.com/RIKEN-RCCS/GEMMul8>`__ - Used when ``CHASE_ENABLE_OZAKI=ON`` and ``CHASE_OZAKI_BACKEND=GEMMUL8``. ChASE can download tag ``v3.4.4`` and build the GEMM-only INT8 library.
+     * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ 13.5 or newer - Used when ``CHASE_OZAKI_BACKEND=CUBLAS``. This backend does not build GEMMul8.
 
 Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required. 
 

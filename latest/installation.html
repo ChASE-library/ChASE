@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.7.5 documentation</title>
+  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.8.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a0b0b767"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -56,38 +56,40 @@
       changelog
     </option><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.0.0/">
-      v1.0.0
-    </option><option value="/ChASE/v1.1.0/">
-      v1.1.0
-    </option><option value="/ChASE/v1.1.1/">
-      v1.1.1
-    </option><option value="/ChASE/v1.2.0/">
-      v1.2.0
-    </option><option value="/ChASE/v1.2.1/">
-      v1.2.1
-    </option><option value="/ChASE/v1.3.0/">
-      v1.3.0
-    </option><option value="/ChASE/v1.3.1/">
-      v1.3.1
-    </option><option value="/ChASE/v1.4.0/">
-      v1.4.0
-    </option><option value="/ChASE/v1.4.1/">
-      v1.4.1
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
-    </option><option value="/ChASE/v1.7.1/">
-      v1.7.1
-    </option><option value="/ChASE/v1.7.2/">
-      v1.7.2
-    </option><option value="/ChASE/v1.7.3/">
-      v1.7.3
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
     </option><option value="/ChASE/v1.7.4/">
       v1.7.4
-    </option><option value="/ChASE/v1.7.5/"selected>
-      v1.7.5
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -171,14 +173,15 @@ function switchVersion(url) {
 </style>
 
 
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
-<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
@@ -220,6 +223,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="emulated-gemm.html">7. Enabling GEMM emulation in ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
 <ul>
@@ -273,7 +277,7 @@ one has to install or load the necessary dependencies.</p>
 <dl class="simple">
 <dt><strong>Required Dependencies:</strong></dt><dd><ul class="simple">
 <li><p>A <code class="docutils literal notranslate"><span class="pre">C++</span></code> compiler with C++17 support (e.g., GCC 7+, Clang 5+, or Intel C++ 17+)</p></li>
-<li><p><a class="reference external" href="http://www.cmake.org/">CMake</a> version 3.8 or higher</p></li>
+<li><p><a class="reference external" href="http://www.cmake.org/">CMake</a> version 3.18 or higher</p></li>
 <li><p><a class="reference external" href="http://netlib.org/blas">BLAS</a> (Basic Linear Algebra Subprograms)</p></li>
 <li><p><a class="reference external" href="http://netlib.org/lapack">LAPACK</a> (Linear Algebra PACKage)</p></li>
 </ul>
@@ -283,7 +287,13 @@ one has to install or load the necessary dependencies.</p>
 <li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)</p></li>
 <li><p><a class="reference external" href="https://rocm.docs.amd.com">ROCm/HIP</a> - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)</p></li>
 <li><p><a class="reference external" href="http://www.netlib.org/scalapack/">ScaLAPACK</a> - Optional, for distributed Householder QR factorization</p></li>
-<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> or <a class="reference external" href="https://github.com/ROCm/rccl">RCCL</a> - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
+<li><p>Ozaki-II emulated GEMM - Optional, for the filter on NVIDIA GPUs. See <a class="reference internal" href="emulated-gemm.html"><span class="doc">Enabling GEMM emulation in ChASE</span></a>.</p>
+<ul>
+<li><p><a class="reference external" href="https://github.com/RIKEN-RCCS/GEMMul8">GEMMul8</a> - Used when <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI=ON</span></code> and <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND=GEMMUL8</span></code>. ChASE can download tag <code class="docutils literal notranslate"><span class="pre">v3.4.4</span></code> and build the GEMM-only INT8 library.</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> 13.5 or newer - Used when <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND=CUBLAS</span></code>. This backend does not build GEMMul8.</p></li>
+</ul>
+</li>
 </ul>
 </dd>
 </dl>
@@ -361,10 +371,8 @@ For distributed GPU communication on ROCm, use
 <code class="docutils literal notranslate"><span class="pre">-DCHASE_HIP_DISTRIBUTED_COLLECTIVES=MPI</span></code> to use MPI collectives.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>It is also recommended to build ChASE with the configuration of CUDA compute compatibility through <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code>. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=86</span></code>. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=&quot;70;75;80;86&quot;</span></code>.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">CMAKE_VERSION</span> <span class="pre">&lt;</span> <span class="pre">3.18</span></code> then CMake is not compliant with <em>CMAKE policy CMP0104</em> (introduced
-in CMake 3.18) which defines that the variable <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> has to be initialized. In that case, the code generation flag has to be set manually.
-For simplicity and compatibility with newer (3.18+) CMake version, the <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> variable has to be always set, not matter the cmake version.</p>
+<p>A CUDA build uses one compute capability. Set it with <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code>, for example <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=90</span></code>. If the variable is empty, CMake takes the first GPU reported by <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>. A list such as <code class="docutils literal notranslate"><span class="pre">70;75;80;86</span></code> is rejected.</p>
+<p>CMake 3.18 is required. That is the version which introduced <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> (policy CMP0104).</p>
 </div>
 </section>
 <section id="building-chase-with-examples">
@@ -656,9 +664,41 @@ for debugging and understanding numerical stability.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
 <td><p>Enable optional warmup benchmarking logic during GPU constructor setup.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_GPU_RESIDENT_LANCZOS</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_EARLY_LOCKING</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Disable the early-locking heuristic in the locking step.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable an emulated GEMM for the filter on NVIDIA GPUs. Runtime controls are described in <a class="reference internal" href="emulated-gemm.html"><span class="doc">Enabling GEMM emulation in ChASE</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GEMMUL8</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GEMMUL8</span></code> or <code class="docutils literal notranslate"><span class="pre">CUBLAS</span></code>. <code class="docutils literal notranslate"><span class="pre">CUBLAS</span></code> requires CUDA 13.5 or newer and does not build GEMMul8.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code></p></td>
+<td><p>empty</p></td>
+<td><p>Prefix of an existing GEMMul8 install (<code class="docutils literal notranslate"><span class="pre">include/</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/</span></code>). Empty: ChASE downloads and builds the GEMM-only INT8 library.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_FETCH_GEMMUL8</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
-<td><p>Keep Lanczos-related data resident on the GPU when supported by the backend.</p></td>
+<td><p>Download and build GEMMul8 when <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code> is empty.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_GEMMUL8_GIT_REPOSITORY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://github.com/RIKEN-RCCS/GEMMul8.git</span></code></p></td>
+<td><p>Git repository used when ChASE builds GEMMul8.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_GEMMUL8_GIT_TAG</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">v3.4.4</span></code></p></td>
+<td><p>Git tag or commit used when ChASE builds GEMMul8.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_GEMMUL8_GPU_ARCH</span></code></p></td>
+<td><p>empty</p></td>
+<td><p>CUDA architecture for the fetched GEMMul8 build. Empty uses the single <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> value. A set value must match that architecture.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_GPU_RESIDENT_LANCZOS</span></code></p></td>
+<td><p>always on</p></td>
+<td><p>GPU Lanczos keeps its working data on the device. The build always defines this macro. There is no CMake switch to turn it off.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_INTERFACE_WITH_BLOCKCYLIC</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
@@ -696,9 +736,8 @@ for debugging and understanding numerical stability.</p></td>
 </ul>
 </dd>
 <dt><strong>CUDA Configuration:</strong></dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> - CUDA compute capability architectures to target. Can be a single
-value (e.g., <code class="docutils literal notranslate"><span class="pre">86</span></code> for RTX 3090) or a semicolon-separated list (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;70;75;80;86&quot;</span></code>).
-This option should always be set when building with CUDA support, regardless of CMake version.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> - One CUDA compute capability, for example <code class="docutils literal notranslate"><span class="pre">90</span></code> or <code class="docutils literal notranslate"><span class="pre">86</span></code>.
+A semicolon-separated list is rejected. If unset, CMake uses the first GPU reported by <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>.</p></li>
 </ul>
 </dd>
 <dt><strong>ROCm/HIP Configuration:</strong></dt><dd><ul class="simple">
@@ -744,7 +783,7 @@ This option should always be set when building with CUDA support, regardless of 
 </dd>
 <dt><strong>Build with tests enabled:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCHASE_ENABLE_TESTS=ON \</span>
 <span class="go">         -DMPI_RUN=srun \</span>
-<span class="go">         -DMPI_RUN_ARGS=&quot;--ntasks=4&quot;</span>
+<span class="go">         -DMPI_RUN_ARGS="--ntasks=4"</span>
 </pre></div>
 </div>
 </dd>

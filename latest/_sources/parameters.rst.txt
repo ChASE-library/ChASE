@@ -147,6 +147,15 @@ The configuration object also provides logging controls:
 By default, ChASE initializes logging behavior from environment variables
 (``LogLevelFromEnv()`` and ``LogRankFromEnv()`` internally).
 
+Emulated GEMM
+=============
+
+On NVIDIA GPUs the filter can use an Ozaki-II emulated product. The CMake
+switches and the runtime environment variables (``CHASE_OZAKI_NUM_MODULI``,
+``CHASE_OZAKI_WORKSPACE_GB``, ``CHASE_OZAKI_FPGEMM_FALLBACK``,
+``CHASE_DISABLE_OZAKI``, and the ``CHASE_CUBLAS_*`` controls) are described in
+:doc:`emulated-gemm`.
+
 .. _configuration_object:
 
 Configuration Object

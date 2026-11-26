@@ -1,541 +1,847 @@
+
+
 <!DOCTYPE html>
-<html lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Changelog — ChASE</title>
-  <style>
-    body { margin: 0; background: #fcfcfc; color: #404040;
-      font-family: "Lato", "Helvetica Neue", Arial, sans-serif;
-      font-size: 16px; line-height: 1.5; }
-    main { max-width: 52rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    a { color: #2980b9; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    h1, h2, h3, h4, h5 { font-family: "Roboto Slab", "ff-tisa-web-pro", Georgia, serif;
-      color: #404040; font-weight: 700; line-height: 1.3; }
-    h1 { font-size: 2.2rem; margin: 0 0 1rem; padding-bottom: .4rem; border-bottom: 1px solid #e1e4e5; }
-    h2 { font-size: 1.7rem; margin: 2.2rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid #e1e4e5; }
-    h3 { font-size: 1.35rem; margin: 1.6rem 0 .4rem; }
-    h4, h5 { font-size: 1.1rem; margin: 1.2rem 0 .3rem; }
-    p, ul { margin: .6rem 0 1rem; }
-    ul { padding-left: 1.4rem; }
-    li { margin: .25rem 0; }
-    .meta { color: #666; margin: .15rem 0; }
-    nav ul { columns: 4; margin-top: 1rem; }
-    code { font-family: Consolas, "Liberation Mono", monospace; font-size: .9em;
-      background: #fff; border: 1px solid #e1e4e5; padding: .05rem .3rem; }
-    pre { overflow: auto; padding: .9rem 1rem; background: #f8f8f8; border: 1px solid #e1e4e5; }
-    pre code { background: transparent; border: 0; padding: 0; }
-    hr { border: 0; border-top: 1px solid #e1e4e5; margin: 1.5rem 0; }
-  </style>
-</head>
-<body>
-<main>
-  <p><a href="/ChASE/latest/">ChASE documentation</a></p>
-  <h1>Changelog</h1>
-  <p>Each section is the published GitHub release note for that version. The page does not list individual commits. v1.8.0 will be added with that release.</p>
-  <nav><ul>
-<li><a href="#v175">v1.7.5</a></li>
-<li><a href="#v174">v1.7.4</a></li>
-<li><a href="#v173">v1.7.3</a></li>
-<li><a href="#v172">v1.7.2</a></li>
-<li><a href="#v171">v1.7.1</a></li>
-<li><a href="#v170">v1.7.0</a></li>
-<li><a href="#v170-rc1">v1.7.0-rc1</a></li>
-<li><a href="#v160">v1.6.0</a></li>
-<li><a href="#v150">v1.5.0</a></li>
-<li><a href="#v141">v1.4.1</a></li>
-<li><a href="#v140">v1.4.0</a></li>
-<li><a href="#v131">v1.3.1</a></li>
-<li><a href="#v130">v1.3.0</a></li>
-<li><a href="#v121">v1.2.1</a></li>
-<li><a href="#v120">v1.2.0</a></li>
-<li><a href="#v111">v1.1.1</a></li>
-<li><a href="#v110">v1.1.0</a></li>
-<li><a href="#v100">v1.0.0</a></li>
-  </ul></nav>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog &mdash; ChASE v1.8.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
   
-<section id="v175">
-  <h2>v1.7.5</h2>
-  <p class="meta">2026-11-17 · Configurable rescaling of pseudo-Hermitian initial random vectors and RCCL constructor warm-up</p>
-  <p class="meta"><a href="/ChASE/v1.7.5/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.5">GitHub release</a></p>
-  <h3>ChASE Library Release Notes</h3>
-<h4>v1.7.5 (compared to v1.7.4)</h4>
-<h5>Overview</h5>
-<p>This release makes the lower-half scale $\gamma$ of a random pseudo-Hermitian initial guess configurable, and it fixes the GPU constructor warm-up so that an RCCL-only AMD build keeps it. The CMake project version is now 1.7.5, so generated headers and pkg-config report that version.</p>
-<p>The default scale remains $\gamma = 0.001$. Hermitian problems and approximate restart do not use it. Release and RelWithDebInfo builds still leave the constructor warm-up disabled.</p>
-<h5>🎯 Main Changes</h5>
-<h5>1. Configurable pseudo-Hermitian initial lower-half scale $\gamma$</h5>
-<p>The lower block of a random pseudo-Hermitian initial guess was fixed at $\gamma=0.001$. <code>ChaseConfig</code> now stores this factor, still defaulting to 0.001.</p>
-<ul>
-<li><code>SetInitLowerScale</code> and <code>GetInitLowerScale</code> set and read it.</li>
-<li>The CPU, GPU, and both distributed implementations use it when the initial guess is random and the problem is pseudo-Hermitian.</li>
-<li>Zero clears the lower block. One leaves the random entries unchanged.</li>
-<li>C <code>chase_set_init_lower_scale_</code> and Fortran <code>chase_set_init_lower_scale</code> set it for whichever precision is active.</li>
-<li>This factor is independent of the Chebyshev lower-bound decaying rate.</li>
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="prev" title="Contributing to ChASE" href="contribution.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/changelog/">
+      changelog
+    </option><option value="/ChASE/latest/">
+      latest
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
+    </option><option value="/ChASE/v1.7.4/">
+      v1.7.4
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  const baseUrl = url.replace(/\/$/, '');
+  if (baseUrl.endsWith('/changelog')) {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const pathParts = window.location.pathname.split('/').filter(function (p) { return p; });
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      knownVersions.push(option.text.trim());
+    }
+  }
+  let versionIndex = -1;
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      break;
+    }
+  }
+  if (versionIndex >= 0 && pathParts[versionIndex] === 'changelog') {
+    window.location.href = baseUrl + '/';
+    return;
+  }
+  const relativePath = versionIndex >= 0 ? pathParts.slice(versionIndex + 1).join('/') : '';
+  const home = baseUrl + '/';
+  if (!relativePath) {
+    window.location.href = home;
+    return;
+  }
+  const target = baseUrl + '/' + relativePath;
+  fetch(target, { method: 'HEAD' }).then(function (response) {
+    window.location.href = response.ok ? target : home;
+  }).catch(function () {
+    window.location.href = home;
+  });
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#v1-8-0">v1.8.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-5">v1.7.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-4">v1.7.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-3">v1.7.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-2">v1.7.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-1">v1.7.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-0">v1.7.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-7-0-rc1">v1.7.0-rc1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-6-0">v1.6.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-5-0">v1.5.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-4-1">v1.4.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-4-0">v1.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-3-1">v1.3.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-3-0">v1.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-2-1">v1.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-2-0">v1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-1-1">v1.1.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-1-0">v1.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v1-0-0">v1.0.0</a></li>
 </ul>
-<h5>2. AMD constructor warm-up</h5>
-<p>The <code>pChASEGPU</code> constructor benchmark warm-up was compiled only when <code>HAS_NCCL</code> was defined. An RCCL-only AMD build therefore dropped it.</p>
-<p>The guard is now <code>HAS_NCCL</code> or <code>HAS_RCCL</code>, together with <code>CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP</code>. The warm-up body still selects the <code>NCCL</code> backend type, which is the type used by the RCCL path. CUDA/NCCL builds keep the same warm-up.</p>
-<h5>3. Version reported by the build</h5>
-<p><code>project(... VERSION ...)</code> is now 1.7.5. After configuration, <code>CHASE_VERSION</code> in <code>chase_config.h</code> and <code>Version</code> in <code>chase.pc</code> follow that number. The README checkout example is <code>v1.7.5</code>.</p>
-<h5>📦 Additional Changes</h5>
-<ul>
-<li>update <code>CITATION.cff</code>.</li>
+</li>
 </ul>
-<h5>📌 Migration Notes</h5>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li>Existing configurations keep the lower-half scale at 0.001.</li>
-<li>Applications that need another value call <code>SetInitLowerScale</code>, <code>chase_set_init_lower_scale_</code>, or <code>chase_set_init_lower_scale</code> before solving.</li>
-<li>AMD Benchmark builds that already request <code>CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=ON</code> now run the constructor warm-up. Release and RelWithDebInfo builds still do not.</li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="emulated-gemm.html">7. Enabling GEMM emulation in ChASE</a></li>
 </ul>
-<h5>👥 Contributors</h5>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
 <ul>
-<li>Xinzhe Wu</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Changelog</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
+<p>Each section is the published GitHub release note for that version.
+This page does not list individual commits.</p>
+<section id="v1-8-0">
+<h2>v1.8.0<a class="headerlink" href="#v1-8-0" title="Link to this heading"></a></h2>
+<p>Published 2026-11-24.</p>
+<p><a class="reference external" href="/ChASE/v1.8.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.8.0">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
+<p class="rubric">v1.8.0 (compared to v1.7.5)</p>
+<p class="rubric">Overview</p>
+<p>This release completes the adaptive Ozaki-II emulated GEMM for the Chebyshev filter deployed on NVIDIA GPUs. v1.7.4 shipped an experimental GEMMul8 path and left the adaptive modulus selection out. v1.8.0 selects the number of coprime moduli from the solver tolerance for double-precision Hermitian problems, adds a cuBLAS fixed-point backend for CUDA 13.5 and newer, and uses Ozaki-II for the pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter at a fixed modulus count. The CMake project version is now 1.8.0.</p>
+<p>Emulation stays off unless <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI=ON</span></code>. CPU builds and AMD builds keep the ordinary GEMM. Single precision and pseudo-Hermitian problems do not run the flexible search.</p>
+<p class="rubric">🎯 Main Changes</p>
+<p class="rubric">1. Adaptive GEMMul8 modulus selection</p>
+<p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI=ON</span></code> enables precision emulation in the filter. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">GEMMUL8</span></code>. With <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code> empty, ChASE clones GEMMul8 tag <code class="docutils literal notranslate"><span class="pre">v3.4.4</span></code> and builds the GEMM-only INT8 library for the same single CUDA architecture as the rest of ChASE.</p>
+<p>For a double-precision Hermitian eigenproblem, ChASE keeps the smallest <span class="math notranslate nohighlight">\(s\)</span> in 7 to 16 whose loose bound is below the solver tolerance. If a residual stagnates, it moves to the smallest <span class="math notranslate nohighlight">\(s\)</span> whose conservative bound is below that tolerance. If no such <span class="math notranslate nohighlight">\(s\)</span> exists, the fallback is <span class="math notranslate nohighlight">\(s = 16\)</span>. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_FPGEMM_FALLBACK=1</span></code> uses the ordinary double-precision GEMM instead. The same selection is used on one GPU and on several GPUs. In parallel, the bound takes the number of ranks times the worst local block, and the FP64 reduction error is treated as exact. The complex bound is twice the real bound.</p>
+<ul class="simple">
+<li><p>A single-precision solve stays at <span class="math notranslate nohighlight">\(s = 12\)</span>.</p></li>
+<li><p>A pseudo-Hermitian solve stays at <span class="math notranslate nohighlight">\(s = 16\)</span> in double precision and at <span class="math notranslate nohighlight">\(s = 12\)</span> in single precision.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_NUM_MODULI</span></code> pins <span class="math notranslate nohighlight">\(s\)</span> for any of these problems and turns the search off.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI=1</span></code> keeps the Ozaki build and uses the ordinary GEMM for that run.</p></li>
+<li><p>The device workspace defaults to 12 GiB with memory saving on. <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_WORKSPACE_GB</span></code> sets another cap. <code class="docutils literal notranslate"><span class="pre">MAX</span></code> turns memory saving off and allocates the full workspace for the chosen <span class="math notranslate nohighlight">\(s\)</span>. If that allocation fails, ChASE logs the CUDA error and continues with the ordinary GEMM.</p></li>
+</ul>
+<p class="rubric">2. cuBLAS fixed-point backend</p>
+<p>CUDA 13.5 and newer can emulate a double-precision GEMM with fixed-point arithmetic. Select it with <code class="docutils literal notranslate"><span class="pre">CHASE_OZAKI_BACKEND=CUBLAS</span></code>. This backend uses the CUDA toolkit and does not build GEMMul8. The accuracy knob is the number of mantissa bits, which replaces the coprime modulus count <span class="math notranslate nohighlight">\(s\)</span>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_BITS</span></code> defaults to 32 and is kept for the whole solve.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_MANTISSA_CONTROL=dynamic</span></code> lets cuBLAS choose the bit count so the product is at least as accurate as double precision. Unset, the control is <code class="docutils literal notranslate"><span class="pre">fixed</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_EMULATION_STRATEGY</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">eager</span></code>. <code class="docutils literal notranslate"><span class="pre">performant</span></code> uses emulation only when it is faster.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_WORKSPACE_MB</span></code> defaults to 64. A failed allocation continues the solve with the ordinary GEMM.</p></li>
+<li><p>After a residual stagnation, the product switches to the ordinary double-precision GEMM. <code class="docutils literal notranslate"><span class="pre">CHASE_CUBLAS_DISABLE_FALLBACK=1</span></code> keeps the emulated product.</p></li>
+<li><p>Choosing the bit count from the solver tolerance is not part of this release.</p></li>
+</ul>
+<p class="rubric">3. Pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter</p>
+<p>When Ozaki-II is enabled, the pseudo-Hermitian <span class="math notranslate nohighlight">\(H^2\)</span> filter uses it on one GPU and on several GPUs, unless the solve is already on the ordinary GEMM. CPU backends still call the ordinary <span class="math notranslate nohighlight">\(H^2\)</span> product. The pseudo-Hermitian solve initializes Ozaki-II and stays at the fixed modulus count above. It does not run the flexible search.</p>
+<p class="rubric">📦 Additional Changes</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SetOzakiNumModuli</span></code> and <code class="docutils literal notranslate"><span class="pre">SetOzakiMantissaBits</span></code> set the GEMMul8 modulus count and the cuBLAS mantissa width on the GPU interface.</p></li>
+<li><p>Example 5 accepts <code class="docutils literal notranslate"><span class="pre">--double</span></code> and <code class="docutils literal notranslate"><span class="pre">--complex</span></code>, selecting <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">complex&lt;float&gt;</span></code>, or <code class="docutils literal notranslate"><span class="pre">complex&lt;double&gt;</span></code>.</p></li>
+<li><p>With early locking disabled, a pseudo-Hermitian convergence update is no longer skipped.</p></li>
+<li><p>The user guide documents both emulated GEMM backends.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">project(...</span> <span class="pre">VERSION</span> <span class="pre">...)</span></code> is now 1.8.0. After configuration, <code class="docutils literal notranslate"><span class="pre">CHASE_VERSION</span></code> in <code class="docutils literal notranslate"><span class="pre">chase_config.h</span></code> and <code class="docutils literal notranslate"><span class="pre">Version</span></code> in <code class="docutils literal notranslate"><span class="pre">chase.pc</span></code> follow that number. The README checkout example is <code class="docutils literal notranslate"><span class="pre">v1.8.0</span></code>.</p></li>
+</ul>
+<p class="rubric">Minor</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code> tag publishes that version of the documentation. The changelog lists one section per release.</p></li>
+</ul>
+<p class="rubric">📌 Migration Notes</p>
+<ul class="simple">
+<li><p>Existing configurations stay unchanged. <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OZAKI</span></code> remains <code class="docutils literal notranslate"><span class="pre">OFF</span></code>.</p></li>
+<li><p>GEMMul8 is enabled with <code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_OZAKI=ON</span></code>. The first configure needs either a network fetch or <code class="docutils literal notranslate"><span class="pre">GEMMUL8_ROOT</span></code>. <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> must be a single architecture.</p></li>
+<li><p>The cuBLAS backend needs CUDA 13.5 or newer: <code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_OZAKI=ON</span> <span class="pre">-DCHASE_OZAKI_BACKEND=CUBLAS</span></code>.</p></li>
+<li><p>The flexible search applies only to double-precision Hermitian problems. Single-precision and pseudo-Hermitian solves keep the fixed modulus counts above.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_OZAKI=1</span></code> turns emulation off for one run without rebuilding.</p></li>
+</ul>
+<p class="rubric">👥 Contributors</p>
+<ul class="simple">
+<li><p>Clément Richefort</p></li>
+<li><p>Xinzhe Wu</p></li>
 </ul>
 </section>
-
-<section id="v174">
-  <h2>v1.7.4</h2>
-  <p class="meta">2026-10-26 · Improved Static Linking and GPU QR Reliability</p>
-  <p class="meta"><a href="/ChASE/v1.7.4/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.4">GitHub release</a></p>
-  <h4>ChASE Library Release Notes</h4>
-<h5>v1.7.4 (compared to v1.7.3)</h5>
-<h4>Overview</h4>
-<p>This release improves integration for downstream applications, fixes GPU QR event handling and timing, and migrates the GPU CI pipeline to JUPITER.</p>
-<p>It also includes an initial experimental CUDA/Hopper integration of the Ozaki-II GEMMul8 filter backend. The complete adaptive Ozaki-II implementation remains under development and is not part of this release.</p>
-<h4>🎯 Main Changes</h4>
-<h5>1. Improved pkg-config Support</h5>
-<p><code>chase.pc</code> now exports the public ChASE libraries and the complete static backend dependency closure, including CUDA/NCCL or HIP/RCCL, ScaLAPACK, BLAS, LAPACK, MPI, OpenMP, and the C++ runtime.</p>
+<section id="v1-7-5">
+<h2>v1.7.5<a class="headerlink" href="#v1-7-5" title="Link to this heading"></a></h2>
+<p>Published 2026-11-17.</p>
+<p><a class="reference external" href="/ChASE/v1.7.5/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.5">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
+<p class="rubric">v1.7.5 (compared to v1.7.4)</p>
+<p class="rubric">Overview</p>
+<p>This release makes the lower-half scale <span class="math notranslate nohighlight">\(\gamma\)</span> of a random pseudo-Hermitian initial guess configurable, and it fixes the GPU constructor warm-up so that an RCCL-only AMD build keeps it. The CMake project version is now 1.7.5, so generated headers and pkg-config report that version.</p>
+<p>The default scale remains <span class="math notranslate nohighlight">\(\gamma = 0.001\)</span>. Hermitian problems and approximate restart do not use it. Release and RelWithDebInfo builds still leave the constructor warm-up disabled.</p>
+<p class="rubric">🎯 Main Changes</p>
+<p class="rubric">1. Configurable pseudo-Hermitian initial lower-half scale <span class="math notranslate nohighlight">\(\gamma\)</span></p>
+<p>The lower block of a random pseudo-Hermitian initial guess was fixed at <span class="math notranslate nohighlight">\(\gamma=0.001\)</span>. <code class="docutils literal notranslate"><span class="pre">ChaseConfig</span></code> now stores this factor, still defaulting to 0.001.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SetInitLowerScale</span></code> and <code class="docutils literal notranslate"><span class="pre">GetInitLowerScale</span></code> set and read it.</p></li>
+<li><p>The CPU, GPU, and both distributed implementations use it when the initial guess is random and the problem is pseudo-Hermitian.</p></li>
+<li><p>Zero clears the lower block. One leaves the random entries unchanged.</p></li>
+<li><p>C <code class="docutils literal notranslate"><span class="pre">chase_set_init_lower_scale_</span></code> and Fortran <code class="docutils literal notranslate"><span class="pre">chase_set_init_lower_scale</span></code> set it for whichever precision is active.</p></li>
+<li><p>This factor is independent of the Chebyshev lower-bound decaying rate.</p></li>
+</ul>
+<p class="rubric">2. AMD constructor warm-up</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pChASEGPU</span></code> constructor benchmark warm-up was compiled only when <code class="docutils literal notranslate"><span class="pre">HAS_NCCL</span></code> was defined. An RCCL-only AMD build therefore dropped it.</p>
+<p>The guard is now <code class="docutils literal notranslate"><span class="pre">HAS_NCCL</span></code> or <code class="docutils literal notranslate"><span class="pre">HAS_RCCL</span></code>, together with <code class="docutils literal notranslate"><span class="pre">CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP</span></code>. The warm-up body still selects the <code class="docutils literal notranslate"><span class="pre">NCCL</span></code> backend type, which is the type used by the RCCL path. CUDA/NCCL builds keep the same warm-up.</p>
+<p class="rubric">3. Version reported by the build</p>
+<p><code class="docutils literal notranslate"><span class="pre">project(...</span> <span class="pre">VERSION</span> <span class="pre">...)</span></code> is now 1.7.5. After configuration, <code class="docutils literal notranslate"><span class="pre">CHASE_VERSION</span></code> in <code class="docutils literal notranslate"><span class="pre">chase_config.h</span></code> and <code class="docutils literal notranslate"><span class="pre">Version</span></code> in <code class="docutils literal notranslate"><span class="pre">chase.pc</span></code> follow that number. The README checkout example is <code class="docutils literal notranslate"><span class="pre">v1.7.5</span></code>.</p>
+<p class="rubric">📦 Additional Changes</p>
+<ul class="simple">
+<li><p>update <code class="docutils literal notranslate"><span class="pre">CITATION.cff</span></code>.</p></li>
+</ul>
+<p class="rubric">📌 Migration Notes</p>
+<ul class="simple">
+<li><p>Existing configurations keep the lower-half scale at 0.001.</p></li>
+<li><p>Applications that need another value call <code class="docutils literal notranslate"><span class="pre">SetInitLowerScale</span></code>, <code class="docutils literal notranslate"><span class="pre">chase_set_init_lower_scale_</span></code>, or <code class="docutils literal notranslate"><span class="pre">chase_set_init_lower_scale</span></code> before solving.</p></li>
+<li><p>AMD Benchmark builds that already request <code class="docutils literal notranslate"><span class="pre">CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP=ON</span></code> now run the constructor warm-up. Release and RelWithDebInfo builds still do not.</p></li>
+</ul>
+<p class="rubric">👥 Contributors</p>
+<ul class="simple">
+<li><p>Xinzhe Wu</p></li>
+</ul>
+</section>
+<section id="v1-7-4">
+<h2>v1.7.4<a class="headerlink" href="#v1-7-4" title="Link to this heading"></a></h2>
+<p>Published 2026-10-26.</p>
+<p><a class="reference external" href="/ChASE/v1.7.4/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.4">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
+<p class="rubric">v1.7.4 (compared to v1.7.3)</p>
+<p class="rubric">Overview</p>
+<p>This release improves integration for downstream applications, fixes GPU</p>
+<p>QR event handling and timing, and migrates the GPU CI pipeline to JUPITER.</p>
+<p>It also includes an initial experimental CUDA/Hopper integration of the</p>
+<p>Ozaki-II GEMMul8 filter backend. The complete adaptive Ozaki-II</p>
+<p>implementation remains under development and is not part of this release.</p>
+<p class="rubric">🎯 Main Changes</p>
+<p class="rubric">1. Improved pkg-config Support</p>
+<p><code class="docutils literal notranslate"><span class="pre">chase.pc</span></code> now exports the public ChASE libraries and the complete static</p>
+<p>backend dependency closure, including CUDA/NCCL or HIP/RCCL, ScaLAPACK,</p>
+<p>BLAS, LAPACK, MPI, OpenMP, and the C++ runtime.</p>
 <p>Static downstream consumers can now use:</p>
-<pre><code>pkg-config --static --libs chase</code></pre>
-<p>OpenMP CMake handling was also corrected to avoid forwarding incompatible host compiler flags through NVCC.</p>
-<h5>2. GPU QR Timing Fixes</h5>
-<ul>
-<li>Avoid querying unrecorded CholQR events in the Householder path</li>
-<li>Fix <code>invalid resource handle</code> errors in output-enabled CUDA builds</li>
-<li>Correctly measure and report explicit Householder core time</li>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pkg-config<span class="w"> </span>--static<span class="w"> </span>--libs<span class="w"> </span>chase
+</pre></div>
+</div>
+<p>OpenMP CMake handling was also corrected to avoid forwarding incompatible</p>
+<p>host compiler flags through NVCC.</p>
+<p class="rubric">2. GPU QR Timing Fixes</p>
+<ul class="simple">
+<li><p>Avoid querying unrecorded CholQR events in the Householder path</p></li>
+<li><p>Fix <code class="docutils literal notranslate"><span class="pre">invalid</span> <span class="pre">resource</span> <span class="pre">handle</span></code> errors in output-enabled CUDA builds</p></li>
+<li><p>Correctly measure and report explicit Householder core time</p></li>
 </ul>
-<h5>3. JUPITER CI Migration</h5>
-<ul>
-<li>Move GPU CI jobs from JUWELS Booster to JUPITER</li>
-<li>Use the JUPITER scratch filesystem and runner tags</li>
-<li>Build for CUDA architecture 90</li>
-<li>Explicitly load ScaLAPACK in GPU build, test, and coverage jobs</li>
+<p class="rubric">3. JUPITER CI Migration</p>
+<ul class="simple">
+<li><p>Move GPU CI jobs from JUWELS Booster to JUPITER</p></li>
+<li><p>Use the JUPITER scratch filesystem and runner tags</p></li>
+<li><p>Build for CUDA architecture 90</p></li>
+<li><p>Explicitly load ScaLAPACK in GPU build, test, and coverage jobs</p></li>
 </ul>
-<h4>📦 Additional Changes</h4>
-<ul>
-<li>Add <code>CHASE_DISABLE_EARLY_LOCKING</code> to disable the early-locking heuristic</li>
-<li>Add an initial, opt-in experimental Ozaki-II/GEMMul8 CUDA backend</li>
-<li>Existing CPU, CUDA, and HIP behavior remains unchanged by default</li>
+<p class="rubric">📦 Additional Changes</p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_EARLY_LOCKING</span></code> to disable the early-locking heuristic</p></li>
+<li><p>Add an initial, opt-in experimental Ozaki-II/GEMMul8 CUDA backend</p></li>
+<li><p>Existing CPU, CUDA, and HIP behavior remains unchanged by default</p></li>
 </ul>
-<p>The adaptive precision and dynamic modulus-selection work from the Ozaki-II development branch is not included in this release.</p>
-<h4>🧪 Testing</h4>
-<p>The static-linking and GPU QR changes were validated through Yambo on one JUPITER node using four MPI ranks and four NVIDIA GPUs.</p>
-<p>The validation covered output-enabled and production builds, Householder and CholQR paths, and CPU/GPU numerical comparisons. All regression checks passed without CUDA event errors.</p>
-<h4>📌 Migration Notes</h4>
-<ul>
-<li>Existing configurations remain unchanged by default.</li>
-<li>Static consumers should use <code>pkg-config --static --libs chase</code>.</li>
-<li>The experimental Ozaki-II backend is disabled by default and should not</li>
+<p>The adaptive precision and dynamic modulus-selection work from the Ozaki-II</p>
+<p>development branch is not included in this release.</p>
+<p class="rubric">🧪 Testing</p>
+<p>The static-linking and GPU QR changes were validated through Yambo on one</p>
+<p>JUPITER node using four MPI ranks and four NVIDIA GPUs.</p>
+<p>The validation covered output-enabled and production builds, Householder</p>
+<p>and CholQR paths, and CPU/GPU numerical comparisons. All regression checks</p>
+<p>passed without CUDA event errors.</p>
+<p class="rubric">📌 Migration Notes</p>
+<ul class="simple">
+<li><p>Existing configurations remain unchanged by default.</p></li>
+<li><p>Static consumers should use <code class="docutils literal notranslate"><span class="pre">pkg-config</span> <span class="pre">--static</span> <span class="pre">--libs</span> <span class="pre">chase</span></code>.</p></li>
+<li><p>The experimental Ozaki-II backend is disabled by default and should not
+yet be considered the complete adaptive implementation.</p></li>
 </ul>
-<p>yet be considered the complete adaptive implementation.</p>
-<h4>👥 Contributors</h4>
-<ul>
-<li>Clément Richefort</li>
-<li>Xinzhe Wu</li>
+<p class="rubric">👥 Contributors</p>
+<ul class="simple">
+<li><p>Clément Richefort</p></li>
+<li><p>Xinzhe Wu</p></li>
 </ul>
 </section>
-
-<section id="v173">
-  <h2>v1.7.3</h2>
-  <p class="meta">2026-09-15 · Support for AMD GPUs (HIP/ROCm)</p>
-  <p class="meta"><a href="/ChASE/v1.7.3/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.3">GitHub release</a></p>
-  <h3>ChASE Library Release Notes</h3>
+<section id="v1-7-3">
+<h2>v1.7.3<a class="headerlink" href="#v1-7-3" title="Link to this heading"></a></h2>
+<p>Published 2026-09-15.</p>
+<p><a class="reference external" href="/ChASE/v1.7.3/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.3">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
 <p><strong>v1.7.3</strong> (compared to v1.7.2)</p>
-<h4>Overview</h4>
+<p class="rubric">Overview</p>
 <p>This release adds production-grade AMD GPU (HIP/ROCm) support to ChASE, together with a unified CUDA/HIP GPU architecture. Serial and distributed GPU solvers now share the same algorithm layers and dispatch to NVIDIA or AMD backends. NVIDIA/CUDA paths are preserved. The mathematical algorithm is unchanged from v1.7.2. The port was validated on Frontier, including Hermitian and pseudo-Hermitian (BSE) problems.</p>
-<h4>🎯 Major Features</h4>
-<h5>1. AMD GPU (HIP/ROCm) Support</h5>
-<ul>
-<li>HIP backend for <code>ChASEGPU</code> (serial GPU) and <code>pChASEGPU</code> (distributed GPU)</li>
-<li>rocBLAS / rocSOLVER wrappers under <code>external/amd_gpu/</code></li>
-<li>Distributed GPU communication on AMD:</li>
-<li>RCCL collectives (default, NCCL-compatible xCCL path)</li>
-<li>HIP-aware MPI as an alternative</li>
-<li>Hermitian and pseudo-Hermitian (full BSE) solvers on HIP, serial and distributed</li>
-<li>C and Fortran interfaces wired to the HIP backend</li>
-<li>Validated on Frontier: serial HIP, HIP-aware MPI, RCCL, and Example 4 C/Fortran interface runs</li>
+<p class="rubric">🎯 Major Features</p>
+<p class="rubric">1. AMD GPU (HIP/ROCm) Support</p>
+<ul class="simple">
+<li><p>HIP backend for <code class="docutils literal notranslate"><span class="pre">ChASEGPU</span></code> (serial GPU) and <code class="docutils literal notranslate"><span class="pre">pChASEGPU</span></code> (distributed GPU)</p></li>
+<li><p>rocBLAS / rocSOLVER wrappers under <code class="docutils literal notranslate"><span class="pre">external/amd_gpu/</span></code></p></li>
+<li><p>Distributed GPU communication on AMD:</p></li>
+<li><p>RCCL collectives (default, NCCL-compatible xCCL path)</p></li>
+<li><p>HIP-aware MPI as an alternative</p></li>
+<li><p>Hermitian and pseudo-Hermitian (full BSE) solvers on HIP, serial and distributed</p></li>
+<li><p>C and Fortran interfaces wired to the HIP backend</p></li>
+<li><p>Validated on Frontier: serial HIP, HIP-aware MPI, RCCL, and Example 4 C/Fortran interface runs</p></li>
 </ul>
-<h5>2. Unified CUDA/HIP GPU Architecture</h5>
-<ul>
-<li>GPU internals reorganized under <code>linalg/internal/gpu/</code>:</li>
-<li><code>backend/</code>: runtime, BLAS, solver, context, workspace planning</li>
-<li><code>serial/</code>: shared CholQR, Lanczos, Rayleigh–Ritz, residuals + CUDA/HIP wrappers</li>
-<li><code>dist_mpi/</code>: GPU-aware MPI path (CUDA-aware and HIP-aware)</li>
-<li><code>dist_xccl/</code>: NCCL (NVIDIA) and RCCL (AMD) path</li>
-<li><code>kernels/</code>: shared device kernels with CUDA/HIP specializations</li>
-<li>Shared implementations for HEMM, CholQR, Lanczos, RR, residuals, and <code>symOrHerm</code></li>
-<li>GPU-resident workspace reuse and execution-context ownership for handles/streams/devInfo</li>
-<li>NVIDIA CUDA/NCCL behavior retained and adapted to the new dispatch layer</li>
+<p class="rubric">2. Unified CUDA/HIP GPU Architecture</p>
+<ul class="simple">
+<li><p>GPU internals reorganized under <code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/</span></code>:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/</span></code>: runtime, BLAS, solver, context, workspace planning</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">serial/</span></code>: shared CholQR, Lanczos, Rayleigh–Ritz, residuals + CUDA/HIP wrappers</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dist_mpi/</span></code>: GPU-aware MPI path (CUDA-aware and HIP-aware)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dist_xccl/</span></code>: NCCL (NVIDIA) and RCCL (AMD) path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernels/</span></code>: shared device kernels with CUDA/HIP specializations</p></li>
+<li><p>Shared implementations for HEMM, CholQR, Lanczos, RR, residuals, and <code class="docutils literal notranslate"><span class="pre">symOrHerm</span></code></p></li>
+<li><p>GPU-resident workspace reuse and execution-context ownership for handles/streams/devInfo</p></li>
+<li><p>NVIDIA CUDA/NCCL behavior retained and adapted to the new dispatch layer</p></li>
 </ul>
-<h5>3. Distributed GPU Collectives and Timing</h5>
-<ul>
-<li>RCCL discovery, build wiring, and distributed kernel layer mirroring NCCL</li>
-<li>Stream-aware synchronization on GPU-aware MPI hot paths</li>
-<li>Corrected HIP/RCCL timing for filter and QR phases (event placement/ordering)</li>
-<li>Reduced over-conservative barriers where correctness allowed</li>
+<p class="rubric">3. Distributed GPU Collectives and Timing</p>
+<ul class="simple">
+<li><p>RCCL discovery, build wiring, and distributed kernel layer mirroring NCCL</p></li>
+<li><p>Stream-aware synchronization on GPU-aware MPI hot paths</p></li>
+<li><p>Corrected HIP/RCCL timing for filter and QR phases (event placement/ordering)</p></li>
+<li><p>Reduced over-conservative barriers where correctness allowed</p></li>
 </ul>
-<h5>4. Documentation and Benchmark Tooling</h5>
-<ul>
-<li>AMD/ROCm install and CMake guidance in the user docs</li>
-<li>Architecture notes: <code>docs/amd_gpu_port_architecture.md</code></li>
-<li>Frontier collective benchmark docs and matrix-operations benchmark (MPI/xCCL modes)</li>
-<li>Helper scripts: <code>scripts/frontier_hip_env.sh</code>, <code>scripts/run_hip_*.sh</code></li>
+<p class="rubric">4. Documentation and Benchmark Tooling</p>
+<ul class="simple">
+<li><p>AMD/ROCm install and CMake guidance in the user docs</p></li>
+<li><p>Architecture notes: <code class="docutils literal notranslate"><span class="pre">docs/amd_gpu_port_architecture.md</span></code></p></li>
+<li><p>Frontier collective benchmark docs and matrix-operations benchmark (MPI/xCCL modes)</p></li>
+<li><p>Helper scripts: <code class="docutils literal notranslate"><span class="pre">scripts/frontier_hip_env.sh</span></code>, <code class="docutils literal notranslate"><span class="pre">scripts/run_hip_*.sh</span></code></p></li>
 </ul>
-<h4>📦 Build &amp; Configuration</h4>
-<h5>CMake Improvements</h5>
-<ul>
-<li>External wrappers grouped by platform: <code>external/cpu</code>, <code>external/nvidia_gpu</code>, <code>external/amd_gpu</code>, <code>external/scalapack</code></li>
-<li><code>FindRCCL.cmake</code> for RCCL detection</li>
-<li>HIP autodetection via <code>check_language(HIP)</code></li>
-<li><code>chase_config.h</code> now exposes HIP / HIP-aware MPI / RCCL flags</li>
+<p class="rubric">📦 Build &amp; Configuration</p>
+<p class="rubric">CMake Improvements</p>
+<ul class="simple">
+<li><p>External wrappers grouped by platform: <code class="docutils literal notranslate"><span class="pre">external/cpu</span></code>, <code class="docutils literal notranslate"><span class="pre">external/nvidia_gpu</span></code>, <code class="docutils literal notranslate"><span class="pre">external/amd_gpu</span></code>, <code class="docutils literal notranslate"><span class="pre">external/scalapack</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FindRCCL.cmake</span></code> for RCCL detection</p></li>
+<li><p>HIP autodetection via <code class="docutils literal notranslate"><span class="pre">check_language(HIP)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase_config.h</span></code> now exposes HIP / HIP-aware MPI / RCCL flags</p></li>
 </ul>
-<h5>Configuration Options</h5>
-<ul>
-<li><code>CHASE_ENABLE_HIP</code>: <code>AUTO</code> (default), <code>ON</code>, or <code>OFF</code></li>
-<li><code>CHASE_HIP_DISTRIBUTED_COLLECTIVES</code>: <code>NCCL</code> (RCCL on ROCm, default) or <code>MPI</code></li>
-<li><code>CHASE_PROBE_HIP_AWARE_MPI_RUNTIME</code>: optional configure-time HIP-aware MPI probe (default: <code>OFF</code>)</li>
+<p class="rubric">Configuration Options</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_HIP</span></code>: <code class="docutils literal notranslate"><span class="pre">AUTO</span></code> (default), <code class="docutils literal notranslate"><span class="pre">ON</span></code>, or <code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_HIP_DISTRIBUTED_COLLECTIVES</span></code>: <code class="docutils literal notranslate"><span class="pre">NCCL</span></code> (RCCL on ROCm, default) or <code class="docutils literal notranslate"><span class="pre">MPI</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_PROBE_HIP_AWARE_MPI_RUNTIME</span></code>: optional configure-time HIP-aware MPI probe (default: <code class="docutils literal notranslate"><span class="pre">OFF</span></code>)</p></li>
 </ul>
 <p>Example HIP build:</p>
-<pre><code>cmake .. \
- -DCHASE_ENABLE_HIP=ON \
- -DCHASE_HIP_DISTRIBUTED_COLLECTIVES=NCCL</code></pre>
-<p>On NVIDIA-only machines, CUDA detection is unchanged. Use <code>-DCHASE_ENABLE_HIP=OFF</code> to skip HIP autodetection.</p>
-<h4>🔍 Logging &amp; Diagnostics</h4>
-<ul>
-<li>Rank-0 logging guards in distributed CholQR and interface config output (less multi-rank noise)</li>
-<li>Additional Frontier bring-up diagnostics for HIP/RCCL collectives</li>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>..<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-DCHASE_ENABLE_HIP<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-DCHASE_HIP_DISTRIBUTED_COLLECTIVES<span class="o">=</span>NCCL
+</pre></div>
+</div>
+<p>On NVIDIA-only machines, CUDA detection is unchanged. Use <code class="docutils literal notranslate"><span class="pre">-DCHASE_ENABLE_HIP=OFF</span></code> to skip HIP autodetection.</p>
+<p class="rubric">🔍 Logging &amp; Diagnostics</p>
+<ul class="simple">
+<li><p>Rank-0 logging guards in distributed CholQR and interface config output (less multi-rank noise)</p></li>
+<li><p>Additional Frontier bring-up diagnostics for HIP/RCCL collectives</p></li>
 </ul>
-<h4>🧪 Testing</h4>
-<ul>
-<li>HIP serial unit tests (CholQR, Lanczos, Rayleigh–Ritz, residuals, kernels)</li>
-<li>HIP-aware MPI distributed tests (HEMM, Lanczos, QR, RR, residuals, pseudo-Hermitian)</li>
-<li>RCCL tests mirroring the NCCL suite</li>
-<li>Serial/distributed C and Fortran interface smoke tests on HIP</li>
-<li>Frontier helper scripts for serial, distributed, e2e, and interface runs</li>
+<p class="rubric">🧪 Testing</p>
+<ul class="simple">
+<li><p>HIP serial unit tests (CholQR, Lanczos, Rayleigh–Ritz, residuals, kernels)</p></li>
+<li><p>HIP-aware MPI distributed tests (HEMM, Lanczos, QR, RR, residuals, pseudo-Hermitian)</p></li>
+<li><p>RCCL tests mirroring the NCCL suite</p></li>
+<li><p>Serial/distributed C and Fortran interface smoke tests on HIP</p></li>
+<li><p>Frontier helper scripts for serial, distributed, e2e, and interface runs</p></li>
 </ul>
-<h4>🔗 API Changes</h4>
-<ul>
-<li><code>QR(cond)</code>: dropped unused <code>fixednev</code> argument</li>
-<li><code>Resd(ritzv, resd)</code>: dropped unused <code>fixednev</code> argument</li>
-<li><code>ReinitColumns(base_col, col_indices, n_indices)</code>: parameter renamed from <code>fixednev</code> to <code>base_col</code></li>
-<li>Public solver classes are unchanged: <code>ChASEGPU</code>, <code>pChASEGPU</code>, C/Fortran interfaces</li>
-<li><code>pChASEGPU</code> communication backend: <code>chase::grid::backend::MPI</code> or <code>chase::grid::backend::NCCL</code> (maps to NCCL on NVIDIA, RCCL on AMD)</li>
+<p class="rubric">🔗 API Changes</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QR(cond)</span></code>: dropped unused <code class="docutils literal notranslate"><span class="pre">fixednev</span></code> argument</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Resd(ritzv,</span> <span class="pre">resd)</span></code>: dropped unused <code class="docutils literal notranslate"><span class="pre">fixednev</span></code> argument</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ReinitColumns(base_col,</span> <span class="pre">col_indices,</span> <span class="pre">n_indices)</span></code>: parameter renamed from <code class="docutils literal notranslate"><span class="pre">fixednev</span></code> to <code class="docutils literal notranslate"><span class="pre">base_col</span></code></p></li>
+<li><p>Public solver classes are unchanged: <code class="docutils literal notranslate"><span class="pre">ChASEGPU</span></code>, <code class="docutils literal notranslate"><span class="pre">pChASEGPU</span></code>, C/Fortran interfaces</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pChASEGPU</span></code> communication backend: <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> or <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> (maps to NCCL on NVIDIA, RCCL on AMD)</p></li>
 </ul>
-<h4>📌 Migration Notes</h4>
-<h5>For Users Upgrading</h5>
-<ul>
-<li>HIP is opt-in via CMake; existing CUDA builds should keep working</li>
-<li>Typical usage remains one GPU per MPI rank</li>
-<li>Distributed HIP Householder QR uses the ScaLAPACK fallback (native HIP Householder QR is not in this release)</li>
-<li>NVIDIA XGEEV for pseudo-Hermitian RR remains CUDA-only (<code>CHASE_ENABLE_XGEEV_RAYLEIGHRITZ</code>)</li>
+<p class="rubric">📌 Migration Notes</p>
+<p class="rubric">For Users Upgrading</p>
+<ul class="simple">
+<li><p>HIP is opt-in via CMake; existing CUDA builds should keep working</p></li>
+<li><p>Typical usage remains one GPU per MPI rank</p></li>
+<li><p>Distributed HIP Householder QR uses the ScaLAPACK fallback (native HIP Householder QR is not in this release)</p></li>
+<li><p>NVIDIA XGEEV for pseudo-Hermitian RR remains CUDA-only (<code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_XGEEV_RAYLEIGHRITZ</span></code>)</p></li>
 </ul>
-<h5>For Developers / Downstream Includes</h5>
+<p class="rubric">For Developers / Downstream Includes</p>
 <p>Old CUDA-only headers moved. Update includes, for example:</p>
-<ul>
-<li><code>external/cublaspp/</code> → <code>external/nvidia_gpu/cublaspp/</code></li>
-<li><code>external/blaspp/</code> → <code>external/cpu/blaspp/</code></li>
-<li><code>linalg/internal/cuda/</code> → <code>linalg/internal/gpu/serial/cuda/</code> and <code>linalg/internal/gpu/kernels/</code></li>
-<li><code>linalg/internal/nccl/</code> → <code>linalg/internal/gpu/dist_xccl/nccl/</code></li>
-<li><code>linalg/internal/cuda_aware_mpi/</code> → <code>linalg/internal/gpu/dist_mpi/cuda/</code></li>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">external/cublaspp/</span></code> → <code class="docutils literal notranslate"><span class="pre">external/nvidia_gpu/cublaspp/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">external/blaspp/</span></code> → <code class="docutils literal notranslate"><span class="pre">external/cpu/blaspp/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/cuda/</span></code> → <code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/serial/cuda/</span></code> and <code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/kernels/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/nccl/</span></code> → <code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/dist_xccl/nccl/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linalg/internal/cuda_aware_mpi/</span></code> → <code class="docutils literal notranslate"><span class="pre">linalg/internal/gpu/dist_mpi/cuda/</span></code></p></li>
 </ul>
-<h4>👥 Contributors</h4>
+<p class="rubric">👥 Contributors</p>
 <p>This release includes work by Xinzhe Wu, with major efforts in:</p>
-<ul>
-<li>AMD/HIP port on Frontier</li>
-<li>Unified CUDA/HIP GPU backend</li>
-<li>RCCL and HIP-aware MPI distributed paths</li>
-<li>HIP test coverage and documentation</li>
+<ul class="simple">
+<li><p>AMD/HIP port on Frontier</p></li>
+<li><p>Unified CUDA/HIP GPU backend</p></li>
+<li><p>RCCL and HIP-aware MPI distributed paths</p></li>
+<li><p>HIP test coverage and documentation</p></li>
 </ul>
 </section>
-
-<section id="v172">
-  <h2>v1.7.2</h2>
-  <p class="meta">2026-05-05 · Interior eigenvalue support for pseudo-hermitian problems and built-in multi-GPU HouseholderQR </p>
-  <p class="meta"><a href="/ChASE/v1.7.2/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.2">GitHub release</a></p>
-  <h3>ChASE Library Release Notes</h3>
-<h4>Overview</h4>
+<section id="v1-7-2">
+<h2>v1.7.2<a class="headerlink" href="#v1-7-2" title="Link to this heading"></a></h2>
+<p>Published 2026-05-05.</p>
+<p><a class="reference external" href="/ChASE/v1.7.2/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.2">GitHub release</a></p>
+<p class="rubric">ChASE Library Release Notes</p>
+<p class="rubric">Overview</p>
 <p>This release represents significant advancements in the ChASE (Chebyshev Accelerated Subspace Extraction) library, with major enhancements to pseudo-Hermitian matrix support to compute interior eigenpairs with eigenvalues around 0, distributed-memory GPU capabilities, QR factorization algorithms, and user interfaces.</p>
-<hr>
-<h4>🎯 Major Features</h4>
-<h5>1. <strong>Pseudo-Hermitian Matrix Support</strong></h5>
-<ul>
-<li>Extended ChASE to compute lower excited states of full Bethe-Salpeter Equation (BSE) matrices</li>
-<li>Implemented positive-negative symmetry handling in ChASE-CPU, ChASE-GPU, pChASE-CPU and pChASE-GPU</li>
-<li>Improved locking mechanism for negative components with K-conjugate operation</li>
-<li>Added damping factor for lower block initialization to improve numerical stability</li>
-<li>Paper on arxiv: Chebyshev Accelerated Subspace Eigensolver for Pseudo-hermitian Hamiltonians</li>
+<p class="rubric">🎯 Major Features</p>
+<p class="rubric">1. <strong>Pseudo-Hermitian Matrix Support</strong></p>
+<ul class="simple">
+<li><p>Extended ChASE to compute lower excited states of full Bethe-Salpeter Equation (BSE) matrices</p></li>
+<li><p>Implemented positive-negative symmetry handling in ChASE-CPU, ChASE-GPU, pChASE-CPU and pChASE-GPU</p></li>
+<li><p>Improved locking mechanism for negative components with K-conjugate operation</p></li>
+<li><p>Added damping factor for lower block initialization to improve numerical stability</p></li>
+<li><p>Paper on arxiv: Chebyshev Accelerated Subspace Eigensolver for Pseudo-hermitian Hamiltonians</p></li>
 </ul>
-<h5>2. <strong>Distributed-Memory GPU Support (pChASE-GPU)</strong></h5>
-<ul>
-<li>GPU-resident Lanczos implementation with fused kernels</li>
-<li>Optional warm-up procedures in constructor for NCCL initialization</li>
+<p class="rubric">2. <strong>Distributed-Memory GPU Support (pChASE-GPU)</strong></p>
+<ul class="simple">
+<li><p>GPU-resident Lanczos implementation with fused kernels</p></li>
+<li><p>Optional warm-up procedures in constructor for NCCL initialization</p></li>
 </ul>
-<h5>3. <strong>Advanced Householder QR Factorization</strong></h5>
-<ul>
-<li><strong>CUDA-aware-MPI and NCCL Householder QR</strong>: Two-level padding/cleaning strategy with full-path diagnostics</li>
-<li>Level-1: Panel pre-clean (coarse)</li>
-<li>Level-2: Column split-and-pad (fine)</li>
-<li>Full-height GEMM updates with NCCL allreduce</li>
-<li><strong>Distributed CPU Householder QR</strong>:</li>
-<li><code>cpu_distributed_houseQR_panel_factor_block_cyclic_1d</code></li>
-<li><code>cpu_distributed_blocked_houseQR_formQ_block_cyclic_1d</code></li>
+<p class="rubric">3. <strong>Advanced Householder QR Factorization</strong></p>
+<ul class="simple">
+<li><p><strong>CUDA-aware-MPI and NCCL Householder QR</strong>: Two-level padding/cleaning strategy with full-path diagnostics</p></li>
+<li><p>Level-1: Panel pre-clean (coarse)</p></li>
+<li><p>Level-2: Column split-and-pad (fine)</p></li>
+<li><p>Full-height GEMM updates with NCCL allreduce</p></li>
+<li><p><strong>Distributed CPU Householder QR</strong>:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cpu_distributed_houseQR_panel_factor_block_cyclic_1d</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cpu_distributed_blocked_houseQR_formQ_block_cyclic_1d</span></code></p></li>
 </ul>
-<h5>4. <strong>Enhanced Fortran/C Interfaces</strong></h5>
-<ul>
-<li>Added second initializer for Fortran interfaces (internal buffer management)</li>
-<li>Users no longer need to provide external buffers for eigenvectors/eigenvalues</li>
-<li>Configuration setter functions added to Fortran/C interfaces</li>
-<li>Support for both block-block and block-cyclic distributions simultaneously</li>
+<p class="rubric">4. <strong>Enhanced Fortran/C Interfaces</strong></p>
+<ul class="simple">
+<li><p>Added second initializer for Fortran interfaces (internal buffer management)</p></li>
+<li><p>Users no longer need to provide external buffers for eigenvectors/eigenvalues</p></li>
+<li><p>Configuration setter functions added to Fortran/C interfaces</p></li>
+<li><p>Support for both block-block and block-cyclic distributions simultaneously</p></li>
 </ul>
-<hr>
-<h4>📦 Build &amp; Configuration</h4>
-<h5>CMake Improvements</h5>
-<ul>
-<li>Minimal drivers are split into <strong><code>chase_driver_cpu</code></strong> (links <code>chase_cpu</code>, and <strong><code>cublaspp</code>/<code>cusolverpp</code></strong> when CUDA is enabled so shared headers link cleanly) and <strong><code>chase_driver_gpu</code></strong> (links <code>chase_gpu</code> when CUDA is enabled); the old single target <strong><code>chase_driver</code></strong> is removed.</li>
-<li>Made ScaLAPACK optional</li>
-<li>Added pkg-config support</li>
-<li>Improved CMake configuration with <code>chase_config.h.in</code></li>
-<li>Default CUDA architectures: 80;90 (Ampere and Hopper)</li>
+<p class="rubric">📦 Build &amp; Configuration</p>
+<p class="rubric">CMake Improvements</p>
+<ul class="simple">
+<li><p>Minimal drivers are split into <strong>`chase_driver_cpu`</strong> (links <code class="docutils literal notranslate"><span class="pre">chase_cpu</span></code>, and <strong>`cublaspp`/`cusolverpp`</strong> when CUDA is enabled so shared headers link cleanly) and <strong>`chase_driver_gpu`</strong> (links <code class="docutils literal notranslate"><span class="pre">chase_gpu</span></code> when CUDA is enabled); the old single target <strong>`chase_driver`</strong> is removed.</p></li>
+<li><p>Made ScaLAPACK optional</p></li>
+<li><p>Added pkg-config support</p></li>
+<li><p>Improved CMake configuration with <code class="docutils literal notranslate"><span class="pre">chase_config.h.in</span></code></p></li>
+<li><p>Default CUDA architectures: 80;90 (Ampere and Hopper)</p></li>
 </ul>
-<h5>Configuration Options</h5>
-<ul>
-<li>Environment variable support for Householder parameters</li>
-<li><code>CHASE_PH_LANCZOS_DIAG</code>: Optional damping factor info print (default: OFF)</li>
+<p class="rubric">Configuration Options</p>
+<ul class="simple">
+<li><p>Environment variable support for Householder parameters</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHASE_PH_LANCZOS_DIAG</span></code>: Optional damping factor info print (default: OFF)</p></li>
 </ul>
-<hr>
-<h4>🔍 Logging &amp; Diagnostics</h4>
-<ul>
-<li><strong>Centralized ChASE logger</strong> introduced</li>
-<li>Replaced direct stdout with configurable logging</li>
-<li>Log levels: Trace, Debug, Info, Warning, Error</li>
+<p class="rubric">🔍 Logging &amp; Diagnostics</p>
+<ul class="simple">
+<li><p><strong>Centralized ChASE logger</strong> introduced</p></li>
+<li><p>Replaced direct stdout with configurable logging</p></li>
+<li><p>Log levels: Trace, Debug, Info, Warning, Error</p></li>
 </ul>
-<hr>
-<h4>🧪 Testing</h4>
-<ul>
-<li>Added Fortran interface tests</li>
-<li>Full runs of all builds in unit tests</li>
+<p class="rubric">🧪 Testing</p>
+<ul class="simple">
+<li><p>Added Fortran interface tests</p></li>
+<li><p>Full runs of all builds in unit tests</p></li>
 </ul>
-<hr>
-<h4>🔗 API Changes</h4>
-<h5>New Unified Configuration Setters</h5>
+<p class="rubric">🔗 API Changes</p>
+<p class="rubric">New Unified Configuration Setters</p>
 <p>All precision/matrix-type independent:</p>
-<pre><code>chase_set_tol(tol)
-chase_set_deg(deg)
-chase_set_max_deg(max_deg)
-chase_set_max_iter(max_iter)
-chase_set_lanczos_iter(lanczos_iter)
-chase_set_num_lanczos(num_lanczos)
-chase_set_approx(flag)
-chase_set_opt(flag)
-chase_set_cholqr(flag)
-chase_enable_sym_check(flag)
-chase_set_cluster_aware_degrees(flag)</code></pre>
-<hr>
-<h4>📌 Migration Notes</h4>
-<h5>For Users Upgrading</h5>
-<p>1. <strong>ScaLAPACK is now optional</strong>: Distributed Householder QR is the default 2. <strong>Logger API</strong>: Direct <code>printf</code>/<code>cout</code> calls replaced with <code>GetLogger().Log()</code> 3. <strong>Configuration</strong>: Fortran: new unified setters work across all precision/matrix types 4. <strong>Fortran buffers</strong>: Optional external buffers - library can manage internally</p>
-<hr>
-<h4>👥 Contributors</h4>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">chase_set_tol</span><span class="p">(</span><span class="n">tol</span><span class="p">)</span>
+<span class="n">chase_set_deg</span><span class="p">(</span><span class="n">deg</span><span class="p">)</span>
+<span class="n">chase_set_max_deg</span><span class="p">(</span><span class="n">max_deg</span><span class="p">)</span>
+<span class="n">chase_set_max_iter</span><span class="p">(</span><span class="n">max_iter</span><span class="p">)</span>
+<span class="n">chase_set_lanczos_iter</span><span class="p">(</span><span class="n">lanczos_iter</span><span class="p">)</span>
+<span class="n">chase_set_num_lanczos</span><span class="p">(</span><span class="n">num_lanczos</span><span class="p">)</span>
+<span class="n">chase_set_approx</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="n">chase_set_opt</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="n">chase_set_cholqr</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="n">chase_enable_sym_check</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="n">chase_set_cluster_aware_degrees</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">📌 Migration Notes</p>
+<p class="rubric">For Users Upgrading</p>
+<ol class="arabic simple">
+<li><p><strong>ScaLAPACK is now optional</strong>: Distributed Householder QR is the default</p></li>
+<li><p><strong>Logger API</strong>: Direct <code class="docutils literal notranslate"><span class="pre">printf</span></code>/<code class="docutils literal notranslate"><span class="pre">cout</span></code> calls replaced with <code class="docutils literal notranslate"><span class="pre">GetLogger().Log()</span></code></p></li>
+<li><p><strong>Configuration</strong>: Fortran: new unified setters work across all precision/matrix types</p></li>
+<li><p><strong>Fortran buffers</strong>: Optional external buffers - library can manage internally</p></li>
+</ol>
+<p class="rubric">👥 Contributors</p>
 <p>This release includes contributions from Edoardo Di Napoli, Clément Richefort and Xinzhe Wu, with major efforts in:</p>
-<ul>
-<li>Pseudo-Hermitian extensions</li>
-<li>Distributed GPU implementations</li>
-<li>NCCL-based linear algebra</li>
-<li>Interface improvements</li>
+<ul class="simple">
+<li><p>Pseudo-Hermitian extensions</p></li>
+<li><p>Distributed GPU implementations</p></li>
+<li><p>NCCL-based linear algebra</p></li>
+<li><p>Interface improvements</p></li>
 </ul>
 </section>
-
-<section id="v171">
-  <h2>v1.7.1</h2>
-  <p class="meta">2026-03-10 · Stabilized GPU Lanczos, BLACS Context Fixes </p>
-  <p class="meta"><a href="/ChASE/v1.7.1/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.1">GitHub release</a></p>
-  <p>This minor release focuses on stabilizing GPU/NCCL Lanczos and QR workflows, tightening MPI/BLACS integration, and strengthening tests and build configuration.</p>
-<h4>Highlights</h4>
-<p>GPU/NCCL performance &amp; stability: More GPU-resident Lanczos with warm-up phases for Lanczos/QR, fused kernels, async host copies, and better CUDA error reporting. MPI/BLACS correctness: BLACS contexts are now correctly bound to the user’s MPI communicator, fixing issues when using sub-communicators. Robust testing &amp; CI: Broader unit test coverage (including Fortran interfaces), more complete test runs, and stabilized CI across configurations. Better configuration &amp; packaging: Added pkg-config support and chase_config.h.in for easier downstream integration.</p>
-<h4>New &amp; Improved</h4>
-<p>Implemented fully GPU-resident Lanczos with fused kernels and warm-up phases for Lanczos and QR when using NCCL. Cleaned up GPU kernels and enabled async host copies to reduce overhead. Improved examples and interfaces, including updates to 1_hello_world.cpp and new/updated Fortran interface tests. Added pkg-config support and chase_config.h.in to streamline configuration and discovery of ChASE from external projects. Introduced chase_config infrastructure for more flexible build-time configuration.</p>
-<h4>Bug Fixes</h4>
-<p>Fixed a critical bug by binding BLACS contexts to the user’s MPI communicator, ensuring correct behavior with sub-communicators. Resolved multiple issues in GPU-resident Lanczos, including stream handling in chase_gpu and bugs in Lanczos with NCCL. Fixed a typing issue for single-precision eigenvalue vectors in the Fortran interface. Fixed build problems for the GPU version when NCCL is not present, allowing clean builds with or without NCCL. Added explicit CUDA kernel error retrieval to aid debugging and robustness.</p>
-<h4>Testing &amp; CI</h4>
-<p>Added full runs of all builds into unit tests, including GPU and NCCL combinations. Expanded and stabilized Lanczos unit tests and related test files.</p>
+<section id="v1-7-1">
+<h2>v1.7.1<a class="headerlink" href="#v1-7-1" title="Link to this heading"></a></h2>
+<p>Published 2026-03-10.</p>
+<p><a class="reference external" href="/ChASE/v1.7.1/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.1">GitHub release</a></p>
+<p>This minor release focuses on stabilizing GPU/NCCL Lanczos and QR workflows, tightening MPI/BLACS integration, and strengthening tests and build configuration.</p>
+<p class="rubric">Highlights</p>
+<p>GPU/NCCL performance &amp; stability: More GPU-resident Lanczos with warm-up phases for Lanczos/QR, fused kernels, async host copies, and better CUDA error reporting.</p>
+<p>MPI/BLACS correctness: BLACS contexts are now correctly bound to the user’s MPI communicator, fixing issues when using sub-communicators.</p>
+<p>Robust testing &amp; CI: Broader unit test coverage (including Fortran interfaces), more complete test runs, and stabilized CI across configurations.</p>
+<p>Better configuration &amp; packaging: Added pkg-config support and chase_config.h.in for easier downstream integration.</p>
+<p class="rubric">New &amp; Improved</p>
+<p>Implemented fully GPU-resident Lanczos with fused kernels and warm-up phases for Lanczos and QR when using NCCL.</p>
+<p>Cleaned up GPU kernels and enabled async host copies to reduce overhead.</p>
+<p>Improved examples and interfaces, including updates to 1_hello_world.cpp and new/updated Fortran interface tests.</p>
+<p>Added pkg-config support and chase_config.h.in to streamline configuration and discovery of ChASE from external projects.</p>
+<p>Introduced chase_config infrastructure for more flexible build-time configuration.</p>
+<p class="rubric">Bug Fixes</p>
+<p>Fixed a critical bug by binding BLACS contexts to the user’s MPI communicator, ensuring correct behavior with sub-communicators.</p>
+<p>Resolved multiple issues in GPU-resident Lanczos, including stream handling in chase_gpu and bugs in Lanczos with NCCL.</p>
+<p>Fixed a typing issue for single-precision eigenvalue vectors in the Fortran interface.</p>
+<p>Fixed build problems for the GPU version when NCCL is not present, allowing clean builds with or without NCCL.</p>
+<p>Added explicit CUDA kernel error retrieval to aid debugging and robustness.</p>
+<p class="rubric">Testing &amp; CI</p>
+<p>Added full runs of all builds into unit tests, including GPU and NCCL combinations.</p>
+<p>Expanded and stabilized Lanczos unit tests and related test files.</p>
 </section>
-
-<section id="v170">
-  <h2>v1.7.0</h2>
-  <p class="meta">2026-01-22 · Official release: ChASE is now extended to tackle pseudo-Hermitian eigenproblems </p>
-  <p class="meta"><a href="/ChASE/v1.7.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.0">GitHub release</a></p>
-  <p>In this release:</p>
-<ul>
-<li>New solver for pseudo-Hermitian definite eigenvalue problems. This includes:</li>
-<li>Introduction of the <code>PseudoHermitianMatrix</code> class</li>
-<li>Modified algorithm for the Chebyshev filter</li>
-<li>Modified algorithm for the QR factorization</li>
-<li>New oblique Rayleigh-Ritz projection</li>
-<li>Parallel distribution and implementations for distributed CPU and GPU</li>
-<li>Improved and expanded documentation</li>
-<li>Updated README file</li>
-<li>Improved and updated C and Fortran interfaces for pseudo-Hermitian problems</li>
-<li>Resolved bugs in printing parameters</li>
-<li>Updated and improved CI pipeline</li>
-<li>Updated performance counters</li>
-<li>Improved statistics on early locking vectors</li>
-<li>Added mixed precision support</li>
+<section id="v1-7-0">
+<h2>v1.7.0<a class="headerlink" href="#v1-7-0" title="Link to this heading"></a></h2>
+<p>Published 2026-01-22.</p>
+<p><a class="reference external" href="/ChASE/v1.7.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.0">GitHub release</a></p>
+<p>In this release:</p>
+<ul class="simple">
+<li><p>New solver for pseudo-Hermitian definite eigenvalue problems. This includes:</p></li>
+<li><p>Introduction of the <code class="docutils literal notranslate"><span class="pre">PseudoHermitianMatrix</span></code> class</p></li>
+<li><p>Modified algorithm for the Chebyshev filter</p></li>
+<li><p>Modified algorithm for the QR factorization</p></li>
+<li><p>New oblique Rayleigh-Ritz projection</p></li>
+<li><p>Parallel distribution and implementations for distributed CPU and GPU</p></li>
+<li><p>Improved and expanded documentation</p></li>
+<li><p>Updated README file</p></li>
+<li><p>Improved and updated C and Fortran interfaces for pseudo-Hermitian problems</p></li>
+<li><p>Resolved bugs in printing parameters</p></li>
+<li><p>Updated and improved CI pipeline</p></li>
+<li><p>Updated performance counters</p></li>
+<li><p>Improved statistics on early locking vectors</p></li>
+<li><p>Added mixed precision support</p></li>
 </ul>
 </section>
-
-<section id="v170-rc1">
-  <h2>v1.7.0-rc1</h2>
-  <p class="meta">2025-12-19 · Major functionality extension: added solve for pseudo-Hermitian eigenproblems </p>
-  <p class="meta"> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.0-rc1">GitHub release</a></p>
-  <h3><strong>Christmas release!</strong></h3>
+<section id="v1-7-0-rc1">
+<h2>v1.7.0-rc1<a class="headerlink" href="#v1-7-0-rc1" title="Link to this heading"></a></h2>
+<p>Published 2025-12-19.</p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.7.0-rc1">GitHub release</a></p>
+<p class="rubric"><strong>Christmas release!</strong></p>
 <p>ChASE can now tackle pseudo-Hermitian problem as they arise, for instance in Bethe-Salpeter equation. The solve has been extended by generalizing the Chebyshev filter and designing a new oblique method for the Rayleigh-Ritz projection. The algorithmic improvements are also part of a paper that will soon be submitted for publication. <strong>This is a release candidate.</strong></p>
 </section>
-
-<section id="v160">
-  <h2>v1.6.0</h2>
-  <p class="meta">2025-01-28 · ChASE code structure fully revised </p>
-  <p class="meta">This release has no Sphinx documentation. · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.6.0">GitHub release</a></p>
-  <p>ChASE has gone a complex restructuring process that included major changes in the hierarchical folder structure, a clearer division between parallel implementations and a new Test-Driven-Development which introduced unit testing for many of its routines. In particular:</p>
-<ul>
-<li>A clear division between Chase algorithm and their implementation has been maintained</li>
-<li>The name of the base virtual class has changed from Chase to ChaseBase</li>
-<li>All Implementation for sequential and parallel CPU/GPU architecture has been clearly separated and based on the new ChaseBase class.</li>
-<li>All reliance on external numerical libraries (BLAS, LAPACK, etc.) has been separated and templated</li>
-<li>Utilities for the initialization of pure MPI, cuda-aware MPI and NCCL grids has been redefined and clearly separated</li>
-<li>Implementation of the kernels have been grouped in a <code>linalg</code> folder which contains</li>
-<li>matrix classes for shared-memory CPU and GPU architectures</li>
-<li>matrix classes for distinct distribution of matrices and vectors</li>
-<li>shared memory kernels</li>
-<li>distributed CPU kernels</li>
-<li>single GPU kernels</li>
-<li>distributed GPU kernels</li>
-<li>Functionalities for mixed precision have been added</li>
-<li>Unit testing has been introduced for</li>
-<li>the grid functionalities</li>
-<li>matrix type functionalities</li>
-<li>all kernels for the separate cases (CPU, GPU, distributed CPU, etc.)</li>
-<li>Examples have been generalized and redistribution of matrices has been abstracted</li>
-<li>A template for Collaboration Agreement (CLA) has been added </li>
+<section id="v1-6-0">
+<h2>v1.6.0<a class="headerlink" href="#v1-6-0" title="Link to this heading"></a></h2>
+<p>Published 2025-01-28.</p>
+<p>This release has no Sphinx documentation.</p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.6.0">GitHub release</a></p>
+<p>ChASE has gone a complex restructuring process that included major changes in the hierarchical folder structure, a clearer division between parallel implementations and a new Test-Driven-Development which introduced unit testing for many of its routines. In particular:</p>
+<ul class="simple">
+<li><p>A clear division between Chase algorithm and their implementation has been maintained</p></li>
+<li><p>The name of the base virtual class has changed from Chase to ChaseBase</p></li>
+<li><p>All Implementation for sequential and parallel CPU/GPU architecture has been clearly separated and based on the new ChaseBase class.</p></li>
+<li><p>All reliance on external numerical libraries (BLAS, LAPACK, etc.) has been separated and templated</p></li>
+<li><p>Utilities for the initialization of pure MPI, cuda-aware MPI and NCCL grids has been redefined and clearly separated</p></li>
+<li><p>Implementation of the kernels have been grouped in a <code class="docutils literal notranslate"><span class="pre">linalg</span></code> folder which contains</p></li>
+<li><p>matrix classes for shared-memory CPU and GPU architectures</p></li>
+<li><p>matrix classes for distinct distribution of matrices and vectors</p></li>
+<li><p>shared memory kernels</p></li>
+<li><p>distributed CPU kernels</p></li>
+<li><p>single GPU kernels</p></li>
+<li><p>distributed GPU kernels</p></li>
+<li><p>Functionalities for mixed precision have been added</p></li>
+<li><p>Unit testing has been introduced for</p></li>
+<li><p>the grid functionalities</p></li>
+<li><p>matrix type functionalities</p></li>
+<li><p>all kernels for the separate cases (CPU, GPU, distributed CPU, etc.)</p></li>
+<li><p>Examples have been generalized and redistribution of matrices has been abstracted</p></li>
+<li><p>A template for Collaboration Agreement (CLA) has been added</p></li>
 </ul>
 </section>
-
-<section id="v150">
-  <h2>v1.5.0</h2>
-  <p class="meta">2024-09-27 · Added CI pipeline for automatic building and testing </p>
-  <p class="meta"><a href="/ChASE/v1.5.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.5.0">GitHub release</a></p>
-  <p>Created a CI pipeline and included unit and integration testing for the QR decomposition.</p>
+<section id="v1-5-0">
+<h2>v1.5.0<a class="headerlink" href="#v1-5-0" title="Link to this heading"></a></h2>
+<p>Published 2024-09-27.</p>
+<p><a class="reference external" href="/ChASE/v1.5.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.5.0">GitHub release</a></p>
+<p>Created a CI pipeline and included unit and integration testing for the QR decomposition.</p>
 </section>
-
-<section id="v141">
-  <h2>v1.4.1</h2>
-  <p class="meta">2023-12-08 · Bug fix: GPU-timing syncronization </p>
-  <p class="meta"><a href="/ChASE/v1.4.1/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.4.1">GitHub release</a></p>
-  <p>A problem was observed with different NVTX ranges on CPU and GPU. The problem has been solved by explicitly synchronizing the CPU with the GPU.</p>
+<section id="v1-4-1">
+<h2>v1.4.1<a class="headerlink" href="#v1-4-1" title="Link to this heading"></a></h2>
+<p>Published 2023-12-08.</p>
+<p><a class="reference external" href="/ChASE/v1.4.1/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.4.1">GitHub release</a></p>
+<p>A problem was observed with different NVTX ranges on CPU and GPU. The problem has been solved by explicitly synchronizing the CPU with the GPU.</p>
 </section>
-
-<section id="v140">
-  <h2>v1.4.0</h2>
-  <p class="meta">2023-08-07 · ChASE v1.4.0. Major release.</p>
-  <p class="meta"><a href="/ChASE/v1.4.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.4.0">GitHub release</a></p>
-  <p>Introduced a new distributed GPU-build of ChASE entirely based on the NVIDIA NCCL library, which avoids the explicit data movement between host and device memory, and leads to much faster collective communications among the involved GPUs. This new release achieves between a 1.5x and 3x with respect to the traditional distributed multi-GPUs build. Now ChASE can be compiled and executed with the following distinct parallel configurations:</p>
-<p>Distributed CPU only Distributed multi-GPUs (traditionally based on host-device communication standards) Distributed multi-GPUs (using NVIDIA NCCL library)</p>
+<section id="v1-4-0">
+<h2>v1.4.0<a class="headerlink" href="#v1-4-0" title="Link to this heading"></a></h2>
+<p>Published 2023-08-07.</p>
+<p><a class="reference external" href="/ChASE/v1.4.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.4.0">GitHub release</a></p>
+<p>Introduced a new distributed GPU-build of ChASE entirely based on the NVIDIA NCCL library, which avoids the explicit data movement between host and device memory, and leads to much faster collective communications among the involved GPUs. This new release achieves between a 1.5x and 3x with respect to the traditional distributed multi-GPUs build. Now ChASE can be compiled and executed with the following distinct parallel configurations:</p>
+<p>Distributed CPU only</p>
+<p>Distributed multi-GPUs (traditionally based on host-device communication standards)</p>
+<p>Distributed multi-GPUs (using NVIDIA NCCL library)</p>
 </section>
-
-<section id="v131">
-  <h2>v1.3.1</h2>
-  <p class="meta">2023-04-05 · ChASE v1.3.1: minor release </p>
-  <p class="meta"><a href="/ChASE/v1.3.1/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.3.1">GitHub release</a></p>
-  <p>Updated the estimation bound for the condition number of the matrix of filtered vectors <code>V</code>. This estimate bounds from above the actual condition number of the matrix <code>V</code> allowing for the dynamical selection of the Communication-Avoiding QR-decomposition (CAQR) variant within the ChASE library at run time.</p>
+<section id="v1-3-1">
+<h2>v1.3.1<a class="headerlink" href="#v1-3-1" title="Link to this heading"></a></h2>
+<p>Published 2023-04-05.</p>
+<p><a class="reference external" href="/ChASE/v1.3.1/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.3.1">GitHub release</a></p>
+<p>Updated the estimation bound for the condition number of the matrix of filtered vectors <code class="docutils literal notranslate"><span class="pre">V</span></code>. This estimate bounds from above the actual condition number of the matrix <code class="docutils literal notranslate"><span class="pre">V</span></code> allowing for the dynamical selection of the Communication-Avoiding QR-decomposition (CAQR) variant within the ChASE library at run time.</p>
 </section>
-
-<section id="v130">
-  <h2>v1.3.0</h2>
-  <p class="meta">2023-03-10 · ChASE v1.3.0. Major release. </p>
-  <p class="meta"><a href="/ChASE/v1.3.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.3.0">GitHub release</a></p>
-  <p>This release features a number of changes in the parallel implementation and the algorithm.</p>
-<ul>
-<li>The QR factorization, which was previously done redundantly on each MPI process, is not parallelized on a 1D sub-grid of the 2D MPI cartesian grid.</li>
-<li>As a consequence of the additional parallelization, the number and structure of the workspace buffers has changed greatly diminishing the memory footprint of the entire library</li>
-<li>The use of the postApplication function has been substituted with the result that some of the communication is now hidden behind computation during the execution of the Rayleigh-Ritz kernel and the Residual kernel</li>
-<li>The parallel HouseholderQR algorithm has been substituted with the CholeskyQR algorithm (and its more stable variants). A mechanism to avoid failure of this algorithm has been introduced based on numerical analysis results.</li>
-<li>A new parallel random generator has been added to reduce the time spent initializing the computation, especially for large scale problems.</li>
+<section id="v1-3-0">
+<h2>v1.3.0<a class="headerlink" href="#v1-3-0" title="Link to this heading"></a></h2>
+<p>Published 2023-03-10.</p>
+<p><a class="reference external" href="/ChASE/v1.3.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.3.0">GitHub release</a></p>
+<p>This release features a number of changes in the parallel implementation and the algorithm.</p>
+<ul class="simple">
+<li><p>The QR factorization, which was previously done redundantly on each MPI process, is not parallelized on a 1D sub-grid of the 2D MPI cartesian grid.</p></li>
+<li><p>As a consequence of the additional parallelization, the number and structure of the workspace buffers has changed greatly diminishing the memory footprint of the entire library</p></li>
+<li><p>The use of the postApplication function has been substituted with the result that some of the communication is now hidden behind computation during the execution of the Rayleigh-Ritz kernel and the Residual kernel</p></li>
+<li><p>The parallel HouseholderQR algorithm has been substituted with the CholeskyQR algorithm (and its more stable variants). A mechanism to avoid failure of this algorithm has been introduced based on numerical analysis results.</p></li>
+<li><p>A new parallel random generator has been added to reduce the time spent initializing the computation, especially for large scale problems.</p></li>
 </ul>
 </section>
-
-<section id="v121">
-  <h2>v1.2.1</h2>
-  <p class="meta">2023-01-23 · ChASE is now integrated into the ELSI library.</p>
-  <p class="meta"><a href="/ChASE/v1.2.1/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.2.1">GitHub release</a></p>
-  <p>In this release:</p>
-<ul>
-<li>The C and Fortran interfaces have been improved</li>
-<li>Dependencies on Nvtx tool has been removed</li>
-<li>the ELSI interface has been included</li>
+<section id="v1-2-1">
+<h2>v1.2.1<a class="headerlink" href="#v1-2-1" title="Link to this heading"></a></h2>
+<p>Published 2023-01-23.</p>
+<p><a class="reference external" href="/ChASE/v1.2.1/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.2.1">GitHub release</a></p>
+<p>In this release:</p>
+<ul class="simple">
+<li><p>The C and Fortran interfaces have been improved</p></li>
+<li><p>Dependencies on Nvtx tool has been removed</p></li>
+<li><p>the ELSI interface has been included</p></li>
 </ul>
 </section>
-
-<section id="v120">
-  <h2>v1.2.0</h2>
-  <p class="meta">2022-06-13 · ChASE v1.2.0 Release</p>
-  <p class="meta"><a href="/ChASE/v1.2.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.2.0">GitHub release</a></p>
-  <p>We release the version 1.2.0 of ChASE, with new features as follows:</p>
-<ul>
-<li>include fortran interface explicitly in the ChASE code</li>
-</ul>
-<ul>
-<li>add a new chase-mpi-properties interface for block distribution, in which the distribution is provided by user, rather than use the built-in one.</li>
-</ul>
-<ul>
-<li>fully compatible with Quantum Espresso</li>
+<section id="v1-2-0">
+<h2>v1.2.0<a class="headerlink" href="#v1-2-0" title="Link to this heading"></a></h2>
+<p>Published 2022-06-13.</p>
+<p><a class="reference external" href="/ChASE/v1.2.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.2.0">GitHub release</a></p>
+<p>We release the version 1.2.0 of ChASE, with new features as follows:</p>
+<ul class="simple">
+<li><p>include fortran interface explicitly in the ChASE code</p></li>
+<li><p>add a new chase-mpi-properties interface for block distribution, in which the distribution is provided by user, rather than use the built-in one.</p></li>
+<li><p>fully compatible with Quantum Espresso</p></li>
 </ul>
 </section>
-
-<section id="v111">
-  <h2>v1.1.1</h2>
-  <p class="meta">2022-03-17 · Standardized LICENSE</p>
-  <p class="meta"><a href="/ChASE/v1.1.1/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.1.1">GitHub release</a></p>
-  <h4>Fixes</h4>
-<ul>
-<li>BSD3.0 license standardization</li>
+<section id="v1-1-1">
+<h2>v1.1.1<a class="headerlink" href="#v1-1-1" title="Link to this heading"></a></h2>
+<p>Published 2022-03-17.</p>
+<p><a class="reference external" href="/ChASE/v1.1.1/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.1.1">GitHub release</a></p>
+<p class="rubric">Fixes</p>
+<ul class="simple">
+<li><p>BSD3.0 license standardization</p></li>
 </ul>
 </section>
-
-<section id="v110">
-  <h2>v1.1.0</h2>
-  <p class="meta">2022-03-15 · Algorithmic improvements in the Chebyshev filter</p>
-  <p class="meta"><a href="/ChASE/v1.1.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.1.0">GitHub release</a></p>
-  <h4>Improvements</h4>
-<ul>
-<li>Integrated axpy in the call to HEMM when executing the 3-terms recurrence relation in the Chebyshev filter.</li>
-<li>Moved the shift of the A matrix in the 3-terms recurrent relation for the GPU build within the accelerator.</li>
+<section id="v1-1-0">
+<h2>v1.1.0<a class="headerlink" href="#v1-1-0" title="Link to this heading"></a></h2>
+<p>Published 2022-03-15.</p>
+<p><a class="reference external" href="/ChASE/v1.1.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.1.0">GitHub release</a></p>
+<p class="rubric">Improvements</p>
+<ul class="simple">
+<li><p>Integrated axpy in the call to HEMM when executing the 3-terms recurrence relation in the Chebyshev filter.</p></li>
+<li><p>Moved the shift of the A matrix in the 3-terms recurrent relation for the GPU build within the accelerator.</p></li>
 </ul>
 </section>
-
-<section id="v100">
-  <h2>v1.0.0</h2>
-  <p class="meta">2022-03-15 · Release the first stable version of ChASE: v1.0.0</p>
-  <p class="meta"><a href="/ChASE/v1.0.0/">Documentation</a> · <a href="https://github.com/ChASE-library/ChASE/releases/tag/v1.0.0">GitHub release</a></p>
-  <p>First stable version (v1.0.0) of ChASE, which supports:</p>
-<ul>
-<li>shared-memory build;</li>
-<li>MPI+Threads build;</li>
-<li>MPI+multi-GPUs build.</li>
+<section id="v1-0-0">
+<h2>v1.0.0<a class="headerlink" href="#v1-0-0" title="Link to this heading"></a></h2>
+<p>Published 2022-03-15.</p>
+<p><a class="reference external" href="/ChASE/v1.0.0/">Documentation</a></p>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/releases/tag/v1.0.0">GitHub release</a></p>
+<p>First stable version (v1.0.0) of ChASE, which supports:</p>
+<ul class="simple">
+<li><p>shared-memory build;</p></li>
+<li><p>MPI+Threads build;</p></li>
+<li><p>MPI+multi-GPUs build.</p></li>
 </ul>
 <p>This version supports also both the block-distribution and block-cyclic distribution of matrix to be solved across 2D MPI grid.</p>
 </section>
+</section>
 
-</main>
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="contribution.html" class="btn btn-neutral float-left" title="Contributing to ChASE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
 </body>
 </html>

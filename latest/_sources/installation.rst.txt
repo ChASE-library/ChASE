@@ -29,7 +29,7 @@ one has to install or load the necessary dependencies.
 
 **Required Dependencies:**
    * A ``C++`` compiler with C++17 support (e.g., GCC 7+, Clang 5+, or Intel C++ 17+)
-   * `CMake <http://www.cmake.org/>`__ version 3.8 or higher
+   * `CMake <http://www.cmake.org/>`__ version 3.18 or higher
    * `BLAS <http://netlib.org/blas>`__ (Basic Linear Algebra Subprograms)
    * `LAPACK <http://netlib.org/lapack>`__ (Linear Algebra PACKage)
 
@@ -38,7 +38,11 @@ one has to install or load the necessary dependencies.
    * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Optional backend for NVIDIA GPU implementations (ChASEGPU, pChASEGPU)
    * `ROCm/HIP <https://rocm.docs.amd.com>`__ - Optional backend for AMD GPU implementations (ChASEGPU, pChASEGPU)
    * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
-   * `NCCL <https://developer.nvidia.com/nccl>`__ or RCCL - Optional, for optimized multi-GPU communication in pChASEGPU
+   * `NCCL <https://developer.nvidia.com/nccl>`__ or `RCCL <https://github.com/ROCm/rccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+   * Ozaki-II emulated GEMM - Optional, for the filter on NVIDIA GPUs. See :doc:`emulated-gemm`.
+
+     * `GEMMul8 <https://github.com/RIKEN-RCCS/GEMMul8>`__ - Used when ``CHASE_ENABLE_OZAKI=ON`` and ``CHASE_OZAKI_BACKEND=GEMMUL8``. ChASE can download tag ``v3.4.4`` and build the GEMM-only INT8 library.
+     * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ 13.5 or newer - Used when ``CHASE_OZAKI_BACKEND=CUBLAS``. This backend does not build GEMMul8.
 
 Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required.
 
@@ -124,11 +128,9 @@ For distributed GPU communication on ROCm, use
 
 
 .. note::
-  It is also recommended to build ChASE with the configuration of CUDA compute compatibility through ``CMAKE_CUDA_ARCHITECTURES``. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with ``-DCMAKE_CUDA_ARCHITECTURES=86``. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with ``-DCMAKE_CUDA_ARCHITECTURES="70;75;80;86"``.
+  A CUDA build uses one compute capability. Set it with ``CMAKE_CUDA_ARCHITECTURES``, for example ``-DCMAKE_CUDA_ARCHITECTURES=90``. If the variable is empty, CMake takes the first GPU reported by ``nvidia-smi``. A list such as ``70;75;80;86`` is rejected.
 
-  If ``CMAKE_VERSION < 3.18`` then CMake is not compliant with *CMAKE policy CMP0104* (introduced 
-  in CMake 3.18) which defines that the variable ``CMAKE_CUDA_ARCHITECTURES`` has to be initialized. In that case, the code generation flag has to be set manually. 
-  For simplicity and compatibility with newer (3.18+) CMake version, the ``CMAKE_CUDA_ARCHITECTURES`` variable has to be always set, not matter the cmake version.
+  CMake 3.18 is required. That is the version which introduced ``CMAKE_CUDA_ARCHITECTURES`` (policy CMP0104).
 
 
 Building ChASE with Examples
@@ -423,9 +425,33 @@ ChASE-Specific Options
    * - ``CHASE_GPU_CONSTRUCTOR_BENCHMARK_WARMUP``
      - ``OFF``
      - Enable optional warmup benchmarking logic during GPU constructor setup.
-   * - ``CHASE_ENABLE_GPU_RESIDENT_LANCZOS``
+   * - ``CHASE_DISABLE_EARLY_LOCKING``
+     - ``OFF``
+     - Disable the early-locking heuristic in the locking step.
+   * - ``CHASE_ENABLE_OZAKI``
+     - ``OFF``
+     - Enable an emulated GEMM for the filter on NVIDIA GPUs. Runtime controls are described in :doc:`emulated-gemm`.
+   * - ``CHASE_OZAKI_BACKEND``
+     - ``GEMMUL8``
+     - ``GEMMUL8`` or ``CUBLAS``. ``CUBLAS`` requires CUDA 13.5 or newer and does not build GEMMul8.
+   * - ``GEMMUL8_ROOT``
+     - empty
+     - Prefix of an existing GEMMul8 install (``include/`` and ``lib/``). Empty: ChASE downloads and builds the GEMM-only INT8 library.
+   * - ``CHASE_FETCH_GEMMUL8``
      - ``ON``
-     - Keep Lanczos-related data resident on the GPU when supported by the backend.
+     - Download and build GEMMul8 when ``GEMMUL8_ROOT`` is empty.
+   * - ``CHASE_GEMMUL8_GIT_REPOSITORY``
+     - ``https://github.com/RIKEN-RCCS/GEMMul8.git``
+     - Git repository used when ChASE builds GEMMul8.
+   * - ``CHASE_GEMMUL8_GIT_TAG``
+     - ``v3.4.4``
+     - Git tag or commit used when ChASE builds GEMMul8.
+   * - ``CHASE_GEMMUL8_GPU_ARCH``
+     - empty
+     - CUDA architecture for the fetched GEMMul8 build. Empty uses the single ``CMAKE_CUDA_ARCHITECTURES`` value. A set value must match that architecture.
+   * - ``CHASE_ENABLE_GPU_RESIDENT_LANCZOS``
+     - always on
+     - GPU Lanczos keeps its working data on the device. The build always defines this macro. There is no CMake switch to turn it off.
    * - ``CHASE_INTERFACE_WITH_BLOCKCYLIC``
      - ``ON``
      - Enable block-cyclic initialization routines in the C/Fortran interface.
@@ -455,9 +481,8 @@ The following standard CMake variables can also be used to configure the build:
    * ``MPI_Fortran_COMPILER`` - Path to the MPI Fortran compiler wrapper (e.g., ``/usr/bin/mpif90``)
 
 **CUDA Configuration:**
-   * ``CMAKE_CUDA_ARCHITECTURES`` - CUDA compute capability architectures to target. Can be a single
-     value (e.g., ``86`` for RTX 3090) or a semicolon-separated list (e.g., ``"70;75;80;86"``).
-     This option should always be set when building with CUDA support, regardless of CMake version.
+   * ``CMAKE_CUDA_ARCHITECTURES`` - One CUDA compute capability, for example ``90`` or ``86``.
+     A semicolon-separated list is rejected. If unset, CMake uses the first GPU reported by ``nvidia-smi``.
 
 **ROCm/HIP Configuration:**
    * ``CHASE_ENABLE_HIP`` - Enable HIP backend explicitly (``ON``), disable it (``OFF``), or use auto-detection (``AUTO``).

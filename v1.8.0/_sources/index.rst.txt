@@ -1,0 +1,39 @@
+**********************
+ChASE's Documentation
+**********************
+
+.. toctree::
+   :maxdepth: 2
+   :caption: INTRODUCTION
+
+   chase
+   version
+   license
+   reference
+   contribution
+   changelog
+
+.. toctree::
+   :maxdepth: 2
+   :caption: USER DOCUMENTATION
+   :numbered:
+
+   quick-start
+   installation
+   usage
+   parameters
+   module
+   example
+   emulated-gemm
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API REFERENCE
+   :numbered:
+   
+   api/index
+
+Index
+==================
+
+* :ref:`genindex`   

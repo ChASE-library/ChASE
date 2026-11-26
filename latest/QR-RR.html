@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.7.5 documentation</title>
+  <title>Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.8.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a0b0b767"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=4eaa865d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -54,38 +54,40 @@
       changelog
     </option><option value="/ChASE/latest/">
       latest
-    </option><option value="/ChASE/v1.0.0/">
-      v1.0.0
-    </option><option value="/ChASE/v1.1.0/">
-      v1.1.0
-    </option><option value="/ChASE/v1.1.1/">
-      v1.1.1
-    </option><option value="/ChASE/v1.2.0/">
-      v1.2.0
-    </option><option value="/ChASE/v1.2.1/">
-      v1.2.1
-    </option><option value="/ChASE/v1.3.0/">
-      v1.3.0
-    </option><option value="/ChASE/v1.3.1/">
-      v1.3.1
-    </option><option value="/ChASE/v1.4.0/">
-      v1.4.0
-    </option><option value="/ChASE/v1.4.1/">
-      v1.4.1
-    </option><option value="/ChASE/v1.5.0/">
-      v1.5.0
-    </option><option value="/ChASE/v1.7.0/">
-      v1.7.0
-    </option><option value="/ChASE/v1.7.1/">
-      v1.7.1
-    </option><option value="/ChASE/v1.7.2/">
-      v1.7.2
-    </option><option value="/ChASE/v1.7.3/">
-      v1.7.3
+    </option><option value="/ChASE/v1.8.0/"selected>
+      v1.8.0
+    </option><option value="/ChASE/v1.7.5/">
+      v1.7.5
     </option><option value="/ChASE/v1.7.4/">
       v1.7.4
-    </option><option value="/ChASE/v1.7.5/"selected>
-      v1.7.5
+    </option><option value="/ChASE/v1.7.3/">
+      v1.7.3
+    </option><option value="/ChASE/v1.7.2/">
+      v1.7.2
+    </option><option value="/ChASE/v1.7.1/">
+      v1.7.1
+    </option><option value="/ChASE/v1.7.0/">
+      v1.7.0
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.3.0/">
+      v1.3.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -169,14 +171,15 @@ function switchVersion(url) {
 </style>
 
 
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu"><p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
-<li class="toctree-l1"><a class="reference internal" href="/ChASE/changelog/">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -186,6 +189,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="emulated-gemm.html">7. Enabling GEMM emulation in ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
 <ul>
@@ -218,33 +222,14 @@ function switchVersion(url) {
              
   <section id="orthogonalization-and-rayleigh-ritz">
 <span id="qr-rr-algorithm"></span><h1>Orthogonalization and Rayleigh-Ritz<a class="headerlink" href="#orthogonalization-and-rayleigh-ritz" title="Link to this heading"></a></h1>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2QRE4BaseI1TE">
-<span id="_CPPv3N5chase9ChaseBase2QRE4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase2QRE4BaseI1TE"></span><span id="chase::ChaseBase::QR__Base:T:"></span><span class="target" id="classchase_1_1ChaseBase_1a7f21ad93ff0b34d48348cd04e7ba9ad1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2QRE4BaseI1TE" title="Link to this definition"></a><br /></dt>
-<dd><p>Performs QR factorization with optional Householder transformation. </p>
-<p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>cond</strong> – Condition number for controlling the factorization process. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE">
-<span id="_CPPv3N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::ChaseBase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1ChaseBase_1a04cbf7185a16bde67a70d870cf3a628f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE" title="Link to this definition"></a><br /></dt>
-<dd><p>Performs Rayleigh-Ritz projection for eigenproblem reduction. </p>
-<p>This method projects the eigenproblem into a smaller subspace, solves the smaller problem, and reconstructs the eigenvectors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
-<li><p><strong>block</strong> – The number of non-converged eigenpairs used for the small eigenproblem. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygenfunction: Cannot find function “chase::ChaseBase::QR” in doxygen xml output for project “ChASE” from directory: /builds/chase/chase-library/ChASE/build_docs/docs/doxygen/xml</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygenfunction: Cannot find function “chase::ChaseBase::RR” in doxygen xml output for project “ChASE” from directory: /builds/chase/chase-library/ChASE/build_docs/docs/doxygen/xml</p>
+</div>
 </section>
 
 
