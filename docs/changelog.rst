@@ -22,7 +22,7 @@ Published 2026-11-24.
 .. rubric:: Overview
 
 
-This release completes the adaptive Ozaki-II emulated GEMM for the NVIDIA GPU filter. v1.7.4 shipped an experimental GEMMul8 path and left the adaptive modulus selection out. v1.8.0 selects the number of coprime moduli from the solver tolerance for double-precision Hermitian problems, adds a cuBLAS fixed-point backend for CUDA 13.5 and newer, and uses Ozaki-II for the pseudo-Hermitian :math:`H^2` filter at a fixed modulus count. The CMake project version is now 1.8.0.
+This release completes the adaptive Ozaki-II emulated GEMM for the Chebyshev filter deployed on NVIDIA GPUs. v1.7.4 shipped an experimental GEMMul8 path and left the adaptive modulus selection out. v1.8.0 selects the number of coprime moduli from the solver tolerance for double-precision Hermitian problems, adds a cuBLAS fixed-point backend for CUDA 13.5 and newer, and uses Ozaki-II for the pseudo-Hermitian :math:`H^2` filter at a fixed modulus count. The CMake project version is now 1.8.0.
 
 
 Emulation stays off unless ``CHASE_ENABLE_OZAKI=ON``. CPU builds and AMD builds keep the ordinary GEMM. Single precision and pseudo-Hermitian problems do not run the flexible search.
@@ -34,7 +34,7 @@ Emulation stays off unless ``CHASE_ENABLE_OZAKI=ON``. CPU builds and AMD builds 
 .. rubric:: 1. Adaptive GEMMul8 modulus selection
 
 
-``CHASE_ENABLE_OZAKI=ON`` enables the filter emulation. ``CHASE_OZAKI_BACKEND`` defaults to ``GEMMUL8``. With ``GEMMUL8_ROOT`` empty, ChASE clones GEMMul8 tag ``v3.4.4`` and builds the GEMM-only INT8 library for the same single CUDA architecture as the rest of ChASE.
+``CHASE_ENABLE_OZAKI=ON`` enables precision emulation in the filter. ``CHASE_OZAKI_BACKEND`` defaults to ``GEMMUL8``. With ``GEMMUL8_ROOT`` empty, ChASE clones GEMMul8 tag ``v3.4.4`` and builds the GEMM-only INT8 library for the same single CUDA architecture as the rest of ChASE.
 
 
 For a double-precision Hermitian eigenproblem, ChASE keeps the smallest :math:`s` in 7 to 16 whose loose bound is below the solver tolerance. If a residual stagnates, it moves to the smallest :math:`s` whose conservative bound is below that tolerance. If no such :math:`s` exists, the fallback is :math:`s = 16`. ``CHASE_OZAKI_FPGEMM_FALLBACK=1`` uses the ordinary double-precision GEMM instead. The same selection is used on one GPU and on several GPUs. In parallel, the bound takes the number of ranks times the worst local block, and the FP64 reduction error is treated as exact. The complex bound is twice the real bound.
