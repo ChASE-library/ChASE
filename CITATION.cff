@@ -83,5 +83,5 @@ keywords:
   - MPI+Threads build
   - Multi-GPU build
 license: BSD-3-Clause
-version: v1.7.5
-date-released: '2026-11-17'
+version: v1.8.0
+date-released: '2026-11-26'

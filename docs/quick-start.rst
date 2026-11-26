@@ -28,9 +28,7 @@ It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout v1.7.5
-
-
+    git checkout v1.8.0
 Dependencies
 ============
 

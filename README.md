@@ -61,7 +61,7 @@ sudo port select --set mpi openmpi-mp-fortran #Set installed MPI as MPI compiler
 
 ```bash
 git clone https://github.com/ChASE-library/ChASE #cloning the ChASE repository
-git checkout v1.7.5 #it is recommended to check out the latest stable tag.
+git checkout v1.8.0 #it is recommended to check out the latest stable tag.
 ```
 
 ### Building and Installing the ChASE library
